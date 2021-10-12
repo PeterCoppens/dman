@@ -234,15 +234,16 @@ class Run:
         self.exported = False
 
     def export(self):
-        if not os.path.exists(self.target):
-            os.makedirs(self.target)
+        target = os.path.join(self.target, self.meta.name)
+        if not os.path.exists(target):
+            os.makedirs(target)
 
         record = configparser.ConfigParser()
-        record['Info'] = {**self.meta.export(self.target), **self.config.export(self.target)}
-        record['Scripts'] = self.scripts.export(self.target)
-        record['Timing'] = self.timing.export(self.target)
+        record['Info'] = {**self.meta.export(target), **self.config.export(target)}
+        record['Scripts'] = self.scripts.export(target)
+        record['Timing'] = self.timing.export(target)
 
-        with open(os.path.join(self.target, Run.DEFAULT_RECORD), 'w') as configfile:
+        with open(os.path.join(target, Run.DEFAULT_RECORD), 'w') as configfile:
             record.write(configfile)        
 
     @staticmethod
@@ -278,13 +279,13 @@ class Run:
 
         meta = RunEntry.from_argument_parser(parser, args, default_name=default_name)
 
-        target = os.path.join(target, meta.name)
-        if os.path.exists(target):
-            if args.override and prompt_user(f'override folder {target}'):
-                shutil.rmtree(target)
+        dest = os.path.join(target, meta.name)
+        if os.path.exists(dest):
+            if args.override and prompt_user(f'override folder {dest}'):
+                shutil.rmtree(dest)
                 # TODO proper remove of run (including of the stamp?)
             else:
-                raise parser.error(f'Output folder already exists: {target}. Use --override if you want to overwrite its contents.')
+                raise parser.error(f'Output folder already exists: {dest}. Use --override if you want to overwrite its contents.')
             
         scripts = ScriptsEntry.from_argument_parser(parser, args)
         config = ConfigEntry.from_argument_parser(parser, args)
@@ -316,113 +317,9 @@ class Generator:
     def __enter__(self):
         self.parse()
         self.run.timing.start
-        return self
+        return self.run
     
     def __exit__(self, exc_type, exc_val, exc_trb):
         if exc_type is None:
             if not self.run.timing.finished: self.run.timing.stop()
         self.run.export()
-
-
-# def configure_log(args):
-#     numeric_level = getattr(logging, args.log.upper(), None)
-#     if not isinstance(numeric_level, int):
-#         raise parser.error('Invalid log level: %s' % args.log.upper())
-#     logging.basicConfig(level=numeric_level)
-
-
-# def init(args):
-#     if os.path.exists('.dman'):
-#         logging.info('Reinitialized existing dman project.')
-#         return
-#     logging.info(f'Initializing dman project: .dman')
-#     os.mkdir('.dman')
-#     config = configparser.ConfigParser()
-#     config['Info'] = {
-#         'Studies' : [],
-#         'Study_Folder': 'studies'
-#     }
-    
-
-#     with open(os.path.join('.dman', 'info.ini'), 'w') as configfile:
-#         config.write(configfile)
-
-
-# def load(args):
-#     root_path = None
-#     current_path = os.getcwd()
-#     while root_path is None:
-#         if os.path.exists(os.path.join(current_path, '.dman')):
-#             root_path = os.path.join(current_path)
-#         else:
-#             current_path = os.path.dirname(current_path)
-#             if os.path.dirname(current_path) == current_path:
-#                 logging.error('could not find .dman folder')
-#                 return
-    
-#     config = configparser.ConfigParser()
-#     config.read(os.path.join(root_path, '.dman', 'info.ini'))
-#     return config, root_path
-
-
-# def spawn(args):
-#     logging.info(f'creating study: {args.name}')
-    
-#     # load config
-#     config, root_path = load(args)
-
-#     # create study folder
-#     study_path = os.path.join(root_path, config['Info']['study_folder'], args.name)
-#     logging.info(f'creating study folder: {study_path}')
-#     if os.path.exists(study_path):
-#         logging.error('folder already exists')
-#         return
-#     os.mkdir(study_path)
-
-#     # create empty config file
-    
-
-#     # register study
-#     if args.name in config['Info']['studies']:
-#         logging.error(f'a study at {study_path} was already registered.')
-#         return
-        
-#     logging.info(f'registering study: {args.name}')
-#     lst = json.loads(config['Info']['studies'])
-#     config['Info']['studies'] = json.dumps(lst + [args.name])
-    
-#     with open(os.path.join(root_path, '.dman', 'info.ini'), 'w') as configfile:
-#         config.write(configfile)
-
-
-# if __name__ == '__main__':
-#     logging.basicConfig(level=logging.DEBUG)
-
-#     parser = argparse.ArgumentParser()
-
-#     parser.add_argument(
-#         '--log',
-#         dest='log',
-#         default='WARNING',
-#         type=str,
-#         help='specify a logging level'
-#     )
-
-#     subparsers = parser.add_subparsers(title='commands', description='dman supports the actions listed below', help='options')
-
-#     init_parser = subparsers.add_parser('init', help='initialize dman in this folder')
-#     init_parser.set_defaults(execute=init)
-
-#     spawn_parser = subparsers.add_parser('spawn', help='spawn a study folder')
-#     spawn_parser.set_defaults(execute=spawn)
-#     spawn_parser.add_argument(
-#         'name',
-#         type=str,
-#         help='set name of study'
-#     )
-
-#     args = parser.parse_args()
-#     if hasattr(args, 'execute'):
-#         args.execute(args)
-#     else:
-#         parser.print_help()
