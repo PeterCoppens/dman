@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import json
 import configparser
 import subprocess
@@ -152,9 +153,8 @@ class Manager:
         self.root_path = get_root_folder(ROOT_FOLDER)
         self.valid = True
         if self.root_path is None:
-            logging.error(f'could not find {ROOT_FOLDER} folder')
-            self.valid = False
-            return
+            logging.error(f'could not find {ROOT_FOLDER} folder.')
+            sys.exit()
         
         self.config = configparser.ConfigParser()
         self.config.read(self.config_path)
@@ -235,6 +235,8 @@ class Manager:
         stamp.write(dir=self.stamp_dir)
         logging.info('created stamp:')
         logging.info(stamp.info)
+
+        return stamp.label
     
     def get_stamp(self, label):
         if label not in self.stamps:

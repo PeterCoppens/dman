@@ -42,24 +42,31 @@ def stamp(args):
 
 def remove_stamp(args):
     dstamp = Manager()
+    if args.label not in dstamp.stamps:
+        logging.error(f'{args.label} is not a stamp.')
+        return
+
     if args.label == dstamp.latest:
-        logging.error(f'Cannot remove latest stamp {args.label}.')
+        logging.error(f'cannot remove latest stamp {args.label}.')
         return
     dstamp.remove_stamp(args.label)
 
-def list_stamps(args):
+def list_stamps(_):
     dstamp = Manager()
     for stamp in dstamp.stamps:
         print(stamp)
 
 def info_stamp(args):
     dstamp = Manager()
+    if args.label not in dstamp.stamps:
+        logging.error(f'{args.label} is not a stamp.')
+        return 
+
     print(dstamp.get_stamp(args.label).info)
 
-def latest_stamp(args):
+def latest_stamp(_):
     dstamp = Manager()
     print(dstamp.get_stamp(dstamp.latest).info)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

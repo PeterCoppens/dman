@@ -2,135 +2,138 @@ import argparse
 import configparser
 import os
 import shutil
-import logging
 import sys
+import json
 
 from dataclasses import dataclass, field
-from collections import namedtuple
 from datetime import datetime
 from typing import List
 
 from dman.stamp import Manager
-
-
-DEFAULT_GENERATOR = 'gen.py'
-DEFAULT_CONFIG = 'config.ini'
-DEFAULT_META = 'info.ini'
-DEFAULT_RUN_DATE_STRING = '%y-%m-%d-%H%M%S'
-DEFAULT_OUTPUT = '.dman/runs'
+from dman.utils import prompt_user
 
 
 @dataclass
-class Timeframe:
+class TimingEntry:
     begin: datetime
     end: datetime = field(default=None)
     datestr: str = field(default='%d/%m/%y %H:%M:%S')
-
+    
     @property
-    def begin_string(self):
-        return self.begin.strftime(self.datestr)
-
-    @property
-    def end_string(self):
+    def finished(self):
+        return self.end is not None
+    
+    def start(self):
+        self.begin = datetime.now()
+        self.end = None
+    
+    def stop(self):
+        self.end = datetime.now()
+    
+    def export(self, _: str):
+        end = 'not finished'
         if self.end:
-            return self.end.strftime(self.datestr)
-        return 'not finished'
+            end = self.end.strftime(self.datestr)
+            
+        return {
+            'start': self.begin.strftime(self.datestr),
+            'end': end
+        }
+
+    @staticmethod
+    def configure_parser(_: argparse.ArgumentParser):
+        pass
+    
+    @classmethod
+    def from_argument_parser(cls, parser: argparse.ArgumentParser, args, default_start: datetime = None):
+        if default_start is None:
+            default_start = datetime.now()
+        return cls(begin=default_start)
 
 
 @dataclass
-class Run:
-    name: str
-    gen: str
-    config: str 
-    timing: Timeframe
-    parsers: List[str] = field(default_factory=list)
-    msg: str = field(default=None)
+class ConfigEntry:
+    DEFAULT_CONFIG = 'config.ini'
 
-    def export(self, path: str):
-        config = configparser.ConfigParser()
-        config['Meta-data'] = {}
-        config['Meta-data']['Name'] = self.name
-        if self.config:
-            config['Meta-data']['Config-File'] = self.config
-        if self.msg:
-            config['Meta-data']['Description'] = self.msg
+    path: str
+    contents: configparser.ConfigParser
 
-        config['Scripts'] = {}
-        config['Scripts']['Generator'] = self.gen
-        if len(self.parsers) > 0:
-            config['Scripts']['Parsers'] = str(self.parsers)
+    def export(self, target: str):
+        if self.path == '':
+            return {}
+        else:
+            shutil.copy(src=self.path, dst=os.path.join(target, ConfigEntry.DEFAULT_CONFIG))
+            return {
+                'config': ConfigEntry.DEFAULT_CONFIG
+            }
 
-        config['Timing'] = {}
-        config['Timing']['Start'] = self.timing.begin_string
-        config['Timing']['End'] = self.timing.end_string
-
-        # config['RNG'] = {'State': str(random.getstate())}
-
-        with open(path, 'w') as configfile:
-            config.write(configfile)
-
-
-class Generator:
-    """
-    Usage: 
-        >>> with Generator(name='name'):
-        >>>     ...
-    """
-    Config = namedtuple("Config", "path contents")
-
-    def __init__(self, name, version=None) -> None:
-        self.name = name
-        self.version = version
-
-        self.args = None
-        self.timing = None
-        self.finished = False
-
-        self.mgr = Manager()
-        if not self.mgr.valid:
-            sys.exit()
-
-        self.parser = argparse.ArgumentParser(f'{name} generator')
-
-        def configFile(string):
-            if not os.path.exists(string):
-                self.parser.error(f'Could not find config file at {string}.')
-
-            config = configparser.ConfigParser()
-            config.read(string)
-
-            res = self.Config(path=string, contents=config)
-            return res
-
-        self.parser.add_argument(
+    @staticmethod
+    def configure_parser(parser: argparse.ArgumentParser):
+        parser.add_argument(
             '--config', 
             dest='config',
-            default=self.Config(path=None, contents={}),
-            type=configFile,
+            default=None,
+            type=str,
             help='path of config file'
         )
+    
+    @classmethod
+    def from_argument_parser(cls, parser: argparse.ArgumentParser, args):
+        if args.config is None:
+            return cls('', configparser.ConfigParser())
 
-        self.parser.add_argument(
-            '--path',
-            dest='path',
-            default=os.path.join(self.mgr.root_path, DEFAULT_OUTPUT),
-            type=str,
-            help='specify the folder to store the run in'
-        )
-            
-        default_run_name = f'run-{name}-{datetime.now().strftime(DEFAULT_RUN_DATE_STRING)}'
-        if version:
-            default_run_name = f'run-{name}-v{version}-{datetime.now().strftime(DEFAULT_RUN_DATE_STRING)}'
+        res = ConfigEntry.from_path(args.config)
+        if res is None:
+            raise parser.error(f'could not find valid config at {args.config}')
+        return res
 
-        self.parser.add_argument(
+    @classmethod
+    def from_path(cls, path: str):
+        if not os.path.exists(path):
+            return None
+        
+        config = configparser.ConfigParser()
+        config.read(path)
+
+        return cls(path=path, contents=config)
+
+
+@dataclass 
+class RunEntry:
+    name: str
+    stamp: str
+    msg: str = field(default=None)
+
+    def export(self, _: str):
+        if self.stamp is None:
+            mgr = Manager()
+            self.stamp = mgr.stamp(name=self.name, msg=self.msg)
+            mgr.save()
+
+        return {
+            'name': self.name,
+            'stamp': self.stamp,
+            'description': self.msg
+        }
+    
+    @staticmethod
+    def configure_parser(parser: argparse.ArgumentParser):
+        parser.add_argument(
             '--run-name',
-            dest='output',
-            default=default_run_name,
+            dest='name',
+            default=None,
             type=str,
             help='specify a custom run name'
         )
 
-        self.parser.add_argument(
+        parser.add_argument(
+            '--stamp',
+            dest='stamp',
+            action='store_true',
+            help='automatically create a stamp with the same name as the run'
+        )
+
+        parser.add_argument(
             '-m',
             dest='msg',
             default='',
@@ -138,14 +141,53 @@ class Generator:
             help='specify run details.'
         )
 
-        self.parser.add_argument(
-            '-y',
-            dest='prompt',
-            action='store_true',
-            help='accept prompts automatically'
-        )
+    @classmethod
+    def from_argument_parser(cls, parser: argparse.ArgumentParser, args, default_name: str = None):
+        name, msg = args.name, args.msg
 
-        self.parser.add_argument(
+        if name is None:
+            name = default_name
+
+        stamp = None
+        if not args.stamp:
+            stamp = Manager().latest
+
+        return cls(name=name, stamp=stamp, msg=msg)
+
+@dataclass
+class ScriptsEntry:
+    DEFAULT_GENERATOR = 'gen.py'
+
+    gen: str
+    parsers: List[str] = field(default_factory=list)
+    local: bool = field(default=False)
+    
+    def export(self, target: str):
+        mgr = Manager()
+
+        if self.local:
+            local_gen = os.path.join(target, ScriptsEntry.DEFAULT_GENERATOR)
+            shutil.copy(src=self.gen, dst=local_gen)
+            self.gen = os.path.basename(local_gen)
+
+            for i, parser in enumerate(self.parsers):
+                local_parser = os.path.join(target, os.path.basename(parser))
+                shutil.copy(src=parser, dst=local_parser)
+                self.parsers[i] = os.path.basename(local_parser)
+        else:
+            for i, parser in enumerate(self.parsers):
+                self.parsers[i] = os.path.relpath(parser, start=mgr.root_path)
+            self.gen = os.path.relpath(self.gen, start=mgr.root_path)
+
+        return {
+            'generator': self.gen,
+            'parsers': json.dumps(self.parsers)
+        }
+            
+
+    @staticmethod
+    def configure_parser(parser: argparse.ArgumentParser):
+        parser.add_argument(
             '--parser-list',
             dest='parsers',
             nargs='+',
@@ -153,102 +195,133 @@ class Generator:
             help='path to parser scripts to store in meta data'
         )
 
-        self.parser.add_argument(
-            '--store-gen',
-            dest='store',
+        parser.add_argument(
+            '--keep-local',
+            dest='local',
             action='store_true',
-            help='store the generator and parser scripts in the output folder'
+            help='store the generator and parser scripts locally in the output folder'
         )
+    
+    @classmethod
+    def from_argument_parser(cls, parser, args):
+        gen = os.path.realpath(sys.argv[0])
 
-        self.parser.add_argument(
+        parsers = args.parsers
+        for i, parse_script in enumerate(parsers):
+            if not os.path.exists(parse_script):
+                raise parser.error(f'could not find file at {parse_script}.')
+            parsers[i] = os.path.realpath(parse_script)
+
+        return cls(gen=gen, parsers=parsers, local=args.local)
+
+
+class Run:
+    DEFAULT_RECORD = 'info.ini'
+    DEFAULT_RUN_DATE_STRING = '%y-%m-%d-%H%M%S'
+    DEFAULT_RUN_TARGET = '.dman/runs'
+
+    def __init__(self, target: str, meta: RunEntry, scripts: ScriptsEntry, config: ConfigEntry = None, timing: TimingEntry = None) -> None:
+        self.target = target
+
+        self.meta = meta
+        self.scripts = scripts
+        if timing is None:
+            timing = TimingEntry(datetime.now())
+        self.timing = timing
+        self.config = config
+
+        self.finished = False
+        self.exported = False
+
+    def export(self):
+        if not os.path.exists(self.target):
+            os.makedirs(self.target)
+
+        record = configparser.ConfigParser()
+        record['Info'] = {**self.meta.export(self.target), **self.config.export(self.target)}
+        record['Scripts'] = self.scripts.export(self.target)
+        record['Timing'] = self.timing.export(self.target)
+
+        with open(os.path.join(self.target, Run.DEFAULT_RECORD), 'w') as configfile:
+            record.write(configfile)        
+
+    @staticmethod
+    def configure_parser(parser: argparse.ArgumentParser):
+        parser.add_argument(
+            '--dir',
+            dest='dir',
+            default=None,
+            type=str,
+            help='specify the directory to store the run in.'
+        )
+        
+        parser.add_argument(
             '--override',
             dest='override',
             action='store_true',
             help='override the contents of the output folder if it exists'
         )
 
-        # self.parser.add_argument(
-        #     '--stamp',
-        #     dest='stamp',
-        #     action='store_true',
-        #     help='automatically create a stamp with the same name as the run'
-        # )
+        for entry in [RunEntry, ScriptsEntry, TimingEntry, ConfigEntry]:
+            entry.configure_parser(parser)
+            
     
+    @classmethod
+    def from_argument_parser(cls, parser, args, generator_name: str = None):
+        current_time = datetime.now()
+        default_name = f'run-{generator_name}-{current_time.strftime(Run.DEFAULT_RUN_DATE_STRING)}'
+        
+        target = args.dir
+        if target is None:
+            mgr = Manager()
+            target = os.path.join(mgr.root_path, Run.DEFAULT_RUN_TARGET)
+
+        meta = RunEntry.from_argument_parser(parser, args, default_name=default_name)
+
+        target = os.path.join(target, meta.name)
+        if os.path.exists(target):
+            if args.override and prompt_user(f'override folder {target}'):
+                shutil.rmtree(target)
+                # TODO proper remove of run (including of the stamp?)
+            else:
+                raise parser.error(f'Output folder already exists: {target}. Use --override if you want to overwrite its contents.')
+            
+        scripts = ScriptsEntry.from_argument_parser(parser, args)
+        config = ConfigEntry.from_argument_parser(parser, args)
+        timing = TimingEntry.from_argument_parser(parser, args, default_start=current_time)
+        return cls(target=target, meta=meta, scripts=scripts, config=config, timing=timing)
+        
+
+class Generator:
+    """
+    Usage: 
+        >>> with Generator(name='name'):
+        >>>     ...
+    """
+
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+        self.mgr = Manager()
+        if not self.mgr.valid:
+            sys.exit()
+
+        self.parser = argparse.ArgumentParser(f'{name} generator')
+        Run.configure_parser(self.parser)
+
     def parse(self):
         self.args = self.parser.parse_args()
-
-        if (not self.args.override) and os.path.exists(self.path):
-            raise self.parser.error(f'Output folder already exists: {self.path}. Use --override if you want to overwrite its contents.')
-
-    @property
-    def config(self):
-        return self.args.config.contents
-
-    @property
-    def path(self):
-        return os.path.join(self.runFolder, self.args.output)
-
-    @property
-    def runFolder(self):
-        return self.args.path
-
-    def start_timing(self):
-        self.finished = False
-        self.timing = Timeframe(datetime.now())
-
-    def stop_timing(self):
-        if self.finished:
-            return  # stop timing was already called
-        self.finished = True
-        self.timing.end = datetime.now()
-
-    def write(self):
-        if not os.path.exists(self.runFolder):
-            os.mkdir(self.runFolder)
-            logging.info(f'Created output directory at {self.runFolder}')
-            
-        if not os.path.exists(self.path):
-            os.mkdir(self.path)
-            logging.info(f'Created run directory at {self.path}')
-
-        timing = self.timing
-        if timing is None:
-            timing = Timeframe(start = datetime.now())
-
-        if self.args.config.path is not None:
-            shutil.copy(src=self.args.config.path, dst=os.path.join(self.path, DEFAULT_CONFIG))
-        if self.args.store:
-            shutil.copy(src=__file__, dst=os.path.join(self.path, DEFAULT_GENERATOR))
-            for parser in self.args.parsers:
-                shutil.copy(src=parser, dst=os.path.join(self.path, os.path.basename(parser)))
-
-            Run(
-                name=self.args.output, 
-                gen=DEFAULT_GENERATOR, 
-                config=DEFAULT_CONFIG if self.args.config.path else None,
-                timing=timing,
-                parsers=[os.path.basename(parser) for parser in self.args.parsers],
-                msg=self.args.msg
-            ).export(os.path.join(self.path, DEFAULT_META))
-        else:
-            Run(
-                name=self.args.output, 
-                gen=os.path.realpath(__file__), 
-                config=DEFAULT_CONFIG if self.args.config.path else None,
-                timing=timing,
-                parsers=[os.path.realpath(parser) for parser in self.args.parsers],
-                msg=self.args.msg
-            ).export(os.path.join(self.path, DEFAULT_META))
+        self.run = Run.from_argument_parser(self.parser, self.args, generator_name=f'{self.name}')
         
     def __enter__(self):
         self.parse()
-        self.start_timing()
+        self.run.timing.start
         return self
     
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_trb):
         if exc_type is None:
-            self.stop_timing()
-        self.write()
+            if not self.run.timing.finished: self.run.timing.stop()
+        self.run.export()
 
 
 # def configure_log(args):
