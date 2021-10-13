@@ -3,10 +3,10 @@ import argparse
 import configparser
 import logging
 import os
-from re import I
 import shutil
 import sys
 import json
+import tempfile
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -383,14 +383,17 @@ class Run:
 
     def export(self):
         path = self.path
+        tmp_file = None
         if os.path.exists(path):
             if self.override:
-                path = path + '.tmp'
+                tmp_file = tempfile.TemporaryDirectory()
+                path = tmp_file.name
             else:
                 logging.error('could not export run: {path} exists.')
                 return None
+        else:
+            os.makedirs(path)      # path should not exist at this point
 
-        os.makedirs(path)      # path should not exist at this point
 
         record = configparser.ConfigParser()
         record['Info'] = {**self.meta.export(path), **self.config.export(path)}
@@ -401,9 +404,10 @@ class Run:
         with open(os.path.join(path, Run.DEFAULT_RECORD), 'w') as configfile:
             record.write(configfile)
 
-        if path != self.path and self.override:
-            shutil.rmtree(self.path)
-            shutil.move(src=path, dst=self.path)                        
+        if tmp_file is not None:
+            shutil.rmtree(self.path)    # delete old run data
+            shutil.copytree(src=path, dst=self.path) 
+            tmp_file.cleanup()                   
         
         return self.path
 

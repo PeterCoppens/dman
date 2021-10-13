@@ -1,3 +1,4 @@
+.venv/
 build/
 dist/
 dman.egg-info/
