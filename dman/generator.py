@@ -17,6 +17,13 @@ from dman.stamp import Manager
 from dman.utils import prompt_user
 
 
+class PopulatableEntry(type):
+    def __call__(cls, *args, **kwargs):
+        obj = type.__call__(cls, *args, **kwargs)
+        obj.populate()
+        return obj
+
+
 @dataclass
 class TimingEntry:
     DATESTR = '%d/%m/%y %H:%M:%S'
@@ -64,7 +71,7 @@ class TimingEntry:
 
 
 @dataclass
-class ConfigEntry:
+class ConfigEntry(metaclass=PopulatableEntry):
     DEFAULT_CONFIG = 'config.ini'
 
     path: str
@@ -112,6 +119,9 @@ class ConfigEntry:
         config.read(path)
 
         return cls(path=path, contents=config)
+    
+    def populate(self):
+        pass
 
 
 @dataclass 
@@ -178,6 +188,7 @@ class RunEntry:
 
         return cls(name=name, stamp=stamp, msg=msg)
 
+
 @dataclass
 class ScriptsEntry:
     DEFAULT_GENERATOR = 'gen.py'
@@ -185,6 +196,13 @@ class ScriptsEntry:
     gen: str
     parsers: List[str] = field(default_factory=list)
     local: bool = field(default=False)
+
+    def add_parser(self, *parser: str):
+        base_path = os.path.realpath(os.path.dirname(sys.argv[0]))
+        for p in parser:
+            self.parsers.append(
+                os.path.realpath(os.path.join(base_path, p))
+            )
     
     def export(self, target: str):
         if self.local:
@@ -196,28 +214,31 @@ class ScriptsEntry:
                 local_parser = os.path.join(target, os.path.basename(parser))
                 shutil.copy(src=parser, dst=local_parser)
                 self.parsers[i] = os.path.basename(local_parser)
-        else:
+        else:   
+            # we store path with respect to root of dman repo when not local
+            root_path = Manager().root_path
             for i, parser in enumerate(self.parsers):
-                self.parsers[i] = os.path.relpath(parser, start=target)
-            self.gen = os.path.relpath(self.gen, start=target)
+                self.parsers[i] = os.path.relpath(parser, start=root_path)
+            self.gen = os.path.relpath(self.gen, start=root_path)
 
         return {
             'generator': self.gen,
-            'parsers': json.dumps(self.parsers)
+            'parsers': json.dumps(self.parsers),
+            'local': json.dumps(self.local)
         }
     
     @classmethod
     def load(cls, path: str, record: dict):
+        islocal = json.loads(record['local'])
         path = os.path.realpath(path)
+        if not islocal:
+            path = Manager().root_path
 
         parsers = json.loads(record['parsers'])
         for i, p in enumerate(parsers):
             parsers[i] = os.path.realpath(os.path.join(path, p))
         
         genpath = os.path.realpath(os.path.join(path, record['generator']))
-
-        # check if first part of genpath is path (TODO better test?)
-        islocal = genpath.find(path) == 0  
 
         return cls(
             gen=genpath,
@@ -309,6 +330,17 @@ class DataCluster(DataType, OrderedDict):
     def append(self, entry: 'DataEntry'):
         self[entry.name] = entry
     
+    def append_content(self, content: DataType, name: str = None, descr: str = None):
+        if name is None:
+            name = content.file.split('.')[0]
+
+        if descr is None:
+            descr = f'entry -- {name} of type {content.type}'
+
+        self.append(DataEntry(
+            name, descr, content
+        ))
+
     @classmethod
     def from_file(cls, file: str):
         record = configparser.ConfigParser()
@@ -325,6 +357,50 @@ class DataCluster(DataType, OrderedDict):
 
         with open(os.path.join(path, DataCluster.DEFAULT_CLUSTER), 'w') as configfile:
             record.write(configfile)
+
+
+@DataType.register('list')
+class DataList(DataType, list):
+    DEFAULT_RECORD = 'list.ini'
+
+    def __init__(self, folder: str, use_basename: bool = True, content: List['DataEntry'] = None):
+        DataType.__init__(self, folder, use_basename)
+        if content is None:
+            content = []
+        list.__init__(self, content)
+
+    def append(self, item: 'DataEntry'):
+        list.append(self, item)
+    
+    def append_content(self, content: DataType, name: str = None, descr: str = None):
+        if name is None:
+            name = content.file.split('.')[0]
+
+        if descr is None:
+            descr = f'entry -- {name} of type {content.type}'
+
+        self.append(DataEntry(
+            name, descr, content
+        ))
+
+    @classmethod
+    def from_file(cls, file: str):
+        record = configparser.ConfigParser()
+        record.read(os.path.join(file, DataList.DEFAULT_RECORD))
+        content = DataEntry.load(file, record['Data'])
+        return cls(folder=file, content=content.values())
+    
+    def write(self, target: str):
+        record = configparser.ConfigParser()
+        path = os.path.join(target, self.file)
+
+        os.mkdir(path)
+        record['Data'] = dict(ChainMap(*reversed([data.export(path) for data in self])))
+
+        with open(os.path.join(path, DataList.DEFAULT_RECORD), 'w') as configfile:
+            record.write(configfile)
+    
+
 
 
 @dataclass
@@ -376,6 +452,12 @@ class Run:
 
     def append(self, data: DataEntry):
         self.data[data.name] = data
+    
+    def appends(self, name: str, content: DataType):
+        descr = f'entry {name} of type {content.type}'
+        self.append(DataEntry(
+            name, descr, content
+        ))
 
     @property
     def path(self):
