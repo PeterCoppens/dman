@@ -17,13 +17,6 @@ from dman.stamp import Manager
 from dman.utils import prompt_user
 
 
-class PopulatableEntry(type):
-    def __call__(cls, *args, **kwargs):
-        obj = type.__call__(cls, *args, **kwargs)
-        obj.populate()
-        return obj
-
-
 @dataclass
 class TimingEntry:
     DATESTR = '%d/%m/%y %H:%M:%S'
@@ -71,11 +64,22 @@ class TimingEntry:
 
 
 @dataclass
-class ConfigEntry(metaclass=PopulatableEntry):
+class ConfigEntry:
     DEFAULT_CONFIG = 'config.ini'
 
     path: str
     contents: configparser.ConfigParser
+
+    @classmethod
+    def assign(cls, run: 'Run', default_file: str = None, *args, **kwargs):
+        if run.config.path == '' and default_file is not None:
+            # load the predetermined config
+            run.config = cls.from_path(os.path.join(os.path.dirname(sys.argv[0]), default_file))
+        else:
+            run.config = cls(run.config.path, run.config.contents)
+        
+        run.config.__post_assign__(*args, **kwargs)
+        return run.config
 
     def export(self, target: str):
         if self.path == '':
@@ -120,7 +124,7 @@ class ConfigEntry(metaclass=PopulatableEntry):
 
         return cls(path=path, contents=config)
     
-    def populate(self):
+    def __post_assign__(self, *args, **kwargs):
         pass
 
 
