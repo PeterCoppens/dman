@@ -10,7 +10,7 @@ import tempfile
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Type, Union
 from collections import ChainMap, OrderedDict
 
 from dman.stamp import Manager
@@ -85,7 +85,10 @@ class ConfigEntry:
         if self.path == '':
             return {}
         else:
-            shutil.copy(src=self.path, dst=os.path.join(target, ConfigEntry.DEFAULT_CONFIG))
+            dst = os.path.join(target, ConfigEntry.DEFAULT_CONFIG)
+            if os.path.realpath(self.path) != os.path.realpath(dst):
+                shutil.copy(src=self.path, dst=dst)
+
             return {
                 'config': ConfigEntry.DEFAULT_CONFIG
             }
@@ -280,15 +283,31 @@ class ScriptsEntry:
         return cls(gen=gen, parsers=parsers, local=args.local)
 
 
+@dataclass
+class LoadableType:
+    dcls: Type['DataType']
+    file: str
+    target: str
+    loaded: bool = field(init=False, default=False)
+    
+    def export(self, target):
+        return {'type': self.dcls.type, 'file': self.file, 'preload': json.dumps(True)}
+
+    def load(self):
+        return self.dcls.from_file(os.path.join(self.target, self.file))
+        
+
 # source https://medium.com/@vadimpushtaev/python-choosing-subclass-cf5b1b67c696
 class DataType(ABC):
     data_types = {}
     type: str = 'Base'
+    loaded: bool = True
 
-    def __init__(self, file, use_basename=True):
+    def __init__(self, file, use_basename=True, preload: bool = False):
         if use_basename:
             file = os.path.basename(file)
         self.file = file
+        self.preload = preload
 
     @classmethod
     def register(cls, data_type): 
@@ -301,14 +320,23 @@ class DataType(ABC):
     
     def export(self, target):
         self.write(target)
-        return {'type': self.type, 'file': self.file}
+        return {'type': self.type, 'file': self.file, 'preload': json.dumps(self.preload)}
     
     @classmethod
     def load(cls, path: str, record: dict):
         if record['type'] not in cls.data_types:
             raise ValueError(f'Bad class type {record["type"]}')
         
-        return cls.data_types[record['type']].from_file(os.path.join(path, record['file']))
+        if json.loads(record['preload']):
+            return cls.data_types[record['type']].from_file(os.path.join(path, record['file']))
+        else:    
+            return LoadableType(dcls=cls.data_types[record['type']], target=path, file=record['file'])
+    
+    @staticmethod
+    def mkdir(dir: str):
+        if os.path.exists(dir):
+            return
+        os.mkdir(dir)
     
     @classmethod
     @abstractmethod
@@ -356,7 +384,7 @@ class DataCluster(DataType, OrderedDict):
         record = configparser.ConfigParser()
         path = os.path.join(target, self.file)
 
-        os.mkdir(path)
+        DataType.mkdir(path)
         record['Data'] = dict(ChainMap(*reversed([data.export(path) for data in self.values()])))
 
         with open(os.path.join(path, DataCluster.DEFAULT_CLUSTER), 'w') as configfile:
@@ -398,13 +426,11 @@ class DataList(DataType, list):
         record = configparser.ConfigParser()
         path = os.path.join(target, self.file)
 
-        os.mkdir(path)
+        DataType.mkdir(path)
         record['Data'] = dict(ChainMap(*reversed([data.export(path) for data in self])))
 
         with open(os.path.join(path, DataList.DEFAULT_RECORD), 'w') as configfile:
             record.write(configfile)
-    
-
 
 
 @dataclass
@@ -412,10 +438,11 @@ class DataEntry:
     name: str
     description: str
     content: DataType = field(compare=False)
+    _content: DataType = field(compare=False, repr=False, init=False)
 
     @abstractmethod
     def export(self, target: str):
-        return {self.name : json.dumps({'description': self.description, **self.content.export(target)})}
+        return {self.name : json.dumps({'description': self.description, **self._content.export(target)})}
     
     @classmethod
     def load(cls, path, record):
@@ -428,6 +455,17 @@ class DataEntry:
                 content=DataType.load(path, rec)
             )
         return res
+    
+    @property
+    def content(self):
+        if not self._content.loaded:
+            self._content = self._content.load()
+        return self._content
+    
+    @content.setter
+    def content(self, v: Union[DataType, LoadableType]):
+        self._content = v
+    
 
 
 class Run:
@@ -467,16 +505,18 @@ class Run:
     def path(self):
         return os.path.join(self.target, self.meta.name)
 
-    def export(self):
+    def export(self, clear: bool = False):
         path = self.path
         tmp_file = None
+
         if os.path.exists(path):
-            if self.override:
-                tmp_file = tempfile.TemporaryDirectory()
-                path = tmp_file.name
-            else:
-                logging.error('could not export run: {path} exists.')
-                return None
+            if clear:
+                if self.override:
+                    tmp_file = tempfile.TemporaryDirectory()
+                    path = tmp_file.name
+                else:
+                    logging.error('could not export run: {path} exists.')
+                    return None
         else:
             os.makedirs(path)      # path should not exist at this point
 
@@ -616,7 +656,7 @@ class LatestRun:
 
         if self.update:
             self.run.override = True
-            path = self.run.export()
+            path = self.run.export(clear=False)
             self.record.update(path, time=self.run.timing.export()['start'])
         
 
@@ -648,7 +688,7 @@ class Generator:
             if not self.run.timing.finished: self.run.timing.stop()
 
         # export run
-        path = self.run.export()
+        path = self.run.export(clear=True)
 
         # record new run
         self.record.update(path, time=self.run.timing.export()['start'])
