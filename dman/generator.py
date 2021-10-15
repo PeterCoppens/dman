@@ -291,10 +291,14 @@ class LoadableType:
     loaded: bool = field(init=False, default=False)
     
     def export(self, target):
-        return {'type': self.dcls.type, 'file': self.file, 'preload': json.dumps(True)}
+        return {'type': self.type, 'file': self.file, 'preload': json.dumps(True)}
 
     def load(self):
         return self.dcls.from_file(os.path.join(self.target, self.file))
+    
+    @property
+    def type(self):
+        return self.dcls.type
         
 
 # source https://medium.com/@vadimpushtaev/python-choosing-subclass-cf5b1b67c696
@@ -433,12 +437,14 @@ class DataList(DataType, list):
             record.write(configfile)
 
 
-@dataclass
 class DataEntry:
-    name: str
-    description: str
-    content: DataType = field(compare=False)
-    _content: DataType = field(compare=False, repr=False, init=False)
+    def __init__(self, name: str, description: str, content: DataType):
+        self.name = name
+        self.description = description
+        self._content = content
+
+    def __repr__(self) -> str:
+        return f'DataEntry(name={self.name}, type={self._content.type})'
 
     @abstractmethod
     def export(self, target: str):
