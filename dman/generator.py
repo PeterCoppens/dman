@@ -284,17 +284,50 @@ class ScriptsEntry:
 
 
 @dataclass
+class GitIgnore:
+    lst: List[str] = field(default_factory=list)
+
+    @classmethod
+    def load(cls, path: str):
+        file = os.path.join(path, '.gitignore')
+        if not os.path.exists(file):
+            return cls(lst=[])
+
+        with open(file, 'r') as f:
+            lst = [line[:-1] for line in f.readlines()]
+        
+        return cls(lst=lst)
+
+    def export(self, target: str, override: bool = False):
+        path = os.path.join(target, '.gitignore')
+
+        if not override and os.path.exists(path):
+                self.lst += GitIgnore.load(path).lst
+
+        with open(path, 'w') as f:
+            f.writelines((line + '\n' for line in self.lst))
+        
+        return {}
+
+    def append(self, path: str):
+        self.lst.append(path)
+
+
+@dataclass
 class LoadableType:
     dcls: Type['DataType']
     file: str
     target: str
+    gitignore: bool = field(default=True)
     loaded: bool = field(init=False, default=False)
     
     def export(self, target):
-        return {'type': self.type, 'file': self.file, 'preload': json.dumps(True)}
+        return {'type': self.type, 'file': self.file, 'preload': json.dumps(True), 'gitignore': json.dumps(self.gitignore)}
 
     def load(self):
-        return self.dcls.from_file(os.path.join(self.target, self.file))
+        res: DataType = self.dcls.from_file(os.path.join(self.target, self.file))
+        res.gitignore = self.gitignore
+        return res
     
     @property
     def type(self):
@@ -305,13 +338,14 @@ class LoadableType:
 class DataType(ABC):
     data_types = {}
     type: str = 'Base'
-    loaded: bool = True
 
-    def __init__(self, file, use_basename=True, preload: bool = False):
+    def __init__(self, file, use_basename=True, preload: bool = False, gitignore: bool = True):
         if use_basename:
             file = os.path.basename(file)
         self.file = file
         self.preload = preload
+        self.gitignore = gitignore
+        self.loaded = True
 
     @classmethod
     def register(cls, data_type): 
@@ -324,7 +358,17 @@ class DataType(ABC):
     
     def export(self, target):
         self.write(target)
-        return {'type': self.type, 'file': self.file, 'preload': json.dumps(self.preload)}
+        
+        gig = GitIgnore.load(target)
+        if self.gitignore:
+            if self.file not in gig.lst:
+                gig.append(self.file)
+            gig.export(target, override=True)
+        elif self.file in gig.lst:
+            gig.lst.remove(self.file)
+            gig.export(target, override=True)
+
+        return {'type': self.type, 'file': self.file, 'preload': json.dumps(self.preload), 'gitignore': json.dumps(self.gitignore)}
     
     @classmethod
     def load(cls, path: str, record: dict):
@@ -332,9 +376,11 @@ class DataType(ABC):
             raise ValueError(f'Bad class type {record["type"]}')
         
         if json.loads(record['preload']):
-            return cls.data_types[record['type']].from_file(os.path.join(path, record['file']))
+            res = cls.data_types[record['type']].from_file(os.path.join(path, record['file']))
         else:    
-            return LoadableType(dcls=cls.data_types[record['type']], target=path, file=record['file'])
+            res = LoadableType(dcls=cls.data_types[record['type']], target=path, file=record['file'])
+        res.gitignore = json.loads(record['gitignore'])
+        return res
     
     @staticmethod
     def mkdir(dir: str):
@@ -357,7 +403,7 @@ class DataType(ABC):
 class DataCluster(DataType, OrderedDict):
     DEFAULT_CLUSTER = 'cluster.ini'
 
-    def __init__(self, folder: str, use_basename = True, content: OrderedDict = None):
+    def __init__(self, folder: str, use_basename = True, content: OrderedDict = None, gitignore: bool = True):
         DataType.__init__(self, folder, use_basename)
         if content is None:
             content = {}
@@ -399,7 +445,7 @@ class DataCluster(DataType, OrderedDict):
 class DataList(DataType, list):
     DEFAULT_RECORD = 'list.ini'
 
-    def __init__(self, folder: str, use_basename: bool = True, content: List['DataEntry'] = None):
+    def __init__(self, folder: str, use_basename: bool = True, content: List['DataEntry'] = None, gitignore: bool = True):
         DataType.__init__(self, folder, use_basename)
         if content is None:
             content = []
@@ -479,7 +525,7 @@ class Run:
     DEFAULT_RUN_DATE_STRING = '%y-%m-%d-%H%M%S'
     DEFAULT_RUN_TARGET = '.dman/runs'
 
-    def __init__(self, target: str, meta: RunEntry, scripts: ScriptsEntry, config: ConfigEntry = None, timing: TimingEntry = None, data: Dict[str, DataEntry] = None, override: bool = False) -> None:
+    def __init__(self, target: str, meta: RunEntry, scripts: ScriptsEntry, config: ConfigEntry = None, timing: TimingEntry = None, data: Dict[str, DataEntry] = None, override: bool = False, gitignore: bool = True) -> None:
         self.target = target
 
         self.meta = meta
@@ -493,6 +539,7 @@ class Run:
         self.exported = False
 
         self.override = override
+        self.gitignore = gitignore
 
         if data is None:
             data = {}
@@ -529,6 +576,8 @@ class Run:
 
         record = configparser.ConfigParser()
         record['Info'] = {**self.meta.export(path), **self.config.export(path)}
+        record['Info']['gitignore'] = json.dumps(self.gitignore)
+
         record['Scripts'] = self.scripts.export(path)
         record['Timing'] = self.timing.export(path)
         record['Data'] = dict(ChainMap(*[data.export(path) for data in self.data.values()]))
@@ -553,8 +602,9 @@ class Run:
         scripts = ScriptsEntry.load(path, record['Scripts'])
         timing = TimingEntry.load(path, record['Timing'])
         data = DataEntry.load(path, record['Data'])
+        gitignore = json.loads(record['Info']['gitignore'])
 
-        return cls(target=os.path.realpath(os.path.dirname(path)), meta=meta, config=config, scripts=scripts, timing=timing, data=data)
+        return cls(target=os.path.realpath(os.path.dirname(path)), meta=meta, config=config, scripts=scripts, timing=timing, data=data, gitignore=gitignore)
 
     @staticmethod
     def configure_parser(parser: argparse.ArgumentParser):
@@ -571,6 +621,13 @@ class Run:
             dest='override',
             action='store_true',
             help='override the contents of the output folder if it exists'
+        )
+        
+        parser.add_argument(
+            '--gitinclude',
+            dest='gitignore',
+            action='store_false',
+            help='do not gitignore the run folder.'
         )
 
         for entry in [RunEntry, ScriptsEntry, TimingEntry, ConfigEntry]:
@@ -595,11 +652,12 @@ class Run:
         scripts = ScriptsEntry.from_argument_parser(parser, args)
         config = ConfigEntry.from_argument_parser(parser, args)
         timing = TimingEntry.from_argument_parser(parser, args, default_start=current_time)
-        return cls(target=target, meta=meta, scripts=scripts, config=config, timing=timing, override=args.override)
+        return cls(target=target, meta=meta, scripts=scripts, config=config, timing=timing, override=args.override, gitignore=args.gitignore)
         
 
 class GeneratorRecord:
     DEFAULT_GEN_FILE = '.dman/gen.ini'
+    RUN_GITIGNORE_FOLDER = '.dman/'
 
     def __init__(self, name: str) -> None:
         self.name = name
@@ -624,12 +682,23 @@ class GeneratorRecord:
         with open(self.config_path, 'w') as configfile:
             self.config.write(configfile)
     
-    def update(self, path: str, time: str):
+    def update(self, path: str, time: str, gitignore: bool = True):
         path = os.path.relpath(path, start=self.mgr.root_path)
 
         # store new run in path (or push to last element)
         if path in self.runs:
             self.runs.remove(path)
+
+        gigpath = os.path.join(self.mgr.root_path, GeneratorRecord.RUN_GITIGNORE_FOLDER)
+        runpath = os.path.relpath(path, start = gigpath)
+        gig = GitIgnore.load(gigpath)
+        if gitignore and runpath not in gig.lst:
+            gig.append(runpath)
+            gig.export(gigpath, override=True)
+        elif not gitignore and runpath in gig.lst:
+            gig.lst.remove(runpath)
+            gig.export(gigpath, override=True)
+
         self.runs.append(path)
 
         # update config for this generator
@@ -663,7 +732,7 @@ class LatestRun:
         if self.update:
             self.run.override = True
             path = self.run.export(clear=False)
-            self.record.update(path, time=self.run.timing.export()['start'])
+            self.record.update(path, time=self.run.timing.export()['start'], gitignore=self.run.gitignore)
         
 
 class Generator:
@@ -692,9 +761,12 @@ class Generator:
     def __exit__(self, exc_type, exc_val, exc_trb):
         if exc_type is None:
             if not self.run.timing.finished: self.run.timing.stop()
+        else:
+            if not prompt_user('Process encountered an error, do you still want to update the run?'):
+                return
 
         # export run
         path = self.run.export(clear=True)
 
         # record new run
-        self.record.update(path, time=self.run.timing.export()['start'])
+        self.record.update(path, time=self.run.timing.export()['start'], gitignore=self.run.gitignore)
