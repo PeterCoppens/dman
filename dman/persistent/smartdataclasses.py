@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 
-from dataclasses import dataclass, field, Field, MISSING
+from dataclasses import dataclass, field, Field, MISSING, is_dataclass, fields
 
 
 class _NO_STORE_TYPE:
     pass
 
 NO_STORE = _NO_STORE_TYPE()
+
 
 class Wrapper:    
     WRAPPED_FIELDS_NAME = '_wrapped__fields'
@@ -17,7 +18,7 @@ class Wrapper:
     def __store_process__(self, obj, processed):
         return NO_STORE
     
-    def __store__(self, obj, value):
+    def __store__(self, obj, value, currentvalue):
         return value
 
 
@@ -63,8 +64,6 @@ def set_wrapper(obj, attr: str, value: Wrapper):
 
 
 def _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen):
-    annotations = cls.__dict__.get('__annotations__', dict())
-
     attributes = [a for a in dir(cls) if not a.startswith('__')]
     wrapped_fields = {}
 
@@ -110,11 +109,110 @@ def _attr__getter(attr: str):
 def _attr__setter(attr: str):
     def _wrapped__setter(self, value):
         wrapper: Wrapper = get_wrapper(self, attr)
-        to_store = wrapper.__store__(self, value)
+        to_store = wrapper.__store__(self, value, getattr(self, attr_wrapped_field(attr), MISSING))
         if to_store is not NO_STORE:
             setattr(self, attr_wrapped_field(attr), to_store)
     
     return _wrapped__setter
+
+
+    from dataclasses import is_dataclass, dataclass, fields, field, Field, MISSING
+from smartdataclasses import wrapfield, Wrapper, WrappedField
+import copy
+
+AUTO = '_merg__auto'
+
+def overrideable(cls=None, /, *, init=True, repr=True, eq=True, order=False,
+              unsafe_hash=False, frozen=True):
+
+    def wrap(cls):
+        annotations = cls.__dict__.get('__annotations__', dict())
+
+        for k in annotations:
+            fld: Field = getattr(cls, k, None)
+            if fld is None:
+                setattr(cls, k, field(default=AUTO))
+            elif isinstance(fld, Field):
+                setattr(cls, k, field(default=fld.default, default_factory=fld.default_factory, init=True, repr=fld.repr, hash=fld.hash, compare=fld.compare, metadata=fld.metadata))
+            else:
+                setattr(cls, k, field(default=fld))
+        
+        res = dataclass(cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen)
+
+        setattr(res, '__lshift__', _override__lshift__)
+        setattr(res, '__rshift__', _override__rshift__)
+
+        return res
+
+    # See if we're being called as @serializable or @serializable().
+    if cls is None:
+        # We're called with parens.
+        return wrap
+
+    # We're called as @serializable without parens.
+    return wrap(cls)
+
+
+def _override__rshift__(self, other):
+    result = copy.deepcopy(self)
+    if not is_dataclass(other) or not is_dataclass(self):
+        return result
+    
+    flds = {}
+    
+    other_flds = [fld.name for fld in fields(other)]
+
+    for fld in fields(self):
+        attr = getattr(self, fld.name)
+        if attr is AUTO and fld.name in other_flds:
+            flds[fld.name] = getattr(other, fld.name)
+        else:
+            flds[fld.name] = attr
+    
+    return self.__class__(**flds)
+
+def _override__lshift__(self, other):
+    return _override__rshift__(other, self)
+
+class OverrideWrapper(Wrapper):
+    def __init__(self, default_wrapper) -> None:
+        Wrapper.__init__(self)
+        self.default_wrapper = default_wrapper
+    
+    def __store__(self, obj, value, currentvalue):
+        if currentvalue is MISSING:
+            currentvalue = self.default_wrapper()
+            
+        return super().__store__(obj, currentvalue << value, currentvalue)
+
+
+def overridefield(*, default_factory, init=True, repr=False, hash=False, compare=False, metadata=None):
+    return WrappedField(OverrideWrapper(default_factory), MISSING, default_factory, init, repr, hash, compare, metadata)
+
+
+
+
+
+if __name__ == '__main__':
+    @overrideable
+    class Over:
+        a: str
+        b: int
+        c: int = 5
+
+    m1 = Over(a='test')
+    m2 = Over(a='hello', b=5)
+
+    # starting from m1, if m2 has an assigned value, override it
+    # i.e., m1 is the default, m2 overrides
+
+    # m1.a (default) = 'test << m2.b = 'hello', m1.b (default) = AUTO << m2.b = 5
+    print(m1 << m2)  
+
+    # the reverse operation
+    # m2.a (default) = 'hello << m1.b = 'test', m2.b (default) = 5 remains five since m1.b = AUTO (i.e., unassigned)
+    print(m2 << m1)
+
 
 
 if __name__ == '__main__':
@@ -123,8 +221,11 @@ if __name__ == '__main__':
             print(f'[processing] {wrapped} for {obj}')
             return wrapped
         
-        def __store__(self, obj, value):
-            print(f'[storing] {value} for {obj}')
+        def __store__(self, obj, value, currentvalue):
+            if currentvalue is not MISSING:
+                print(f'[storing] {value} for {obj} from {currentvalue}')
+            else:
+                print(f'[storing] {value} for {obj}')
             return value
     
     @wrappedclass

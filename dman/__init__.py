@@ -1,1 +1,1 @@
-from persistent import serializables, storables, configclasses, wrapped
+from persistent import serializables, storables, configclasses, smartdataclasses, modelclasses

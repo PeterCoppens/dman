@@ -135,7 +135,7 @@ if __name__ == '__main__':
         class FirstSection:
             b: int = 3
             a: str = 'wow'
-        first: FirstSection     # optional
+        first: FirstSection     # (use these, not the local classes, turn into field and then dataclass)
         
         @section(name='second')
         class SecondSection:
