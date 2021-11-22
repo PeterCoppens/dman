@@ -1,6 +1,5 @@
-from abc import ABC, abstractmethod
-
 from dataclasses import dataclass, field, Field, MISSING, is_dataclass, fields
+import copy
 
 
 class _NO_STORE_TYPE:
@@ -62,6 +61,12 @@ def get_wrapper(obj, attr: str):
 def set_wrapper(obj, attr: str, value: Wrapper):
     return setattr(obj, attr_wrapper(attr), value)
 
+def get_wrapped_field(obj, attr: str):
+    return getattr(obj, attr_wrapped_field(attr))
+
+def set_wrapped_field(obj, attr: str, value):
+    return setattr(obj, attr_wrapped_field(attr), value)
+
 
 def _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen):
     attributes = [a for a in dir(cls) if not a.startswith('__')]
@@ -72,7 +77,7 @@ def _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen):
         if isinstance(value, WrappedField):
             wrapper: Wrapper = value.wrapper
 
-            # add to list of storable fields
+            # add to list of storeable fields
             lst = wrapped_fields.get(wrapper.WRAPPED_FIELDS_NAME, list())
             lst.append(attr)
             wrapped_fields[wrapper.WRAPPED_FIELDS_NAME] = lst
@@ -83,13 +88,13 @@ def _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen):
     # convert to dataclass
     res = dataclass(cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen)
 
-    # replace attr fields by the storable properties
-    for k in wrapped_fields:
-        for attr in wrapped_fields[k]:
+    # replace attr fields by the storeable properties
+    for k, v in wrapped_fields.items():
+        for attr in v:
             setattr(res, attr, property(
                 _attr__getter(attr), _attr__setter(attr)
             ))
-            setattr(res, k, attr)
+        setattr(res, k, v)
         
     return res
 
@@ -116,11 +121,14 @@ def _attr__setter(attr: str):
     return _wrapped__setter
 
 
-    from dataclasses import is_dataclass, dataclass, fields, field, Field, MISSING
-from smartdataclasses import wrapfield, Wrapper, WrappedField
-import copy
 
 AUTO = '_merg__auto'
+OVERRIDABLE_TYPE = '_overridable'
+
+
+def is_overrideable(cls):
+    return getattr(cls, OVERRIDABLE_TYPE, False)
+
 
 def overrideable(cls=None, /, *, init=True, repr=True, eq=True, order=False,
               unsafe_hash=False, frozen=True):
@@ -141,6 +149,7 @@ def overrideable(cls=None, /, *, init=True, repr=True, eq=True, order=False,
 
         setattr(res, '__lshift__', _override__lshift__)
         setattr(res, '__rshift__', _override__rshift__)
+        setattr(res, OVERRIDABLE_TYPE, True)
 
         return res
 
@@ -164,8 +173,10 @@ def _override__rshift__(self, other):
 
     for fld in fields(self):
         attr = getattr(self, fld.name)
-        if attr is AUTO and fld.name in other_flds:
+        if attr == AUTO and fld.name in other_flds:
             flds[fld.name] = getattr(other, fld.name)
+        elif is_overrideable(attr) and fld.name in other_flds:
+            flds[fld.name] = _override__rshift__(attr, getattr(other, fld.name))
         else:
             flds[fld.name] = attr
     
@@ -188,52 +199,3 @@ class OverrideWrapper(Wrapper):
 
 def overridefield(*, default_factory, init=True, repr=False, hash=False, compare=False, metadata=None):
     return WrappedField(OverrideWrapper(default_factory), MISSING, default_factory, init, repr, hash, compare, metadata)
-
-
-
-
-
-if __name__ == '__main__':
-    @overrideable
-    class Over:
-        a: str
-        b: int
-        c: int = 5
-
-    m1 = Over(a='test')
-    m2 = Over(a='hello', b=5)
-
-    # starting from m1, if m2 has an assigned value, override it
-    # i.e., m1 is the default, m2 overrides
-
-    # m1.a (default) = 'test << m2.b = 'hello', m1.b (default) = AUTO << m2.b = 5
-    print(m1 << m2)  
-
-    # the reverse operation
-    # m2.a (default) = 'hello << m1.b = 'test', m2.b (default) = 5 remains five since m1.b = AUTO (i.e., unassigned)
-    print(m2 << m1)
-
-
-
-if __name__ == '__main__':
-    class PrintWrapper(Wrapper):
-        def __process__(self, obj, wrapped):
-            print(f'[processing] {wrapped} for {obj}')
-            return wrapped
-        
-        def __store__(self, obj, value, currentvalue):
-            if currentvalue is not MISSING:
-                print(f'[storing] {value} for {obj} from {currentvalue}')
-            else:
-                print(f'[storing] {value} for {obj}')
-            return value
-    
-    @wrappedclass
-    class Foo:
-        a: str = wrapfield(PrintWrapper(), default='hi')
-    
-    foo = Foo(a='hello')
-    print(foo)
-    print(foo.a)
-    foo.a = 'oh noes'
-    print(foo.a)

@@ -3,6 +3,7 @@ from dataclasses import dataclass, fields, is_dataclass
 import json
 import inspect
 from typing import Dict, List, Tuple
+from dman.persistent.smartdataclasses import overrideable
 
 
 SER_TYPE = '_ser__type'
@@ -12,8 +13,16 @@ DESERIALIZE = '__deserialize__'
 NO_SERIALIZE = '__no_serialize__'
 
 
-class Serializer:
-    pass
+@overrideable
+class BaseContextCommand:
+    def evaluate(self, ctx: 'BaseContext'):
+        return ctx
+    
+    def __rshift__(self, _: 'BaseContextCommand'):
+        return self
+    
+    def __lshift__(self, other: 'BaseContextCommand'):
+        return other.__rshift__(self)
 
 
 def is_serializable(ser):
@@ -26,7 +35,7 @@ def is_deserializable(serialized: dict):
     return serialized.get(SER_TYPE, None) in serializable_types
 
 
-def serialize(ser, serializer: 'Serializer' = None):
+def serialize(ser, context: 'BaseContext' = None):
     if not is_serializable(ser):
         raise ValueError('object is not a serializeble type')
 
@@ -35,17 +44,17 @@ def serialize(ser, serializer: 'Serializer' = None):
     if len(sig.parameters) == 0:
         return {SER_TYPE: getattr(ser, SER_TYPE), SER_CONTENT: inner_serialize()}
     elif len(sig.parameters) == 1:
-        if serializer is None: serializer = Serializer
-        return {SER_TYPE: getattr(ser, SER_TYPE), SER_CONTENT: inner_serialize(serializer)}
+        if context is None: context = BaseContext
+        return {SER_TYPE: getattr(ser, SER_TYPE), SER_CONTENT: inner_serialize(context)}
     else:
         raise ValueError(f'object has invalid signature for method {SERIALIZE}')
 
 
-def deserialize(serialized: dict, serializer: 'Serializer' = None):
+def deserialize(serialized: dict, context: 'BaseContext' = None):
     if not is_deserializable(serialized):
         raise ValueError(f'provided dictionary is not deserializable.')
         
-    sertype = serialized.pop(SER_TYPE)
+    sertype = serialized.get(SER_TYPE, None)
     if sertype not in serializable_types:
         raise ValueError(f'unregistered type {sertype}.')
     
@@ -55,8 +64,8 @@ def deserialize(serialized: dict, serializer: 'Serializer' = None):
     if len(sig.parameters) == 1:
         return inner_deserialize(serialized.get(SER_CONTENT, {}))
     elif len(sig.parameters) == 2:
-        if serializer is None: serializer = Serializer
-        return inner_deserialize(serialized.get(SER_CONTENT, {}), serializer)
+        if context is None: context = BaseContext
+        return inner_deserialize(serialized.get(SER_CONTENT, {}), context)
     else:
         raise ValueError(f'object has invalid signature for method {DESERIALIZE}')
 
@@ -92,82 +101,63 @@ def serializable(cls=None, /, *, name: str = None, ignore_dataclass: bool = Fals
     return wrap(cls)
 
 
-def _serialize__dataclass(self, serializer: Serializer = None):
+def _serialize__dataclass(self, context: 'BaseContext' = None):
     serialized = dict()
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             value = getattr(self, f.name)
-            serialized[f.name] = _serialize__dataclass__inner(value, serializer)
+            serialized[f.name] = _serialize__dataclass__inner(value, context)
     
     return serialized
 
 
-def _serialize__dataclass__inner(obj, serializer: Serializer = None):
+def _serialize__dataclass__inner(obj, context: 'BaseContext' = None):
         if is_serializable(obj):
-            res = serialize(obj, serializer)
+            res = serialize(obj, context)
             return res
         elif isinstance(obj, (tuple, list)):
-            return type(obj)([_serialize__dataclass__inner(v, serializer) for v in obj])
+            return type(obj)([_serialize__dataclass__inner(v, context) for v in obj])
         elif isinstance(obj, dict):
             return type(obj)(
-                (_serialize__dataclass__inner(k, serializer), _serialize__dataclass__inner(v, serializer)) 
+                (_serialize__dataclass__inner(k, context), _serialize__dataclass__inner(v, context)) 
                 for k, v in obj.items() if v is not None
             )
         else:
             return copy.deepcopy(obj)
 
 @classmethod
-def _deserialize__dataclass(cls, serialized: dict, serializer: Serializer):
+def _deserialize__dataclass(cls, serialized: dict, context: 'BaseContext'):
     processed = copy.deepcopy(serialized)
     for k, v in processed.items():
-        processed[k] = getattr(cls, '_deserialize__dataclass__inner')(v, serializer)
+        processed[k] = getattr(cls, '_deserialize__dataclass__inner')(v, context)
 
     return cls(**processed)
 
 
 @classmethod
-def _deserialize__dataclass__inner(cls, obj, serializer: Serializer):
+def _deserialize__dataclass__inner(cls, obj, context: 'BaseContext'):
     if isinstance(obj, (tuple, list)):
         return type(obj)([
-            getattr(cls, '_deserialize__dataclass__inner')(v, serializer) for v in obj
+            getattr(cls, '_deserialize__dataclass__inner')(v, context) for v in obj
         ])
     elif isinstance(obj, dict) and is_deserializable(obj):
-        return deserialize(obj, serializer)
+        return deserialize(obj, context)
     elif isinstance(obj, dict):
         return type(obj)(
             (
-                getattr(cls, '_deserialize__dataclass__inner')(k, serializer), 
-                getattr(cls, '_deserialize__dataclass__inner')(v, serializer)
+                getattr(cls, '_deserialize__dataclass__inner')(k, context), 
+                getattr(cls, '_deserialize__dataclass__inner')(v, context)
             ) for k, v in obj.items() if v is not None
         )
     else:
         return obj
 
-@serializable(name='_sto__serializer')
-class Serializer:
-    pass
 
-
-if __name__ == '__main__':
-    @serializable
-    @dataclass
-    class Test:
-        a: str
-        b: int
+@serializable(name='__ser_b_ctx')
+class BaseContext:
+    def __serialize__(self):
+        return {}
     
-    @serializable
-    @dataclass
-    class Foo:
-        a: str
-        b: Test
-        c: List[Test]
-        d: Dict[str, Test]
-        e: Tuple[Test]
-    
-    test = Test('a', 5)
-    print(serialize(test))
-
-    foo = Foo('b', test, [test, test], {'a': test, 'b': test}, (test, test))
-    print(json.dumps(serialize(foo), indent=4))
-    
-    print(deserialize(serialize(foo)))
+    @classmethod
+    def __deserialize__(self, serialized: dict):
+        return BaseContext()

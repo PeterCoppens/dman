@@ -1,7 +1,12 @@
-from dataclasses import dataclass
-from storables import STO_FIELD, StoragePlan, modelclass, WRITE, READ, read, recordfield, storable, write, StoringSerializer, storable_type
-from serializables import SER_CONTENT, SER_TYPE, Serializer, serialize, deserialize
+from dataclasses import dataclass, field, is_dataclass, fields
 import inspect
+from typing import Dict
+
+from dman.persistent.storeables import WRITE, READ, storeable
+from dman.persistent.modelclasses import modelclass
+from dman.persistent.serializables import SER_CONTENT, SER_TYPE, BaseContext, serialize, deserialize
+from dman.persistent.record import Record
+from dman.persistent.context import ContextCommand
 
 import configparser
 import json
@@ -17,24 +22,21 @@ def is_section(obj):
 
 
 def getsections(cls):
+    if not is_dataclass(cls):
+        return {}
+
     res = {}
-    for name, obj in inspect.getmembers(cls):
-        if is_section(obj):
-            name = getattr(obj, SECTION_NAME, name)
-            res[name] = obj
+    for fld in fields(cls):
+        res[fld.name] = getattr(cls, fld.name)
+    
     return res
-
-
-def section(cls=None, /, *, name: str = None, sto_name: str = None, **kwargs):
-    def wrap(cls):
-        local_name = name
-        setattr(cls, SECTION_ATTR, True)
         
-        if local_name is None:
-            local_name = cls.__name__
 
-        setattr(cls, SECTION_NAME, local_name)
-        return modelclass(cls, name=sto_name, **kwargs)
+
+def section(cls=None, /, *, name: str = None, **kwargs):
+    def wrap(cls):
+        setattr(cls, SECTION_ATTR, True)
+        return modelclass(cls, name=name, **kwargs)
 
     # See if we're being called as @section or @section().
     if cls is None:
@@ -45,25 +47,24 @@ def section(cls=None, /, *, name: str = None, sto_name: str = None, **kwargs):
     return wrap(cls)
 
 
-def configclass(cls=None, /, *, name: str = None, **kwargs):
+def configclass(cls=None, /, *, name: str = None):
     def wrap(cls):
-        for k, v in getsections(cls).items():
-            value = None
-            try:
-                value = v()
-            except TypeError as err:
-                raise err from TypeError(f'section "{k}" does not has a default initializer.')
+        plan = ContextCommand(suffix='.ini') << getattr(cls, Record.COMMAND, ContextCommand())
+        setattr(cls, Record.COMMAND, plan)
 
-
-            setattr(cls, k, value)
+        annotations: dict = cls.__dict__.get('__annotations__', dict())
+        for sect, obj in annotations.items():
+            if is_section(obj):
+                setattr(cls, sect, field(default_factory=obj))
 
         if getattr(cls, WRITE, None) is None:                
             setattr(cls, WRITE, _write__config)
         
         if getattr(cls, READ, None) is None:
             setattr(cls, READ, _read__config)
-
-        return storable(cls, name=name, **kwargs)
+        
+        return storeable(dataclass(cls), name=name)
+            
 
     # See if we're being called as @configclass or @configclass().
     if cls is None:
@@ -74,7 +75,7 @@ def configclass(cls=None, /, *, name: str = None, **kwargs):
     return wrap(cls)
 
 
-def _write__config(self, path: str, serializer: Serializer = None):
+def _write__config(self, path: str, serializer: BaseContext = None):
     cfg = configparser.ConfigParser()
     section_types = {}
     for section in getsections(self):
@@ -96,7 +97,7 @@ def _write__config(self, path: str, serializer: Serializer = None):
 
 
 @classmethod
-def _read__config(cls, path: str, serializer: Serializer = None):
+def _read__config(cls, path: str, serializer: BaseContext = None):
     cfg = configparser.ConfigParser()
     cfg.read(path)
 
@@ -122,36 +123,22 @@ def _read__config(cls, path: str, serializer: Serializer = None):
         setattr(res, k, deserialize(serialized, serializer))
     
     return res
-        
 
-if __name__ == '__main__':
-    @modelclass(storable=True)
-    class TestModel:
-        a: str = 25
 
-    @configclass
-    class TestConfig:
-        @section(name='first')
-        class FirstSection:
-            b: int = 3
-            a: str = 'wow'
-        first: FirstSection     # (use these, not the local classes, turn into field and then dataclass)
-        
-        @section(name='second')
-        class SecondSection:
-            c: str = 'hello'
-            d: TestModel = recordfield(default_factory=TestModel)
-        second: SecondSection   # optional
+@section(name='_sec__dict')
+class dictsection(dict):
+    def __init__(self, content: dict):
+        dict.__init__(content)
+
+    def __getitem__(self, key):
+        return dict.__getitem__(self.content, key)
     
-    cfg = TestConfig()
-    cfg.first.a = 'yo'
-    with StoringSerializer('out/fourth', clean_on_open=False) as sr:
-        path, _ = sr.request(StoragePlan(filename='test.ini'))
-        write(cfg, path, sr)
-        res: TestConfig = read(storable_type(TestConfig), path, serializer=sr)
-        print(res.first.a)
-        print(res.second.d)
-        print(res.first.b)
-        
+    def __setitem__(self, key, value: str):
+        dict.__setitem__(self.content, key, value)
 
+    def __serialize__(self):
+        return self
     
+    @classmethod
+    def __deserialize__(cls, serialized: dict):
+        return cls(serialized)

@@ -1,5 +1,7 @@
 import os
 import logging
+import subprocess
+
 
 def get_root_folder(folder: str):
     root_path = None
@@ -47,3 +49,17 @@ def prompt_user(question, default=None, loglevel=logging.WARNING):
             return valid[choice]
         else:
             logging.error("Please respond with 'yes' or 'no' " "(or 'y' or 'n').")
+
+
+def get_git_hash(cwd = None):
+    if cwd is None: cwd = os.getcwd()
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=cwd).decode('ascii').strip()
+
+def get_git_url(cwd = None):
+    if cwd is None: cwd = os.getcwd()
+    return subprocess.check_output(['git', 'config', '--get', 'remote.origin.url'], cwd=cwd).decode('ascii').strip()
+
+def check_git_committed(cwd = None):
+    if cwd is None: cwd = os.getcwd()
+    res = subprocess.check_output(['git', 'status'], cwd=cwd).decode('ascii').strip()
+    return res.find('nothing to commit') > 0

@@ -535,9 +535,6 @@ class Run:
         self.timing = timing
         self.config = config
 
-        self.finished = False
-        self.exported = False
-
         self.override = override
         self.gitignore = gitignore
 
