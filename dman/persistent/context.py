@@ -203,31 +203,3 @@ class GitContextManager(ContextManager):
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.close()
-
-
-def manager(git: bool = True, subdir: str = None):
-    mgr = ContextManager()
-    if git:
-        mgr = GitContextManager.from_manager(mgr)
-
-    if subdir is not None:
-        mgr.context.joinpath(subdir)
-    return mgr
-
-
-if __name__ == '__main__':
-    rt = root()
-    print(rt)
-    ctx = rt.joinpath('test/more')
-    print(type(ctx))
-    print(ctx.resolve())
-    print(serialize(ctx, rt))
-
-    cmd = ContextCommand.from_name(subdir='test', name='hello.dat')
-    print(serialize(cmd))
-    print(cmd.evaluate(ctx))
-
-if __name__ == '__main__':
-    with manager(git=True) as mgr:
-        ctx = mgr.request(ContextCommand.from_name(subdir='test', name='hello.dat'))
-        print(ctx)

@@ -5,7 +5,7 @@ from dataclasses import MISSING, fields
 
 from dman.persistent.smartdataclasses import Wrapper, wrappedclass, WrappedField, attr_wrapper, attr_wrapped_field
 from dman.persistent.storeables import is_storeable, storeable
-from dman.persistent.record import Record, Unloaded, isunloaded, record
+from dman.persistent.record import Record, Unloaded, is_unloaded, record
 from dman.persistent.context import Context, ContextCommand
 from dman.persistent.serializables import SERIALIZE, DESERIALIZE, _deserialize__dataclass__inner, _serialize__dataclass__inner, NO_SERIALIZE
 from dman.persistent.serializables import BaseContext, serialize, deserialize, is_serializable, is_deserializable, serializable
@@ -25,7 +25,7 @@ class RecordWrapper(Wrapper):
         if wrapped is None:
             return None
             
-        if isunloaded(wrapped):
+        if is_unloaded(wrapped):
             ul: Unloaded = wrapped
             wrapped = ul.__load__()
         return wrapped
@@ -138,7 +138,7 @@ class _blist(list):
     
     def __getitem__(self, key):
         itm = list.__getitem__(self, key)
-        if isunloaded(itm):
+        if is_unloaded(itm):
             ul: Unloaded = itm
             itm = ul.__load__()
             list.__setitem__(self, key, itm)
@@ -212,7 +212,7 @@ class _bdict(dict):
     
     def __getitem__(self, key):
         itm = dict.__getitem__(self, key)
-        if isunloaded(itm):
+        if is_unloaded(itm):
             ul: Unloaded = itm
             itm = ul.__load__()
             dict.__setitem__(self, key, itm)
@@ -230,7 +230,7 @@ class _bdict(dict):
         res = {'command': serialize(self.command, serializer), 'dict': {}}
         for k in self.keys():
             v = dict.__getitem__(self, k)
-            if isunloaded(v) or is_storeable(v):
+            if is_unloaded(v) or is_storeable(v):
                 key_command = self.__key_command__(k)
                 res['dict'][k] = ({RECORD_FIELD: True, **serialize(record(v, command=self.command << key_command), serializer)})
             elif is_serializable(v):

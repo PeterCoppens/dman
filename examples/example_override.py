@@ -1,4 +1,4 @@
-from dman.persistent.smartdataclasses import overrideable, Wrapper, MISSING, wrapfield, wrappedclass
+from dman.persistent.smartdataclasses import is_complete, overrideable
 
 
 if __name__ == '__main__':
@@ -16,6 +16,9 @@ if __name__ == '__main__':
     m1 = Over(a='test')
     m2 = Over(a='hello', b=5)
 
+    print(is_complete(m1))
+    print(is_complete(m2))
+
     # starting from m1, if m2 has an assigned value, override it
     # i.e., m1 is the default, m2 overrides
 
@@ -31,27 +34,4 @@ if __name__ == '__main__':
     print(m3 << m4)     # m1 << m2
     print(m4 << m3)     # m2 << m1
 
-
-
-if __name__ == '__main__':
-    class PrintWrapper(Wrapper):
-        def __process__(self, obj, wrapped):
-            print(f'[processing] {wrapped} for {obj}')
-            return wrapped
-        
-        def __store__(self, obj, value, currentvalue):
-            if currentvalue is not MISSING:
-                print(f'[storing] {value} for {obj} from {currentvalue}')
-            else:
-                print(f'[storing] {value} for {obj}')
-            return value
     
-    @wrappedclass
-    class Foo:
-        a: str = wrapfield(PrintWrapper(), default='hi')
-    
-    foo = Foo(a='hello')
-    print(foo)
-    print(foo.a)
-    foo.a = 'world'
-    print(foo.a)
