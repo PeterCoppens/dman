@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict, is_dataclass
 from os import PathLike
 
-from dman.persistent.serializables import is_serializable, serialize, deserialize, BaseContext
+from dman.persistent.serializables import SER_CONTENT, SER_TYPE, is_serializable, serialize, deserialize, BaseContext
 
 STO_TYPE = '_sto__type'
 WRITE = '__write__'
@@ -16,6 +16,10 @@ __storeable_types = dict()
 
 def storeable_type(obj):
     return getattr(obj, STO_TYPE, None)
+
+
+def get_storeable(name):
+    return getattr(__storeable_types, name)
 
 
 def is_storeable(obj):
@@ -30,7 +34,7 @@ def storeable(cls=None, /, *, name: str = None, ignore_serializable: bool = None
     def wrap(cls):
         local_name = name
         if local_name is None:
-            local_name = str(cls)
+            local_name = getattr(cls, '__name__')
 
         setattr(cls, STO_TYPE, local_name)
         __storeable_types[local_name] = cls
@@ -74,13 +78,13 @@ def _read__dataclass(cls, path: PathLike):
 def _write__serializable(self, path: PathLike, context: BaseContext = None):
     with open(path, 'w') as f:
         serialized = serialize(self, context)
-        json.dump(serialized, f, indent=4)
+        json.dump(serialized[SER_CONTENT], f, indent=4)
 
 
 @classmethod
-def _read__serializable(_, path: PathLike, context: BaseContext = None):
+def _read__serializable(cls, path: PathLike, context: BaseContext = None):
     with open(path, 'r') as f:
-        serialized = json.load(f)
+        serialized = {SER_TYPE: getattr(cls, SER_TYPE), SER_CONTENT: json.load(f)}
         return deserialize(serialized, context)
 
 

@@ -1,10 +1,11 @@
+from dataclasses import field
 from dman.persistent.modelclasses import modelclass, recordfield
 from dman.persistent.configclasses import configclass, section
-from dman.persistent.storeables import StoringConfig, storeable_type, read, StoragePlan, StoringSerializer, write
+from dman.persistent.storeables import storeable_type, read, write
+from dman.persistent.record import TemporaryContext
 
 import os
 
-BASE_DIR = os.path.join(os.path.dirname(__file__), '_configclasses')
 
 if __name__ == '__main__':
     @modelclass(storeable=True)
@@ -17,6 +18,7 @@ if __name__ == '__main__':
         class FirstSection:
             b: int = 3
             a: str = 'wow'
+            c: list = field(default_factory=list)
         info: FirstSection     
         
         @section(name='second')
@@ -27,15 +29,23 @@ if __name__ == '__main__':
     
     cfg = TestConfig()
     cfg.info.a = 'yo'
+    cfg.info.c = ['h','e','l','l','o']
     print(cfg.info.a)
     cfg2 = TestConfig()
     print(cfg2.info.a)
-    with StoringSerializer(directory=BASE_DIR) as sr:
-        sr.clean()
-        req = sr.request(StoragePlan(filename='test.ini', preload=True))
-        req.write(cfg)
-        res: TestConfig = req.read(storeable_type(TestConfig))
+
+
+    with TemporaryContext() as ctx:
+        target = os.path.join(ctx.path, 'test.ini')
+        write(cfg, target, ctx)
+        with open(target, 'r') as f:
+            print('\n ==== start of file ==== \n')
+            print(f.read())
+            print('\n ==== end of file ==== \n')
+
+        res: TestConfig = read(storeable_type(TestConfig), target, ctx)
         print(res.info.a)
+        print(''.join(res.info.c))
         print(res.second.d)
         print(res.info.b)
         

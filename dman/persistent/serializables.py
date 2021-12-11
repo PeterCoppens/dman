@@ -78,7 +78,7 @@ def serializable(cls=None, /, *, name: str = None, ignore_dataclass: bool = Fals
     def wrap(cls):
         local_name = name
         if local_name is None:
-            local_name = str(cls)
+            local_name = getattr(cls, '__name__')
         setattr(cls, SER_TYPE, local_name)
         register_serializable(local_name, cls)
 
@@ -156,14 +156,6 @@ def _deserialize__dataclass__inner(cls, obj, context: 'BaseContext'):
         return obj
 
 
-@serializable(name='__ser_b_ctx')
 class BaseContext:
     def evaluate(self, *args, **kwargs):
         return
-
-    def __serialize__(self):
-        return {}
-
-    @classmethod
-    def __deserialize__(self, serialized: dict):
-        return BaseContext()

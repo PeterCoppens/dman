@@ -6,14 +6,12 @@ from dman.persistent.storeables import WRITE, READ, storeable
 from dman.persistent.modelclasses import modelclass
 from dman.persistent.serializables import SER_CONTENT, SER_TYPE, BaseContext, serialize, deserialize
 from dman.persistent.record import Record
-from dman.persistent.context import ContextCommand
 
 import configparser
 import json
 
 SECTION_ATTR = '__sec__type'
 SECTION_NAME = '__sec__name'
-TYPE_SECTION = '__section_types__'
 
 def is_section(obj):
     if not inspect.isclass(obj):
@@ -21,7 +19,7 @@ def is_section(obj):
     return getattr(obj, SECTION_ATTR, False)
 
 
-def getsections(cls):
+def get_sections(cls):
     if not is_dataclass(cls):
         return {}
 
@@ -30,6 +28,18 @@ def getsections(cls):
         res[fld.name] = getattr(cls, fld.name)
     
     return res
+
+
+def get_section_types(cls):
+    if not is_dataclass(cls):
+        return {}
+
+    res = {}
+    for fld in fields(cls):
+        res[fld.name] = getattr(cls, fld.name)
+
+    return res
+
         
 
 
@@ -49,8 +59,7 @@ def section(cls=None, /, *, name: str = None, **kwargs):
 
 def configclass(cls=None, /, *, name: str = None):
     def wrap(cls):
-        plan = ContextCommand(suffix='.ini') << getattr(cls, Record.COMMAND, ContextCommand())
-        setattr(cls, Record.COMMAND, plan)
+        setattr(cls, Record.EXTENSION, getattr(cls, Record.EXTENSION, '.ini'))
 
         annotations: dict = cls.__dict__.get('__annotations__', dict())
         for sect, obj in annotations.items():
@@ -78,7 +87,7 @@ def configclass(cls=None, /, *, name: str = None):
 def _write__config(self, path: str, serializer: BaseContext = None):
     cfg = configparser.ConfigParser()
     section_types = {}
-    for section in getsections(self):
+    for section in get_sections(self):
         cfg.add_section(section)
         value: dict = serialize(getattr(self, section), serializer)
         type, content = value.get(SER_TYPE), value.get(SER_CONTENT)
@@ -88,9 +97,6 @@ def _write__config(self, path: str, serializer: BaseContext = None):
         
         cfg[section] = processed
         section_types[section] = type
-    
-    cfg.add_section(TYPE_SECTION)
-    cfg[TYPE_SECTION] = section_types
     
     with open(path, 'w') as f:
         cfg.write(f)       
@@ -102,14 +108,9 @@ def _read__config(cls, path: str, serializer: BaseContext = None):
     cfg.read(path)
 
     res = cls()
-
-    if TYPE_SECTION not in cfg.sections():
-        return res
         
-    section_types = cfg[TYPE_SECTION]
-    for k, v in section_types.items():
-        type = v
-        
+    section_types = get_sections(res)
+    for k, v in section_types.items():        
         if k not in cfg.sections():
             continue
 
@@ -119,7 +120,7 @@ def _read__config(cls, path: str, serializer: BaseContext = None):
         for kk, vv in content.items():
             processed[kk] = json.loads(vv)
 
-        serialized = {SER_TYPE: type, SER_CONTENT: processed}
+        serialized = {SER_TYPE: getattr(v, SER_TYPE), SER_CONTENT: processed}
         setattr(res, k, deserialize(serialized, serializer))
     
     return res

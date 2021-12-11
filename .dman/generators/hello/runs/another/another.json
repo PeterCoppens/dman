@@ -1,0 +1,10 @@
+{
+    "name": "another",
+    "val": {
+        "__record__": true,
+        "config": {
+            "stem": "06120341-a18a-437a-b09a-e58851d6fa74"
+        },
+        "sto_type": "Test"
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "generators": {
+        "__record__": true,
+        "config": {
+            "stem": "gen",
+            "suffix": ".json"
+        },
+        "sto_type": "_sto__smdict",
+        "options": {
+            "gitignore": false
+        }
+    }
+}

@@ -1,0 +1,34 @@
+{
+    "dict": {
+        "test": {
+            "__record__": true,
+            "config": {
+                "stem": "test",
+                "subdir": "runs/test",
+                "suffix": ".json"
+            },
+            "sto_type": "__dman_run",
+            "options": {
+                "gitignore": false
+            }
+        },
+        "another": {
+            "__record__": true,
+            "config": {
+                "stem": "another",
+                "subdir": "runs/another",
+                "suffix": ".json"
+            },
+            "sto_type": "__dman_run",
+            "options": {
+                "gitignore": false
+            }
+        }
+    },
+    "subdir": "runs",
+    "options": {
+        "gitignore": false
+    },
+    "store_by_key": true,
+    "store_subdir": true
+}
