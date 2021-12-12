@@ -1,14 +1,18 @@
 from dataclasses import dataclass, field
 from functools import wraps
+from genericpath import exists
+from inspect import getouterframes
 import os
-from dman.persistent.modelclasses import mdict, modelclass
-from dman.persistent.record import RecordContext
+from tempfile import TemporaryDirectory
+from dman.persistent.modelclasses import modelclass, recordfield, mdict, mdict_factory
+
+from dman.persistent.record import RecordConfig, RecordContext, record, remove
 
 from pathlib import Path
 import shutil
+from dman.persistent.serializables import BaseContext, serialize
 
-from dman.persistent.serializables import serializable
-from dman.persistent.storeables import is_storeable, read, storeable, storeable_type, write
+from dman.persistent.storeables import read, storeable, write
 
 ROOT_FOLDER = '.dman'
 
@@ -41,6 +45,10 @@ class GitIgnore:
             original = GitIgnore.__read__(self.path)
             self.ignored = set.union(original.ignored, self.ignored)
         self.ignored.add('.gitignore\n')
+    
+    @property
+    def dirname(self):
+        return os.path.dirname(self.path)
 
     def append(self, file: str):
         if self.active:
@@ -49,11 +57,29 @@ class GitIgnore:
             )
         else:
             raise RuntimeError('tried to register ignored file while repository is already closed')
+    
+    def remove(self, file: str):
+        if self.active:
+            self.ignored.remove(
+                os.path.relpath(file, start=os.path.dirname(self.path)) + '\n'
+            )
+        else:
+            raise RuntimeError('tried to delete ignored file while repository is already closed')
+
 
     def __write__(self, path: str = None):
         if path is None: path = self.path
-        with open(path, 'w') as f:
-            f.writelines((line for line in self.ignored))
+        if len(self.ignored) == 1:
+            # clean up if we do not need to ignore anything
+            if os.path.exists(path):
+                os.remove(path)
+            if os.path.isdir(self.dirname) and len(os.listdir(self.dirname)) == 0:
+                os.rmdir(self.dirname)
+        else:
+            if not os.path.isdir(self.dirname):
+                os.makedirs(self.dirname)
+            with open(path, 'w') as f:
+                f.writelines((line for line in self.ignored))
 
     @classmethod
     def __read__(cls, path):
@@ -66,48 +92,54 @@ class GitIgnore:
 
 
 @dataclass
-class RepoContext(RecordContext):
-    git: 'GitIgnore'
+class Repository(RecordContext):
+    path: os.PathLike = field(default_factory=get_root_path)
+    parent: 'Repository' = field(default=None, repr=False)
+    git: GitIgnore = field(default=None, init=False, repr=False)
+    children: dict = field(default_factory=dict, init=False, repr=False)
+    
+    def ignore(self, file: os.PathLike):
+        if self.git is None:
+            self.git = GitIgnore(self.path)
+        self.git.append(file)
+    
+    def unignore(self, file: os.PathLike):
+        if self.git is None:
+            self.git = GitIgnore(self.path)
+        self.git.remove(file)
 
-    def evaluate(self, gitignore: bool = True):
+    def track(self, gitignore: bool = True, *args, **kwargs):
         if gitignore:
-            self.git.append(self.path)
+            if self.parent is None:
+                raise RuntimeError('cannot track root repository')
+            self.parent.ignore(self.path)
 
-    def join(self, other: str):
+    def untrack(self, gitignore: bool = True, *args, **kwargs):
+        if gitignore:
+            if self.parent is None:
+                raise RuntimeError('cannot untrack root repository')
+            self.parent.unignore(self.path)
+    
+    def join(self, other: os.PathLike):
+        if other in self.children:
+            return self.children[other]
+
         ctx = super().join(other)
-        return RepoContext(path=ctx.path, git=self.git)
+        if os.path.abspath(ctx.path) == os.path.abspath(self.path):
+            return self
 
-
-class CacheContext(RepoContext):
-    def clear(self):
-        shutil.rmtree(self.path)
-        self.git.active = False 
-
-
-@dataclass
-class Repository():
-    base: str = field(default_factory=get_root_path)
-    git: dict = field(default_factory=dict)
-
-    def folder(self, name):
-        target = os.path.join(self.base, name)
-        self.git[name] = self.git.get(name, GitIgnore(target))
-        return target, self.git[name]
-
-    @property
-    def root(self): 
-        return RepoContext(*self.folder(''))
-    
-    @property
-    def cache(self) -> CacheContext:
-        return CacheContext(*self.folder('cache'))
-    
+        sub = Repository(path=ctx.path, parent=self)
+        self.children[other] = sub
+        return sub.__enter__()
+           
     def close(self):
-        for v in self.git.values():
-            git: GitIgnore = v
-            if git.active:
-                git.__write__()
-                git.active = False
+        if self.git is not None and self.git.active:
+            self.git.__write__()
+            self.git.active = False
+
+        for child in self.children.values():
+            repo: Repository = child
+            repo.close()
 
     def __enter__(self):
         return self
@@ -115,90 +147,138 @@ class Repository():
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+
+class TemporaryRepository(TemporaryDirectory):
+    def __init__(self):
+        TemporaryDirectory.__init__(self)
+        self.repo = None
     
-def persistent(*, name: str, subdir: str = ''):
-    def wrap(cls):
-        o_store = getattr(cls, '__store__', None)
-        o_new = cls.__new__
-        o_init = cls.__init__
-        o_enter = getattr(cls, '__enter__', None)
-        o_exit = getattr(cls, '__exit__', None)
-        o_remove = getattr(cls, '__remove__', None)
+    def __enter__(self) -> 'Repository':
+        self.repo = Repository(TemporaryDirectory.__enter__(self))
+        return self.repo.__enter__()
 
-        reading = False
-        instance = None
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        res = self.repo.__exit__(exc_type, exc_val, exc_tb)
+        TemporaryDirectory.__exit__(self, exc_type, exc_val, exc_tb)
+        return res
 
-        def get_file():
-            local_name = name
-            local_sdir = subdir
 
-            root = get_root_path()
-            ctx = RecordContext(root)
 
-            local = ctx.join(local_sdir)
-            file = os.path.join(local.path, local_name)
-            return local, file
+@modelclass(name='__registry', storeable=True)
+class Registry:
+    _instances = dict()
 
-        @wraps(cls.__new__)
-        def __new__(cls, *args, **kwargs):
-            nonlocal instance
-            nonlocal reading
+    name: str
+    gitignore: bool = field(repr=False)
+    files: mdict = field(repr=False)
 
-            if reading:
-                print('..reading')
-                reading = False
-                res = o_new(cls)
-                o_init(res, *args, **kwargs)
-                return res
+    repo: Repository = field(default=None, repr=False)
+    _repo: Repository = field(default=None, repr=False, init=False)
 
-            if instance is None:
-                local, file = get_file()
-                if os.path.exists(file):
-                    reading = True
-                    instance = read(storeable_type(cls), file, local)
-                    reading = False
-                else:
-                    print('..instantiating')
-                    instance = o_new(cls)
-                    o_init(instance, *args, **kwargs)
+    _closed: bool = True
 
-            return instance
+    __no_serialize__ = ['repo', '_repo', '_instances', '_closed']
+
+    @staticmethod
+    def load(name: str, gitignore: bool = True, base: os.PathLike = None):
+        if name in Registry._instances:
+            reg: Registry = Registry._instances[name]
+            return reg
+
+        if base is None:
+            base = get_root_path()
         
-        def __enter__(self):
-            if o_enter:
-                return o_enter(self)
-            return self            
-        
-        def __store__(self):
-            nonlocal instance
-            if o_store:
-                o_store(self, name, subdir)
-            else:
-                local, file = get_file()
-                write(instance, file, local)
-            instance = None
-        
-        def __remove__(self, context=None):
-            if o_remove:
-                o_remove(self, context)
+        repo = Repository(base)
+        local = RecordContext(base)
+        target = local.join(f'{name}.json')
+        if os.path.exists(target.path):
+            reg: Registry = read(Registry, target.path, local)
+            reg.repo = repo
+        else:
+            reg = Registry(name=name, gitignore=gitignore, repo=repo, files=mdict(store_by_key=True, subdir=name))
 
-            _, file = get_file()
-            if os.path.exists(file):
-                os.remove(file)
-            
-        
-        cls.__new__ = staticmethod(__new__)
-        cls.__init__ = lambda self, *args, **kwargs: None
-        cls.__enter__ = __enter__
+        Registry._instances[name] = reg
+        return reg
+    
+    @property
+    def __make_record(self):
+        return record(self, stem=self.name, suffix='.json', gitignore=self.gitignore)
+    
+    @property
+    def path(self):
+        return os.path.join(self.repo.path, self.name)
 
-        if o_exit is None:
-            cls.__exit__ = lambda self, exc_type, exc_val, exc_tb: __store__(self)
-        setattr(cls, '__store__', __store__)
-        setattr(cls, '__remove__', __remove__)
+    def record(self, key, value, /, *, name: str = None, subdir: os.PathLike = '', preload: bool = None, gitignore: bool = True):
+        self.files.record(key, value, name=name, subdir=subdir, preload=preload, gitignore=gitignore)
+    
+    def remove(self, key):
+        self.files.remove(key, self.repo)
+    
+    def open(self):
+        self._closed = False
+        self._repo = self.repo
+        self.repo = self.repo.__enter__()
+        return self
 
-        return cls
+    def __enter__(self):
+        return self.open()
+    
+    def close(self, exc_type=None, exc_val=None, exc_tb=None):
+        if self._closed:
+            return
+        self._closed = True
+        serialize(self.__make_record, self.repo)
 
-    return wrap
+        self._repo.__exit__(exc_type, exc_val, exc_tb)
+        del Registry._instances[self.name]
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close(exc_type, exc_val, exc_tb)
+    
+    def clear(self):
+        if self._closed:
+            self.open()
+        remove(self.__make_record, self.repo)
+        self._closed = True
+        self._repo.__exit__(None, None, None)
+        del Registry._instances[self.name]
 
 
+class TemporaryRegistry:
+    def __init__(self, directory: TemporaryDirectory, registry: Registry):
+        self.directory = directory
+        self.registry = registry
+    
+    @staticmethod
+    def load(name: str, gitignore: bool = True):
+        directory = TemporaryDirectory()
+        registry = Registry.load(name, gitignore, base=directory.__enter__())
+        return TemporaryRegistry(directory, registry)
+
+    def __enter__(self) -> 'Registry':
+        return self.registry.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        res = self.registry.__exit__(exc_type, exc_val, exc_tb)
+        self.directory.__exit__(exc_type, exc_val, exc_tb)
+        return res
+
+class Cache:
+    @staticmethod
+    def load(gitignore: bool = True, base: os.PathLike = None):
+        return Registry.load(name='cache', gitignore=gitignore, base=base)
+    
+    @staticmethod
+    def clear(base: os.PathLike = None):
+        cache = Registry.load(name='cache', base=base)
+        cache.clear()
+
+
+if __name__ == '__main__':
+    with Registry.load(name='hello') as reg:
+        reg.files['a'] = 'test'
+        print(Registry.load(name='hello') is reg)
+    
+    with Registry.load(name='hello') as reg:
+        print(reg.files['a'])
     

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from dman.persistent.storeables import storeable, storeable_type, write, read
+from dman.persistent.storeables import storeable, write, read
 import os
 
 from tempfile import TemporaryDirectory
@@ -16,5 +16,5 @@ if __name__ == '__main__':
     with TemporaryDirectory() as tmpdir:
         path = os.path.join(tmpdir, 'test.dat')
         write(tst, path)
-        res = read(storeable_type(TestSto), path)
+        res = read(TestSto, path)
         print(res)

@@ -24,47 +24,46 @@ def is_deserializable(serialized: dict):
     return serialized.get(SER_TYPE, None) in __serializable_types
 
 
-def serialize(ser, context: 'BaseContext' = None):
+def serialize(ser, context: 'BaseContext' = None, content_only: bool = False):
     if not is_serializable(ser):
         raise ValueError('object is not a serializable type')
 
     ser_method = getattr(ser, SERIALIZE, lambda: {})
-    result = {SER_TYPE: getattr(ser, SER_TYPE)}
-
     sig = inspect.signature(ser_method)
     if len(sig.parameters) == 0:
-        result[SER_CONTENT] = ser_method()
+        content = ser_method()
     elif len(sig.parameters) == 1:
         if context is None:
             context = BaseContext
-        result[SER_CONTENT] = ser_method(context)
+        content = ser_method(context)
     else:
         raise ValueError(
             f'object has invalid signature for method {SERIALIZE}')
+    
+    if content_only:
+        return content
 
-    return result
+    return {SER_TYPE: getattr(ser, SER_TYPE), SER_CONTENT: content}
 
 
-def deserialize(serialized: dict, context: 'BaseContext' = None):
-    if not is_deserializable(serialized):
-        raise ValueError(f'provided dictionary is not deserializable.')
+def deserialize(serialized: dict, context: 'BaseContext' = None, ser_type = None):
+    if ser_type is None:
+        ser_type = serialized.get(SER_TYPE, None)
+        if ser_type not in __serializable_types:
+            raise ValueError(f'unregistered type {ser_type}.')
+        serialized = serialized.get(SER_CONTENT, {})
+    
+    if isinstance(ser_type, str):
+        ser_type = __serializable_types.get(ser_type)
 
-    ser_type = serialized.get(SER_TYPE, None)
-    if ser_type not in __serializable_types:
-        raise ValueError(f'unregistered type {ser_type}.')
-
-    ser_class = __serializable_types.get(ser_type)
-    ser_method = getattr(ser_class, DESERIALIZE, lambda _: None)
-
-    content = serialized.get(SER_CONTENT, {})
-
+    ser_method = getattr(ser_type, DESERIALIZE, lambda _: None)
     sig = inspect.signature(ser_method)
     if len(sig.parameters) == 1:
-        return ser_method(content)
+        return ser_method(serialized)
     elif len(sig.parameters) == 2:
         if context is None:
             context = BaseContext
-        return ser_method(content, context)
+        return ser_method(serialized, context)
     else:
         raise ValueError(
             f'object has invalid signature for method {DESERIALIZE}')
@@ -157,5 +156,8 @@ def _deserialize__dataclass__inner(cls, obj, context: 'BaseContext'):
 
 
 class BaseContext:
-    def evaluate(self, *args, **kwargs):
+    def track(self, *args, **kwargs):
+        return
+    
+    def untrack(self, *args, **kwargs):
         return

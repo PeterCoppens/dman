@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict, is_dataclass
 from os import PathLike
 
-from dman.persistent.serializables import SER_CONTENT, SER_TYPE, is_serializable, serialize, deserialize, BaseContext
+from dman.persistent.serializables import is_serializable, serialize, deserialize, BaseContext
 
 STO_TYPE = '_sto__type'
 WRITE = '__write__'
@@ -16,10 +16,6 @@ __storeable_types = dict()
 
 def storeable_type(obj):
     return getattr(obj, STO_TYPE, None)
-
-
-def get_storeable(name):
-    return getattr(__storeable_types, name)
 
 
 def is_storeable(obj):
@@ -77,15 +73,13 @@ def _read__dataclass(cls, path: PathLike):
 
 def _write__serializable(self, path: PathLike, context: BaseContext = None):
     with open(path, 'w') as f:
-        serialized = serialize(self, context)
-        json.dump(serialized[SER_CONTENT], f, indent=4)
+        json.dump(serialize(self, context, content_only=True), f, indent=4)
 
 
 @classmethod
 def _read__serializable(cls, path: PathLike, context: BaseContext = None):
     with open(path, 'r') as f:
-        serialized = {SER_TYPE: getattr(cls, SER_TYPE), SER_CONTENT: json.load(f)}
-        return deserialize(serialized, context)
+        return deserialize(json.load(f), context, ser_type=cls)
 
 
 def write(storeable, path: PathLike, context: BaseContext = None):
@@ -105,14 +99,12 @@ def write(storeable, path: PathLike, context: BaseContext = None):
 
 
 def read(type: str, path: PathLike, context: BaseContext = None):
-    # if not preload:
-    #     return Unloaded(type, path, context)
+    if isinstance(type, str):
+        type = __storeable_types.get(type, None)
+        if type is None:
+            raise ValueError(f'type {type} is not registered as a storeable type')
 
-    storeable = __storeable_types.get(type, None)
-    if storeable is None:
-        raise ValueError(f'type {type} is not registered as a storeable type')
-
-    inner_read = getattr(storeable, READ, None)
+    inner_read = getattr(type, READ, None)
     if inner_read is None:
         return None
 

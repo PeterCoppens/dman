@@ -24,13 +24,13 @@ class TestSto:
         return cls(**ser)
 
     def __write__(self, path):
-        print(f'..writing to path {path}')
+        print(f'[teststo] writing to path {path}')
         with open(path, 'w') as f:
             f.write(self.name)
 
     @classmethod
     def __read__(cls, path):
-        print(f'..reading from path {path}')
+        print(f'[teststo] reading from path {path}')
         with open(path, 'r') as f:
             return cls(f.read())
 

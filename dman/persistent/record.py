@@ -1,13 +1,13 @@
 import os
 
-from dataclasses import MISSING, asdict, dataclass, is_dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 import uuid
-from dman.persistent.serializables import is_serializable, serializable, BaseContext, serialize, deserialize
+from dman.persistent.serializables import is_serializable, serializable, BaseContext
 from dman.persistent.smartdataclasses import AUTO, overrideable
-from dman.persistent.storeables import get_storeable, is_storeable, storeable_type, read, write, is_storeable_type
+from dman.persistent.storeables import is_storeable, storeable_type, read, write, is_storeable_type
 
 
 REMOVE = '__remove__'
@@ -23,21 +23,21 @@ class TemporaryContext(TemporaryDirectory):
 
 @dataclass
 class RecordContext(BaseContext):
-    path: str
+    path: os.PathLike
 
-    def join(self, other: str):
+    def join(self, other: os.PathLike):
         return RecordContext(os.path.join(self.path, other))
 
 
 @serializable(name='__ser_rec_config')
 @overrideable(frozen=True)
 class RecordConfig:
-    subdir: str
+    subdir: os.PathLike
     suffix: str
     stem: str
 
     @classmethod
-    def from_name(cls, /, *, name: str, subdir: str = AUTO):
+    def from_name(cls, /, *, name: str, subdir: os.PathLike = AUTO):
         split = name.split('.')
         if len(split) == 1:
             split.append('')
@@ -153,9 +153,10 @@ class Record:
             local, target = Record.__parse(self.config, context)
             if os.path.exists(target.path):
                 # remove all subfiles of content
-                remove(self.content)
+                remove(self.content, local)
                 
                 # remove file itself
+                target.untrack(**self.context_options)
                 os.remove(target.path)
 
                 # clean up the subdir (if empty)
@@ -178,7 +179,7 @@ class Record:
             if not os.path.isdir(local.path):
                 os.makedirs(local.path)
 
-            target.evaluate(**self.context_options)
+            target.track(**self.context_options)
             write(self._content, target.path, context=local)
         else:
             raise RuntimeWarning(f'invalid context for serialization of record {self}')
@@ -214,7 +215,7 @@ class Record:
         return cls(content=content, config=config, preload=preload, context_options=options)
 
 
-def record(content: Any, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: str = '', preload: str = False, **options):
+def record(content: Any, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False, **options):
     if name != AUTO and (stem != AUTO or suffix != AUTO):
         raise ValueError('either provide a name or suffix + stem.')
 

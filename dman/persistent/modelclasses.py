@@ -19,7 +19,7 @@ RECORD_FIELD = '__record__'
 class RecordWrapper(Wrapper):
     WRAPPED_FIELDS_NAME = STO_FIELD
 
-    def __init__(self, stem: str, suffix: str, name: str, subdir: str, preload: str, options: dict):
+    def __init__(self, stem: str, suffix: str, name: str, subdir: os.PathLike, preload: str, options: dict):
         self.stem = stem
         self.suffix = suffix
         self.name = name
@@ -43,7 +43,7 @@ class RecordWrapper(Wrapper):
 def recordfield(*, default=MISSING, default_factory=MISSING, 
         init: bool = True, repr: bool = False, 
         hash: bool = False, compare: bool = False, metadata=None,
-        stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: str = '', preload: str = False, **options
+        stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False, **options
     ):
 
     return WrappedField(
@@ -100,8 +100,12 @@ def recordfields(obj):
 def _remove__modelclass(self, context: BaseContext = None):
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
-            value = getattr(self, f.name)
-            remove(value, context)           
+            if f.name in recordfields(self):
+                value = getattr(self, attr_wrapped_field(f.name))
+                remove(value, context)
+            else:
+                value = getattr(self, f.name)
+                remove(value, context)           
 
 
 def _serialize__modelclass(self, context: BaseContext = None):
@@ -135,52 +139,44 @@ def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
     return cls(**processed)
 
 
+from collections.abc import MutableSequence
 
-class _blist(list):
-    def __init__(self, iterable: Iterable=None, subdir: str = '', preload: bool = False, options: dict = None):
+class _blist(MutableSequence):   
+    def __init__(self, iterable: Iterable=None, subdir: os.PathLike = '', preload: bool = False, options: dict = None):
         if iterable is None: iterable = list()
-        list.__init__(self, iterable)
+        self.store = list(iterable)
 
         self.subdir = subdir
         self.preload = preload
         if options is None:
             options = dict()
         self.options = options
-    
+
     def __repr__(self):
         lst = []
         for i in range(len(self)):
-            res = list.__getitem__(self, i)
+            res = self.store.__getitem__( i)
             if isinstance(res, Record):
                 res = res._content
             lst.append(res)
-        
-        return list.__repr__(lst)
-    
-    def __getitem__(self, key):
-        itm = list.__getitem__(self, key)
-        if isinstance(itm, Record):
-            return itm.content
-        return itm
 
+        return list.__repr__(lst)    
+    
     def __make_record__(self, itm):
-        return record(itm, subdir=self.subdir, preload=self.preload, options=self.options)
+        return record(itm, subdir=self.subdir, preload=self.preload, **self.options)
+    
+    def __remove_key(self, key, context):
+        itm = self.store.__getitem__(key)
+        remove(itm, context)    
     
     def remove(self, key, context: BaseContext):
-        itm = list.__getitem__(self, key)
-        if is_unloaded(itm) or is_storeable(itm):
-            self.__make_record__(itm).__remove__(context)
-        else:
-            remove(itm, context)
-        list.__delitem__(key)
-    
-    def __remove__(self, context: BaseContext): 
-        for itm in self:
-            if is_unloaded(itm) or is_storeable(itm):
-               self.__make_record__(itm).__remove__(context)
-            else:
-                remove(itm, context)
-    
+        self.__remove_key(key, context)
+        self.store.__delitem__(key)
+
+    def __remove__(self, context: BaseContext):
+        for i in range(len(self.store)):
+            self.__remove_key(i, context) 
+        
     def __serialize__(self, context: BaseContext):
         lst = []
 
@@ -197,17 +193,12 @@ class _blist(list):
                 lst.append({
                     RECORD_FIELD: True, **serialize(itm, context)
                 })
-            elif is_storeable(itm):
-                rec = self.__make_record__(itm)
-                lst.append({
-                    RECORD_FIELD: True, **serialize(rec, context)
-                })
             elif is_serializable(itm):
                 lst.append(serialize(itm))
             else:
                 lst.append(itm)
         return res
-    
+
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
         subdir = serialized.get('subdir', '')
@@ -215,7 +206,7 @@ class _blist(list):
         options = serialized.get('options', {})
 
         lst = serialized.get('list', list())
-        res = cls(subdir=subdir, preload=preload, options=json.loads(options))
+        res = cls(subdir=subdir, preload=preload, options=options)
 
         for itm in lst:
             if isinstance(itm, dict) and is_deserializable(itm):
@@ -226,9 +217,50 @@ class _blist(list):
                     res.append(deserialize(itm, context))
             else:
                 res.append(itm)
-        
+
         return res
 
+    def record(self, value, idx: int = None, /, *, name: str = None, subdir: os.PathLike = AUTO, preload: bool = None, **kwargs):
+        if idx is None:
+            self.append(value)
+            idx = -1
+        else:
+            self.insert(idx, value)
+
+        if is_storeable(value):
+            rec: Record = self.store.__getitem__(idx)
+            if name:
+                rec._config = rec._config << RecordConfig.from_name(name=name, subdir=subdir)
+            if preload:
+                rec.preload = preload
+            for k, v in kwargs.items():
+                rec.context_options[k] = v
+
+    def __getitem__(self, key):
+        itm = self.store.__getitem__(key)
+        if isinstance(itm, Record):
+            return itm.content
+        return itm
+    
+    def __setitem__(self, i, v):
+        if is_storeable(v):
+            v = self.__make_record__(v)
+        self.store.__setitem__(i, v)
+    
+    def insert(self, i, v):
+        if is_storeable(v):
+            v = self.__make_record__(v)
+        self.store.insert(i, v)
+    
+    def __delitem__(self, i):
+        raise ValueError('use remove to delete items')
+
+    def __iter__(self):
+        return iter(self.store)
+
+    def __len__(self):
+        return len(self.store)
+    
 
 @serializable(name='_ser__mlist')
 class mlist(_blist):
@@ -241,9 +273,12 @@ class smlist(mlist):
     pass
 
 
-class _bdict(dict):
-    def __init__(self, *, subdir: str = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False, options: dict = None, **kwargs):
-        dict.__init__(self, **kwargs)
+
+from collections.abc import MutableMapping
+
+
+class _bdict(MutableMapping):
+    def __init__(self, *, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False, options: dict = None, **kwargs):
         self.subdir = subdir
         self.preload = preload
         if options is None:
@@ -252,70 +287,43 @@ class _bdict(dict):
 
         self._store_by_key = store_by_key
         self._store_subdir = store_subdir
+
+        self.store = dict()
+        self.update(dict(**kwargs))    
     
+    @classmethod
+    def from_dict(cls, dict: dict, subdir: os.PathLike = '', preload: bool = False, options: dict = None):
+        return cls.__init__(subdir=subdir, preload=preload, options=options, **dict)
+
     def store_by_key(self, subdir: bool = False):
         self._store_by_key = True
         self._store_subdir = subdir
-    
-    def __repr__(self):
-        dct = {}
-        for k in self.keys():
-            res = dict.__getitem__(self, k)
-            if isinstance(res, Record):
-                res = res._content
-            dct[k] = res
-        
-        return dict.__repr__(dct)
-    
-    @classmethod
-    def from_dict(cls, dict: dict, subdir: str = '', preload: bool = False, options: dict = None):
-        return cls.__init__(subdir=subdir, preload=preload, options=options, **dict)
-
-    def get(self, key, default):
-        if key in self:
-            return self.__getitem__(key)
-        return default
-    
-    def __getitem__(self, key):
-        itm = dict.__getitem__(self, key)
-        if isinstance(itm, Record):
-            itm = itm.content
-            return itm
-        return itm
 
     @property
     def config(self):
         return RecordConfig(subdir=self.subdir)
 
-    def __key_command__(self, k):
-        config = RecordConfig()
-        if self._store_by_key:
-            config = config << RecordConfig(stem=k)
-        if self._store_subdir:
-            config = config << RecordConfig(subdir=os.path.join(self.subdir, k))
-        return config
+    def __repr__(self):
+        dct = {}
+        for k in self.keys():
+            res = self.store.__getitem__(k)
+            if isinstance(res, Record):
+                res = res._content
+            dct[k] = res
 
-    def __make_record__(self, k, v=None):
-        if v is None:
-            v = dict.__getitem__(k)
-        config = self.config << self.__key_command__(k)
-        return Record(v, config, self.preload, self.options)
-    
-    def remove(self, key, context: BaseContext):
-        itm = dict.__getitem__(self, key)
-        if is_unloaded(itm) or is_storeable(itm):
-            self.__make_record__(key, itm).__remove__(context)
-        else:
-            remove(itm, context)
-        dict.pop(self, key)
+        return dict.__repr__(dct)   
+
+    def __remove_key(self, key, context: BaseContext):
+        itm = self.store.__getitem__(key)
+        remove(itm, context)
     
     def __remove__(self, context: BaseContext):
         for k in self.keys():
-            v = dict.__getitem__(self, k)
-            if is_unloaded(v) or is_storeable(v):
-                self.__make_record__(k, v).__remove__(context)
-            else:
-                remove(v, context)
+            self.__remove_key(k, context)
+    
+    def remove(self, key, context: BaseContext):
+        self.__remove_key(key, context)
+        del self.store[key]
 
     def __serialize__(self, context: BaseContext):
         dct = dict()
@@ -333,12 +341,9 @@ class _bdict(dict):
             res['store_subdir'] = self._store_subdir
 
         for k in self.keys():
-            v = dict.__getitem__(self, k)
+            v = self.store.__getitem__(k)
             if isinstance(v, Record):
-                dct[k] = ({RECORD_FIELD: True, **v.__serialize__(context)})
-            elif is_storeable(v):
-                record = self.__make_record__(k, v)
-                dct[k] = ({RECORD_FIELD: True, **record.__serialize__(context)})
+                dct[k] = ({RECORD_FIELD: True, **serialize(v, context, content_only=True)})
             elif is_serializable(v):
                 dct[k] = serialize(v, context)
             else:
@@ -368,6 +373,53 @@ class _bdict(dict):
         
         return res
 
+    def __key_command__(self, k):
+        config = RecordConfig()
+        if self._store_by_key:
+            config = config << RecordConfig(stem=k)
+        if self._store_subdir:
+            config = config << RecordConfig(
+                subdir=os.path.join(self.subdir, k))
+        return config
+
+    def __make_record__(self, k, v=None):
+        if v is None:
+            v = dict.__getitem__(k)
+        config = self.config << self.__key_command__(k)
+        return Record(v, config, self.preload, context_options=copy.deepcopy(self.options))
+
+    def __getitem__(self, key):
+        itm = self.store.__getitem__(key)
+        if isinstance(itm, Record):
+            itm = itm.content
+            return itm
+        return itm
+    
+    def __setitem__(self, key, value):
+        if is_storeable(value):
+            value = self.__make_record__(key, value)
+        self.store.__setitem__(key, value)
+    
+    def record(self, key, value, /, *, name: str = None, subdir: os.PathLike = AUTO, preload: bool = None, **kwargs):
+        self.__setitem__(key, value)
+        if is_storeable(value):
+            rec: Record = self.store.__getitem__(key)
+            if name:
+                rec._config = rec._config << RecordConfig.from_name(name=name, subdir=subdir)
+            if preload:
+                rec.preload = preload
+            for k, v in kwargs.items():
+                rec.context_options[k] = v
+    
+    def __delitem__(self, key):
+        raise ValueError('use remove to delete items')
+    
+    def __iter__(self):
+        return iter(self.store)
+    
+    def __len__(self):
+        return len(self.store)   
+
 
 @serializable(name='_ser__mdict')
 class mdict(_bdict):
@@ -380,13 +432,17 @@ class smdict(_bdict):
     pass
 
 
-def smlist_factory(subdir: str = '', preload: bool = False, options: dict = None):
+def smlist_factory(subdir: os.PathLike = '', preload: bool = False, **kwargs):
     def factory():
-        return smlist(subdir=subdir, preload=preload, options=options)
+        return smlist(subdir=subdir, preload=preload, options=kwargs)
     return factory
 
-
-def smdict_factory(subdir: str = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False, options: dict = None):
+def mdict_factory(subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False, **kwargs):
     def factory():
-        return smdict(subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir, options=options)
+        return mdict(subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir, options=kwargs)
+    return factory
+
+def smdict_factory(subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False, **kwargs):
+    def factory():
+        return smdict(subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir, options=kwargs)
     return factory

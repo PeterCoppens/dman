@@ -1,7 +1,7 @@
 from dataclasses import field
 from dman.persistent.modelclasses import modelclass, recordfield
 from dman.persistent.configclasses import configclass, section
-from dman.persistent.storeables import storeable_type, read, write
+from dman.persistent.storeables import read, write
 from dman.persistent.record import TemporaryContext
 
 import os
@@ -43,7 +43,7 @@ if __name__ == '__main__':
             print(f.read())
             print('\n ==== end of file ==== \n')
 
-        res: TestConfig = read(storeable_type(TestConfig), target, ctx)
+        res: TestConfig = read(TestConfig, target, ctx)
         print(res.info.a)
         print(''.join(res.info.c))
         print(res.second.d)
