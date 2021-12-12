@@ -3,18 +3,19 @@ from dman.persistent.serializables import serializable, serialize, deserialize
 from dman.persistent.storeables import storeable
 
 from dman import sjson
-
+from dman.utils import list_files
 
 @storeable
 @serializable
 class TestSto:
     __ext__ = '.tst'
+
     def __init__(self, name):
         self.name = name
-    
+
     def __repr__(self):
         return f'TestSto({self.name})'
-    
+
     def __serialize__(self):
         return {'name': self.name}
 
@@ -33,6 +34,7 @@ class TestSto:
         with open(path, 'r') as f:
             return cls(f.read())
 
+
 if __name__ == '__main__':
     with TemporaryContext() as ctx:
         rec = record(TestSto(name='hello'), preload=False)
@@ -50,7 +52,10 @@ if __name__ == '__main__':
         ser = serialize(rec, ctx)
         print('== third serialization ==')
         print(sjson.dumps(ser, indent=4))
-    
+
+        print()
+        list_files(ctx.path)
+
     with TemporaryContext() as ctx:
         rec = record(TestSto(name='test'), preload=True, subdir='test')
         ser = serialize(rec, ctx)
@@ -58,16 +63,6 @@ if __name__ == '__main__':
 
         rec = deserialize(ser, ctx)
         print(rec.content)
-        
-        
-        
 
-    # rec = record(TestSto(name='hello'), preload=True)
-    # ser = serialize(rec, rt)
-    # print(json.dumps(ser, indent=4))
-    # rrec: Record = deserialize(ser, rt)
-    # rser = serialize(rrec, rt)
-    # print(json.dumps(rser, indent=4))
-    # print('name: ', rrec.content.name)
-    # rrser = serialize(rrec, rt)
-    # print(json.dumps(rrser, indent=4))
+        print()
+        list_files(ctx.path)

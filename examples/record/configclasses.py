@@ -3,6 +3,7 @@ from dman.persistent.modelclasses import modelclass, recordfield
 from dman.persistent.configclasses import configclass, section
 from dman.persistent.storeables import read, write
 from dman.persistent.record import TemporaryContext
+from dman.utils import list_files
 
 import os
 
@@ -38,10 +39,7 @@ if __name__ == '__main__':
     with TemporaryContext() as ctx:
         target = os.path.join(ctx.path, 'test.ini')
         write(cfg, target, ctx)
-        with open(target, 'r') as f:
-            print('\n ==== start of file ==== \n')
-            print(f.read())
-            print('\n ==== end of file ==== \n')
+        list_files(ctx.path)
 
         res: TestConfig = read(TestConfig, target, ctx)
         print(res.info.a)

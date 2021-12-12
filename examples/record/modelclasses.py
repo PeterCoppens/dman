@@ -1,14 +1,15 @@
 import copy
 from dman.persistent.serializables import serialize, deserialize
-from dman.persistent.modelclasses import modelclass, mlist,  mdict, recordfield
+from dman.persistent.modelclasses import modelclass, recordfield
 from dman.persistent.record import TemporaryContext
+from dman.utils import list_files
 
-from example_record import TestSto
-
+from record import TestSto
 from dataclasses import field
 
 from dman import sjson
-    
+
+
 @modelclass(storeable=True, compact=True)
 class Foo:
     __ext__ = '.foo'
@@ -30,50 +31,14 @@ class Foo:
         with open(path, 'r') as f:
             return deserialize(sjson.load(f), context, ser_type=cls)
 
+
 @modelclass(storeable=True)
 class Boo:
     a: Foo = recordfield(name='file.a', subdir='foo')
     b: Foo = field()
 
+
 if __name__ == '__main__':
-    print('\n====== list tests =======\n')
-    with TemporaryContext() as ctx:
-        lst = mlist([1, TestSto('a')])
-        ser = serialize(lst, ctx)
-        print(sjson.dumps(ser, indent=4))
-        
-        lst: mlist = deserialize(ser, ctx)
-        print(lst)
-        print(lst[1])
-        print(lst)
-
-        lst.subdir = 'test'
-        lst.record(TestSto('b'), name='b', preload=True, test='value')
-        ser = serialize(lst, ctx)
-        print(sjson.dumps(ser, indent=4))
-    
-    print('\n====== dict tests =======\n')
-    with TemporaryContext() as ctx:
-        dct = mdict(a=5, b=TestSto('b'), c=TestSto('c'))
-        ser = serialize(dct, ctx)
-        print(sjson.dumps(ser, indent=4))
-
-        dct: mdict = deserialize(ser, ctx)
-        print(dct)
-        print(dct['b'])
-        print(dct['c'])
-        print(dct)
-
-        dct.store_by_key()
-        dct.subdir = 'dct'
-        dct.record('d', TestSto('d'), name='hello', subdir = 'test')
-        ser = serialize(dct, ctx)
-        print(sjson.dumps(ser, indent=4))
-        
-        dct: mdict = deserialize(ser, ctx)
-        print(dct['b'])
-        print(dct['c'])
-        print(dct)
 
     print('\n====== model class tests =======\n')
     with TemporaryContext() as ctx:
@@ -94,3 +59,6 @@ if __name__ == '__main__':
         boo: Boo = deserialize(ser, ctx)
         print(boo.a.c)
         print(boo.b.c)
+
+        print()
+        list_files(ctx.path)

@@ -96,6 +96,8 @@ class DMan:
         return res
     
     def add_dependency(self, path: os.PathLike):
+        if not os.path.exists(path):
+            raise ValueError(f'could not find git repository at: {path}')
         dep = Dependency.from_path(path)
         self.dependencies.files[dep.name] = dep
 
@@ -107,25 +109,3 @@ class DMan:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stamps.__exit__(exc_type, exc_val, exc_tb)
         self.dependencies.__exit__(exc_type, exc_val, exc_tb)
-
-
-if __name__ == '__main__':
-    import time
-    with DMan() as dman:
-        dman.stamps.empty()
-        
-    with DMan() as dman:
-        dman.add_dependency('../multbx')
-        dman.stamp(msg='test')
-        time.sleep(1)
-        dman.stamp()
-
-    with DMan() as dman:
-        for stamp in dman.stamps.files.values():
-            stamp: Stamp = stamp
-            print(stamp)
-            print(stamp.dependencies['multbx'])
-
-    list_files('.dman')
-    
-    

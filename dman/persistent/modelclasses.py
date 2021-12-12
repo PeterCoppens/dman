@@ -425,10 +425,10 @@ class _bdict(MutableMapping):
 
         for k, v in dct.items():
             if isinstance(v, dict):
-                if v.get(RECORD_FIELD, False):
-                    res[k] = Record.__deserialize__(v, context)
-                else:
-                    res[k] = deserialize(v, context)
+                res[k] = deserialize(
+                    v, context, 
+                    ser_type=Record if v.get(RECORD_FIELD, False) else None
+                )
             else:
                 res[k] = v
 

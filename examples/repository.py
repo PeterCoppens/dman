@@ -2,7 +2,7 @@ import os
 from tempfile import TemporaryDirectory
 from dman.utils import list_files, print_contents
 
-from example_record import TestSto
+from record.record import TestSto
 from dman.repository import Cache, Registry, TemporaryRegistry, TemporaryRepository
 
 

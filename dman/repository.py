@@ -4,7 +4,7 @@ import sys
 from tempfile import TemporaryDirectory
 from dman.persistent.modelclasses import modelclass, mdict, smdict
 
-from dman.persistent.record import RecordContext, record, remove
+from dman.persistent.record import Record, RecordContext, record, remove
 
 from pathlib import Path
 from dman.persistent.serializables import serialize
@@ -34,17 +34,19 @@ def get_root_path():
 
 
 @dataclass
-class GitIgnore:
-    path: str
+class GitIgnore(RecordContext):
     ignored: set = field(default_factory=set)
     active: bool = True
 
     def __post_init__(self):
-        self.path = os.path.join(self.path, '.gitignore')
+        original = ['.gitignore']
         if os.path.exists(self.path):
-            original = GitIgnore.__read__(self.path)
-            self.ignored = set.union(original.ignored, self.ignored)
-        self.ignored.add('.gitignore\n')
+            with open(self.path, 'r') as f:
+                for line in f.readlines():
+                    if len(line) > 0 and line[-1] == '\n':
+                        line = line[:-1]
+                    original.append(line)
+        self.ignored = set.union(set(original), self.ignored)
     
     @property
     def dirname(self):
@@ -53,7 +55,7 @@ class GitIgnore:
     def append(self, file: str):
         if self.active:
             self.ignored.add(
-                os.path.relpath(file, start=os.path.dirname(self.path)) + '\n'
+                os.path.relpath(file, start=os.path.dirname(self.path))
             )
         else:
             raise RuntimeError('tried to register ignored file while repository is already closed')
@@ -61,100 +63,62 @@ class GitIgnore:
     def remove(self, file: str):
         if self.active:
             self.ignored.remove(
-                os.path.relpath(file, start=os.path.dirname(self.path)) + '\n'
+                os.path.relpath(file, start=os.path.dirname(self.path))
             )
         else:
             raise RuntimeError('tried to delete ignored file while repository is already closed')
 
-    def __write__(self, path: str = None):
-        if path is None: path = self.path
+    def close(self):
+        self.track()
         if len(self.ignored) == 1:
             # clean up if we do not need to ignore anything
-            if os.path.exists(path):
-                os.remove(path)
-
-            if os.path.isdir(self.dirname) and len(os.listdir(self.dirname)) == 0:
-                os.rmdir(self.dirname)
+            if os.path.exists(self.path):
+                os.remove(self.path)
+                self.untrack()
         else:
-            if not os.path.isdir(self.dirname):
-                os.makedirs(self.dirname)
-            with open(path, 'w') as f:
-                f.writelines((line for line in self.ignored))
-
-    @classmethod
-    def __read__(cls, path):
-        with open(path, 'r') as f:
-            ignored = [line for line in f.readlines()]
-            if len(ignored) > 0 and ignored[-1][-1] != '\n':
-                ignored[-1] += '\n'
-
-            return cls(path=path, ignored=set(ignored))
-
+            with open(self.path, 'w') as f:
+                f.writelines((line + '\n' for line in self.ignored))
+        
+        self.active = False
 
 @dataclass
 class Repository(RecordContext):
     path: os.PathLike = field(default_factory=get_root_path)
     parent: 'Repository' = field(default=None, repr=False)
-    git: GitIgnore = field(default=None, init=False, repr=False)
-    children: dict = field(default_factory=dict, init=False, repr=False)
-    
+    _git: GitIgnore = field(default=None, init=False, repr=False)
+
+    @property
+    def git(self):
+        if self._git is None:
+            self._git = GitIgnore.class_join(self, '.gitignore')
+        return self._git
+
     def ignore(self, file: os.PathLike):
-        if self.git is None:
-            self.git = GitIgnore(self.path)
         self.git.append(file)
     
     def unignore(self, file: os.PathLike):
-        if self.git is None:
-            self.git = GitIgnore(self.path)
         self.git.remove(file)
 
     def track(self, gitignore: bool = True, *args, **kwargs):
+        super(Repository, self).track(*args, **kwargs)
         if gitignore:
-            if self.parent is None:
-                raise RuntimeError('cannot track root repository')
             self.parent.ignore(self.path)
 
     def untrack(self, gitignore: bool = True, *args, **kwargs):
+        if self.parent is None:
+            raise RuntimeError('cannot untrack root repository')
         if gitignore:
-            if self.parent is None:
-                raise RuntimeError('cannot untrack root repository')
             self.parent.unignore(self.path)
-            self.parent.remove_child(self)
+        super(Repository, self).untrack(*args, **kwargs)
     
-    def join(self, other: os.PathLike):
-        if other == '' or other == '.':
-            return self
-
-        # other = os.path.relpath(other, start=self.path)
-        head, tail = os.path.split(other)
-        if len(head) > 0:
-            return self.join(head).join(tail)
-
-        if other in self.children:
-            return self.children[other]
-
-        ctx = super().join(other)
-        if os.path.abspath(ctx.path) == os.path.abspath(self.path):
-            return self
-
-        sub = Repository(path=ctx.path, parent=self)
-        self.children[other] = sub
-        return sub.__enter__()
-    
-    def remove_child(self, child: 'Repository'):
-        path = os.path.relpath(child.path, start=self.path)
-        del self.children[path]
+    def join(self, other: os.PathLike) -> 'Repository':
+        res = super(Repository, self).join(other)
+        return res.__enter__()
            
     def close(self):
         for child in self.children.values():
             repo: Repository = child
             repo.close()
-
-        if self.git is not None and self.git.active:
-            self.git.__write__()
-            self.git.active = False
-        elif os.path.isdir(self.path) and len(os.listdir(self.path)) == 0:
-            os.rmdir(self.path)
 
     def __enter__(self):
         return self
@@ -343,9 +307,10 @@ class Cache(Registry):
 
 
 class RunFactory:
-    def __init__(self, type, name: str = None, base: str = None) -> None:
+    def __init__(self, type, name, base, gitignore) -> None:
         self.cache = Cache.load(base=base)
         self.name = name
+        self.gitignore = gitignore
         self.run = None
         self.type = type
     
@@ -362,7 +327,7 @@ class RunFactory:
         return self.run
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cache.record(self.name, self.run, subdir='runs')
+        self.cache.record(self.name, self.run, subdir='runs', gitignore=self.gitignore)
         self.cache.__exit__(exc_type, exc_val, exc_tb)
         
 
@@ -373,26 +338,8 @@ class Run:
     value: str = 'none'
     
     @classmethod
-    def load(cls, name: str = None, base: os.PathLike = None):
-        return RunFactory(type=cls, name=name, base=base)
-    
-
-
-if __name__ == '__main__':
-    # Cache.clear()
-    with Run.load() as run:
-        print(run.name, run.value)
-    with Run.load(name='run-0') as run:
-        print(run.name, run.value)
-
-
-    with Cache.load() as cache:
-        from dman.utils import list_files
-        list_files(cache.repo.path)
-        cache['test'] = cache.get('test', 0) + 1
-        print(len(cache.store))
-        if len(cache.store) > 5:
-            cache.clear()
+    def load(cls, name: str = None, base: os.PathLike = None, gitignore: bool = True):
+        return RunFactory(type=cls, name=name, base=base, gitignore=gitignore)
         
         
 

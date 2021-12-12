@@ -1,11 +1,12 @@
+import copy
 import os
 
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import asdict, dataclass, field, is_dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 import uuid
-from dman.persistent.serializables import is_serializable, serializable, BaseContext
+from dman.persistent.serializables import deserialize, is_serializable, serializable, BaseContext, serialize
 from dman.persistent.smartdataclasses import AUTO, overrideable
 from dman.persistent.storeables import is_storeable, storeable_type, read, write, is_storeable_type
 
@@ -24,9 +25,53 @@ class TemporaryContext(TemporaryDirectory):
 @dataclass
 class RecordContext(BaseContext):
     path: os.PathLike
+    parent: 'RecordContext' = field(default=None, repr=False)
+    children: dict = field(default_factory=dict, repr=False, init=False)
 
-    def join(self, other: os.PathLike):
-        return RecordContext(os.path.join(self.path, other))
+    def track(self, *args, **kwargs):
+        if self.parent is None:
+            raise RuntimeError('cannot track root repository')
+        if not os.path.isdir(self.parent.path):
+            os.makedirs(self.path)
+    
+    def clean(self):
+        if self.parent is None:
+            return  # do not clean root
+        if os.path.isdir(self.path) and len(os.listdir(self.path)) == 0:
+            os.rmdir(self.path)
+            self.parent.clean()
+
+    def untrack(self, *args, **kwargs):
+        self.parent.clean()
+        
+    def normalize(self, other: os.PathLike):
+        return os.path.relpath(os.path.join(self.path, other), start=self.path)
+    
+    def remove_child(self, other: 'RecordContext'):
+        other = self.normalize(other.path)
+        del self.children[other]
+
+    @classmethod
+    def class_join(cls, self: 'RecordContext', other: os.PathLike):
+        # normalize
+        other = self.normalize(other)
+        if other == '.':
+            return self
+
+        head, tail = os.path.split(other)
+        if len(head) > 0:
+            return self.join(head).join(tail)
+
+        res: cls = self.children.get(other, None)
+        if res is not None:
+            return res
+
+        res = cls(os.path.join(self.path, other), parent=self)
+        self.children[other] = res
+        return res
+
+    def join(self, other: os.PathLike) -> 'RecordContext':
+        return self.__class__.class_join(self, other)
 
 
 @serializable(name='__ser_rec_config')
@@ -61,7 +106,7 @@ class RecordConfig:
         return res
     
     @classmethod
-    def __deserialize__(cls, serialized):
+    def __deserialize__(cls, serialized: dict):
         stem = serialized.get('stem')
         subdir = serialized.get('subdir', '')
         suffix = serialized.get('suffix', '')
@@ -157,8 +202,8 @@ class Record:
                 remove(self.content, local)
                 
                 # remove file itself
-                target.untrack(**self.context_options)
                 os.remove(target.path)
+                target.untrack(**self.context_options)
 
                 # clean up the subdir (if empty)
                 steps = Path(self.config.subdir).joinpath('_').parents
@@ -187,21 +232,23 @@ class Record:
             raise RuntimeWarning(f'invalid context for serialization of record {self}')
 
         res = {
-            'config': self.config.__serialize__(),
+            'config': serialize(self.config, content_only=True),
             'sto_type': sto_type
         }
         if self.preload:
             res['preload'] = self.preload
         if len(self.context_options) > 0:
-            res['options'] = self.context_options
+            res = res | self.context_options
         return res
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        config = RecordConfig.__deserialize__(serialized['config'])
-        sto_type = serialized['sto_type']
-        preload = serialized.get('preload', False)
-        options = serialized.get('options', dict())
+        serialized = copy.deepcopy(serialized)
+
+        config = deserialize(serialized.pop('config', dict()), ser_type=RecordConfig)
+        sto_type = serialized.pop('sto_type')
+        preload = serialized.pop('preload', False)
+        options = serialized
 
         if not is_storeable_type(sto_type):
             raise ValueError('record does not contain storeable type.')
