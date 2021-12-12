@@ -79,6 +79,7 @@ class Unloaded:
     context: BaseContext
 
     def __load__(self):
+        # print(f'loading {self.type} from {self.path}')
         return read(self.type, self.path, context=self.context)
     
     def __repr__(self) -> str:
@@ -160,8 +161,9 @@ class Record:
                 os.remove(target.path)
 
                 # clean up the subdir (if empty)
-                steps = Path(self.config.subdir).joinpath('tmp').parents
+                steps = Path(self.config.subdir).joinpath('_').parents
                 for step in steps:
+                    if step == '.': continue
                     step_dir = context.join(step).path
                     if len(os.listdir(step_dir)) == 0:
                         os.rmdir(step_dir)

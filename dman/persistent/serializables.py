@@ -14,6 +14,14 @@ NO_SERIALIZE = '__no_serialize__'
 __serializable_types = dict()
 
 
+def ser_type2str(ser):
+    return getattr(ser, SER_TYPE)
+
+
+def ser_str2type(ser):
+    return __serializable_types.get(ser)
+
+
 def is_serializable(ser):
     return getattr(ser, SER_TYPE, None) in __serializable_types
 

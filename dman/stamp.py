@@ -1,13 +1,13 @@
 import logging
 import os
 import sys
-import json
 import configparser
 
 from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Dict
 
+from dman import sjson
 from dman.utils import get_root_folder, prompt_user, get_git_hash, get_git_url, check_git_committed
 
 
@@ -102,7 +102,7 @@ class Dependecy:
     
     @classmethod
     def load(cls, mgr: 'Manager', value: str):
-        value = json.loads(value)
+        value = sjson.loads(value)
         res = cls(
             name=value['name'],
             path=None,
@@ -134,7 +134,7 @@ class Dependecy:
         else:
             res['path'] = os.path.relpath(self.path, start=mgr.root_path)
 
-        return json.dumps(res)
+        return sjson.dumps(res)
 
 class Manager:
     def __init__(self):

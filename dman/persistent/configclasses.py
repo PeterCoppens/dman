@@ -5,11 +5,11 @@ from typing import Dict
 
 from dman.persistent.storeables import WRITE, READ, storeable
 from dman.persistent.modelclasses import modelclass
-from dman.persistent.serializables import BaseContext, serialize, deserialize
+from dman.persistent.serializables import BaseContext, is_deserializable, is_serializable, ser_str2type, serializable, ser_type2str, serialize, deserialize
 from dman.persistent.record import Record
 
 import configparser
-import json
+from dman import sjson
 
 SECTION_ATTR = '__sec__type'
 SECTION_NAME = '__sec__name'
@@ -46,7 +46,7 @@ def get_section_types(cls):
 def section(cls=None, /, *, name: str = None, **kwargs):
     def wrap(cls):
         setattr(cls, SECTION_ATTR, True)
-        return modelclass(cls, name=name, **kwargs)
+        return modelclass(cls, name=name, compact=True, **kwargs)
 
     # See if we're being called as @section or @section().
     if cls is None:
@@ -90,7 +90,7 @@ def _write__config(self, path: str, serializer: BaseContext = None):
         content: dict = serialize(getattr(self, section), serializer, content_only=True)
         processed = {}
         for k, v in content.items():
-            processed[k] = json.dumps(v)
+            processed[k] = sjson.dumps(v)
 
         cfg[section] = processed
 
@@ -114,7 +114,7 @@ def _read__config(cls, path: str, context: BaseContext = None):
 
         processed = {}
         for kk, vv in content.items():
-            processed[kk] = json.loads(vv)
+            processed[kk] = sjson.loads(vv)
 
         setattr(res, k, deserialize(processed, context, ser_type=v))
 
@@ -123,13 +123,20 @@ def _read__config(cls, path: str, context: BaseContext = None):
 
 @section(name='_sec__dict')
 class dictsection(MutableMapping):
-    def __init__(self, content: dict):
+    def __init__(self, content: dict = None, type = None):
+        if content is None: content = dict()
         self.store = content
+        if type is not None:
+            if not is_serializable(type):
+                raise ValueError('can only contain serializable types')
+        self.type = type
 
     def __getitem__(self, key):
         return self.store.__getitem__(key)
 
-    def __setitem__(self, key, value: str):
+    def __setitem__(self, key, value):
+        if not isinstance(value, self.type):
+            raise Exception(f'dictsection can only contain objects of type {self.type}')
         self.store.__setitem__(self.store, key, value)
 
     def __delitem__(self, value) -> None:
@@ -141,9 +148,23 @@ class dictsection(MutableMapping):
     def __len__(self):
         return len(self.store)
 
-    def __serialize__(self):
-        return self.store
+    def __serialize__(self, context):
+        if self.type is None:
+            return self.store
+        
+        res = {k: serialize(v, context, content_only=True) for k, v in self.items()}
+        res['__type'] = ser_type2str(self.type)
+
+        return res
 
     @classmethod
-    def __deserialize__(cls, serialized: dict):
-        return cls(serialized)
+    def __deserialize__(cls, serialized: dict, context):
+        type = serialized.pop('__type', None)
+        if type is None:
+            return cls(serialized)
+        
+        type = ser_str2type(type)
+        
+        return cls({
+            k: deserialize(v, context, ser_type=type) for k, v in serialized.items()
+        }, type=type)

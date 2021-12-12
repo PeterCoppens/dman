@@ -1,18 +1,15 @@
 from dataclasses import dataclass, field
-from functools import wraps
-from genericpath import exists
-from inspect import getouterframes
 import os
+import sys
 from tempfile import TemporaryDirectory
-from dman.persistent.modelclasses import modelclass, recordfield, mdict, mdict_factory
+from dman.persistent.modelclasses import modelclass, mdict, smdict
 
-from dman.persistent.record import RecordConfig, RecordContext, record, remove
+from dman.persistent.record import RecordContext, record, remove
 
 from pathlib import Path
-import shutil
-from dman.persistent.serializables import BaseContext, serialize
+from dman.persistent.serializables import serialize
 
-from dman.persistent.storeables import read, storeable, write
+from dman.persistent.storeables import read
 
 ROOT_FOLDER = '.dman'
 
@@ -28,7 +25,10 @@ def get_root_path():
         else:
             current_path = current_path.parent
             if current_path.parent == current_path:
-                return cwd
+                print(f'no .dman folder found, created one in {cwd}')
+                root_path = os.path.join(cwd, ROOT_FOLDER)
+                os.makedirs(root_path)
+                return root_path
 
     return str(root_path)
 
@@ -66,13 +66,13 @@ class GitIgnore:
         else:
             raise RuntimeError('tried to delete ignored file while repository is already closed')
 
-
     def __write__(self, path: str = None):
         if path is None: path = self.path
         if len(self.ignored) == 1:
             # clean up if we do not need to ignore anything
             if os.path.exists(path):
                 os.remove(path)
+
             if os.path.isdir(self.dirname) and len(os.listdir(self.dirname)) == 0:
                 os.rmdir(self.dirname)
         else:
@@ -119,8 +119,17 @@ class Repository(RecordContext):
             if self.parent is None:
                 raise RuntimeError('cannot untrack root repository')
             self.parent.unignore(self.path)
+            self.parent.remove_child(self)
     
     def join(self, other: os.PathLike):
+        if other == '' or other == '.':
+            return self
+
+        # other = os.path.relpath(other, start=self.path)
+        head, tail = os.path.split(other)
+        if len(head) > 0:
+            return self.join(head).join(tail)
+
         if other in self.children:
             return self.children[other]
 
@@ -131,15 +140,21 @@ class Repository(RecordContext):
         sub = Repository(path=ctx.path, parent=self)
         self.children[other] = sub
         return sub.__enter__()
+    
+    def remove_child(self, child: 'Repository'):
+        path = os.path.relpath(child.path, start=self.path)
+        del self.children[path]
            
     def close(self):
-        if self.git is not None and self.git.active:
-            self.git.__write__()
-            self.git.active = False
-
         for child in self.children.values():
             repo: Repository = child
             repo.close()
+
+        if self.git is not None and self.git.active:
+            self.git.__write__()
+            self.git.active = False
+        elif os.path.isdir(self.path) and len(os.listdir(self.path)) == 0:
+            os.rmdir(self.path)
 
     def __enter__(self):
         return self
@@ -164,7 +179,7 @@ class TemporaryRepository(TemporaryDirectory):
 
 
 
-@modelclass(name='__registry', storeable=True)
+@modelclass(name='_registry', storeable=True)
 class Registry:
     _instances = dict()
 
@@ -179,8 +194,8 @@ class Registry:
 
     __no_serialize__ = ['repo', '_repo', '_instances', '_closed']
 
-    @staticmethod
-    def load(name: str, gitignore: bool = True, base: os.PathLike = None):
+    @classmethod
+    def load(cls, name: str, gitignore: bool = True, base: os.PathLike = None):
         if name in Registry._instances:
             reg: Registry = Registry._instances[name]
             return reg
@@ -192,12 +207,12 @@ class Registry:
         local = RecordContext(base)
         target = local.join(f'{name}.json')
         if os.path.exists(target.path):
-            reg: Registry = read(Registry, target.path, local)
+            reg: cls = read(cls, target.path, local)
             reg.repo = repo
         else:
-            reg = Registry(name=name, gitignore=gitignore, repo=repo, files=mdict(store_by_key=True, subdir=name))
+            reg = cls(name=name, gitignore=gitignore, repo=repo, files=mdict(store_by_key=True, subdir=name))
 
-        Registry._instances[name] = reg
+        cls._instances[name] = reg
         return reg
     
     @property
@@ -205,7 +220,7 @@ class Registry:
         return record(self, stem=self.name, suffix='.json', gitignore=self.gitignore)
     
     @property
-    def path(self):
+    def directory(self):
         return os.path.join(self.repo.path, self.name)
 
     def record(self, key, value, /, *, name: str = None, subdir: os.PathLike = '', preload: bool = None, gitignore: bool = True):
@@ -235,7 +250,7 @@ class Registry:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close(exc_type, exc_val, exc_tb)
     
-    def clear(self):
+    def empty(self):
         if self._closed:
             self.open()
         remove(self.__make_record, self.repo)
@@ -263,22 +278,122 @@ class TemporaryRegistry:
         self.directory.__exit__(exc_type, exc_val, exc_tb)
         return res
 
-class Cache:
-    @staticmethod
-    def load(gitignore: bool = True, base: os.PathLike = None):
-        return Registry.load(name='cache', gitignore=gitignore, base=base)
+
+class Cache(Registry):
+    @classmethod
+    def load(cls, gitignore: bool = True, base: os.PathLike = None):
+        return super(Cache, cls).load(name='cache', gitignore=gitignore, base=base)
+    
+    @classmethod
+    def clear(cls, base: os.PathLike = None):
+        cache = super(Cache, cls).load(name='cache', base=base)
+        cache.empty()
     
     @staticmethod
-    def clear(base: os.PathLike = None):
-        cache = Registry.load(name='cache', base=base)
-        cache.clear()
+    def script_key():
+        script = Path(sys.argv[0]).resolve().relative_to(
+            Path(get_root_path()).parent)
+        directory = str(script.parent)
+        name = str(script.stem)
+        return f'{directory.replace(os.sep, ":")}:{name}'
+    
+    @property
+    def store(self):
+        key = Cache.script_key()
+        if key in self.files:
+            return self.files[key]
+        
+        res = smdict(subdir=key, store_by_key=True, options={'gitignore': True})
+        self.files[key] = res
+        return res
+    
+    def __getitem__(self, key):
+        return self.store[key]
+    
+    def __setitem__(self, key, value):
+        self.store.__setitem__(key, value)
+    
+    def get(self, key, default):
+        return self.store.get(key, default)
+
+    def record(self, key, value, /, *, name: str = None, subdir: os.PathLike = '', preload: bool = None, gitignore: bool = True):
+        self.store.record(
+            key, value, 
+            name=name, subdir=subdir,
+            preload=preload, gitignore=gitignore
+        )
+
+    def remove(self, key):
+        self.store.remove(
+            key, self.repo
+        )
+    
+    def empty(self):
+        if self._closed:
+            self.open()
+        
+        key = Cache.script_key()
+        if key in self.files:
+            self.files.remove(key, self.repo)
+
+        if len(self.files) == 0:
+            super(Cache, self).empty()
+        else:
+            self.close()
+
+
+class RunFactory:
+    def __init__(self, type, name: str = None, base: str = None) -> None:
+        self.cache = Cache.load(base=base)
+        self.name = name
+        self.run = None
+        self.type = type
+    
+    def __enter__(self) -> 'Run':
+        self.cache.__enter__()
+        if self.name is None:
+            run_count = self.cache.get('__run_count', 0)
+            self.name = f'run-{run_count}'
+            self.cache['__run_count'] = run_count + 1
+        self.run = self.cache.get(
+            self.name,
+            self.type(name=self.name)
+        )
+        return self.run
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.cache.record(self.name, self.run, subdir='runs')
+        self.cache.__exit__(exc_type, exc_val, exc_tb)
+        
+
+
+@modelclass(name='_dman__run', storeable=True)
+class Run:
+    name: str
+    value: str = 'none'
+    
+    @classmethod
+    def load(cls, name: str = None, base: os.PathLike = None):
+        return RunFactory(type=cls, name=name, base=base)
+    
 
 
 if __name__ == '__main__':
-    with Registry.load(name='hello') as reg:
-        reg.files['a'] = 'test'
-        print(Registry.load(name='hello') is reg)
-    
-    with Registry.load(name='hello') as reg:
-        print(reg.files['a'])
+    # Cache.clear()
+    with Run.load() as run:
+        print(run.name, run.value)
+    with Run.load(name='run-0') as run:
+        print(run.name, run.value)
+
+
+    with Cache.load() as cache:
+        from dman.utils import list_files
+        list_files(cache.repo.path)
+        cache['test'] = cache.get('test', 0) + 1
+        print(len(cache.store))
+        if len(cache.store) > 5:
+            cache.clear()
+        
+        
+
     

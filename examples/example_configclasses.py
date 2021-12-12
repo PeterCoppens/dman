@@ -14,14 +14,14 @@ if __name__ == '__main__':
 
     @configclass
     class TestConfig:
-        @section(name='first')
+        @section
         class FirstSection:
             b: int = 3
             a: str = 'wow'
             c: list = field(default_factory=list)
         info: FirstSection     
         
-        @section(name='second')
+        @section
         class SecondSection:
             c: str = 'hello'
             d: TestModel = recordfield(default_factory=TestModel)

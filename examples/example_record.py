@@ -1,9 +1,8 @@
-from dataclasses import dataclass
-from dman.persistent.record import Record, RecordContext, record, TemporaryContext
+from dman.persistent.record import Record, record, TemporaryContext
 from dman.persistent.serializables import serializable, serialize, deserialize
 from dman.persistent.storeables import storeable
 
-import json
+from dman import sjson
 
 
 @storeable
@@ -39,23 +38,23 @@ if __name__ == '__main__':
         rec = record(TestSto(name='hello'), preload=False)
         ser = serialize(rec, ctx)
         print('== first serialization ==')
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
 
         rec: Record = deserialize(ser, ctx)
         ser = serialize(rec, ctx)
         print('== second serialization ==')
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
 
         rec: Record = deserialize(ser, ctx)
         print('content: ', rec.content)
         ser = serialize(rec, ctx)
         print('== third serialization ==')
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
     
     with TemporaryContext() as ctx:
         rec = record(TestSto(name='test'), preload=True, subdir='test')
         ser = serialize(rec, ctx)
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
 
         rec = deserialize(ser, ctx)
         print(rec.content)

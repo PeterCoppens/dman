@@ -7,9 +7,9 @@ from example_record import TestSto
 
 from dataclasses import field
 
-import json
+from dman import sjson
     
-@modelclass(storeable=True)
+@modelclass(storeable=True, compact=True)
 class Foo:
     __ext__ = '.foo'
 
@@ -22,13 +22,13 @@ class Foo:
     def __write__(self, path, context):
         print(f'..writing foo to {path}')
         with open(path, 'w') as f:
-            json.dump(serialize(self, context, content_only=True), f, indent=4)
+            sjson.dump(serialize(self, context, content_only=True), f, indent=4)
 
     @classmethod
     def __read__(cls, path, context):
         print(f'..writing foo to {path}')
         with open(path, 'r') as f:
-            return deserialize(json.load(f), context, ser_type=cls)
+            return deserialize(sjson.load(f), context, ser_type=cls)
 
 @modelclass(storeable=True)
 class Boo:
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     with TemporaryContext() as ctx:
         lst = mlist([1, TestSto('a')])
         ser = serialize(lst, ctx)
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
         
         lst: mlist = deserialize(ser, ctx)
         print(lst)
@@ -50,13 +50,13 @@ if __name__ == '__main__':
         lst.subdir = 'test'
         lst.record(TestSto('b'), name='b', preload=True, test='value')
         ser = serialize(lst, ctx)
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
     
     print('\n====== dict tests =======\n')
     with TemporaryContext() as ctx:
         dct = mdict(a=5, b=TestSto('b'), c=TestSto('c'))
         ser = serialize(dct, ctx)
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
 
         dct: mdict = deserialize(ser, ctx)
         print(dct)
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         dct.subdir = 'dct'
         dct.record('d', TestSto('d'), name='hello', subdir = 'test')
         ser = serialize(dct, ctx)
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
         
         dct: mdict = deserialize(ser, ctx)
         print(dct['b'])
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     with TemporaryContext() as ctx:
         foo = Foo(a='a', b=TestSto('b'), c=TestSto('c'), d=TestSto('d'))
         ser = serialize(foo, ctx)
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
 
         foo: Foo = deserialize(ser, ctx)
         print(foo)
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         print('=== processing boo ===')
         boo = Boo(a=foo, b=copy.deepcopy(foo))
         ser = serialize(boo, ctx)
-        print(json.dumps(ser, indent=4))
+        print(sjson.dumps(ser, indent=4))
 
         boo: Boo = deserialize(ser, ctx)
         print(boo.a.c)
