@@ -31,7 +31,13 @@ class RecordContext(BaseContext):
     def track(self, *args, **kwargs):
         if self.parent is None:
             raise RuntimeError('cannot track root repository')
-        if not os.path.isdir(self.parent.path):
+        self.parent.open()
+
+    def untrack(self, *args, **kwargs):
+        self.parent.clean()
+    
+    def open(self):
+        if not os.path.isdir(self.path):
             os.makedirs(self.path)
     
     def clean(self):
@@ -40,19 +46,11 @@ class RecordContext(BaseContext):
         if os.path.isdir(self.path) and len(os.listdir(self.path)) == 0:
             os.rmdir(self.path)
             self.parent.clean()
-
-    def untrack(self, *args, **kwargs):
-        self.parent.clean()
         
     def normalize(self, other: os.PathLike):
         return os.path.relpath(os.path.join(self.path, other), start=self.path)
     
-    def remove_child(self, other: 'RecordContext'):
-        other = self.normalize(other.path)
-        del self.children[other]
-
-    @classmethod
-    def class_join(cls, self: 'RecordContext', other: os.PathLike):
+    def join(self, other: os.PathLike) -> 'RecordContext':
         # normalize
         other = self.normalize(other)
         if other == '.':
@@ -62,16 +60,13 @@ class RecordContext(BaseContext):
         if len(head) > 0:
             return self.join(head).join(tail)
 
-        res: cls = self.children.get(other, None)
+        res = self.children.get(other, None)
         if res is not None:
             return res
 
-        res = cls(os.path.join(self.path, other), parent=self)
+        res = self.__class__(os.path.join(self.path, other), parent=self)
         self.children[other] = res
         return res
-
-    def join(self, other: os.PathLike) -> 'RecordContext':
-        return self.__class__.class_join(self, other)
 
 
 @serializable(name='__ser_rec_config')
@@ -223,9 +218,6 @@ class Record:
             local = unloaded.context
         elif isinstance(context, RecordContext):
             local, target = Record.__parse(self.config, context)
-            if not os.path.isdir(local.path):
-                os.makedirs(local.path)
-
             target.track(**self.context_options)
             write(self._content, target.path, context=local)
         else:

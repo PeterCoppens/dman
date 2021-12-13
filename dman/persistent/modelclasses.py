@@ -338,7 +338,7 @@ class smlist(mlist):
 
 
 class _bdict(MutableMapping):
-    def __init__(self, *, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False, options: dict = None, **kwargs):
+    def __init__(self, *, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False, options: dict = None, content: dict = None):
         self.subdir = subdir
         self.preload = preload
         if options is None:
@@ -349,11 +349,12 @@ class _bdict(MutableMapping):
         self._store_subdir = store_subdir
 
         self.store = dict()
-        self.update(dict(**kwargs))
+        if content is not None:
+            self.update(content)
 
     @classmethod
-    def from_dict(cls, dict: dict, subdir: os.PathLike = '', preload: bool = False, options: dict = None):
-        return cls.__init__(subdir=subdir, preload=preload, options=options, **dict)
+    def from_dict(cls, content: dict, /, *, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False, options: dict = None):
+        return cls.__init__(subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir, options=options, content=content)
 
     def store_by_key(self, subdir: bool = False):
         self._store_by_key = True
@@ -474,7 +475,7 @@ class _bdict(MutableMapping):
             for k, v in kwargs.items():
                 rec.context_options[k] = v
 
-    def __delitem__(self, key):
+    def __delitem__(self, _):
         raise ValueError('use remove to delete items')
 
     def __iter__(self):

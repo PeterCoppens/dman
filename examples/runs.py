@@ -1,4 +1,4 @@
-from dman.repository import Run, Cache
+from dman.runs import Run, Cache
 from dman.utils import list_files
 from tempfile import TemporaryDirectory
 
@@ -14,7 +14,15 @@ if __name__ == '__main__':
             run.value='it worked'
             print(run.name, run.value)
 
+        print('='*25+' result with run-tst '+'='*25)
+        list_files(base, print_content=False)
+        with Cache.load(base=base) as cache:
+            cache.remove('run-tst')
+            
+        print('='*25+' result without run-tst '+'='*25)
+        list_files(base, print_content=True)
+
         print('='*25+' result '+'='*25)
         list_files(base)
-        Cache.clear()
-        list_files(base)
+        # Cache.clear(base=base)
+        # list_files(base)

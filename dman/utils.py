@@ -3,6 +3,8 @@ import logging
 import subprocess
 import textwrap
 
+from dman.repository import get_root_path
+
 
 def print_contents(path: os.PathLike):
     print(f'contents of {path}')
@@ -16,6 +18,8 @@ def print_contents(path: os.PathLike):
 
 
 def list_files(startpath, print_content: bool = True):
+    if startpath is None:
+        startpath = get_root_path()
     print(f'file tree of {startpath}')
     content = []
     for root, _, files in os.walk(startpath):
@@ -30,8 +34,8 @@ def list_files(startpath, print_content: bool = True):
             content.append(os.path.join(root, f))
             print('>>> {}{}'.format(subindent, f))
     
+    print()
     if print_content:
-        print()
         for f in content:
             print_contents(f)
         
