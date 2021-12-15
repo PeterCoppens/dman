@@ -41,14 +41,11 @@ def script_label(base: os.PathLike):
             .relative_to(Path(base).parent)
     except ValueError:
         return Path(sys.argv[0]).stem
+    except TypeError:
+        return os.path.join('cache', '__interpreter__')
 
     directory = str(script.parent)
     name = str(script.stem)
-
-    if directory == '.':
-        if name == '':
-            return '__interpreter__'
-        return name
 
     return f'{directory.replace(os.sep, ":")}:{name}'
 
