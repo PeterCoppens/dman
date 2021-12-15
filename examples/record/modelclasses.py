@@ -1,13 +1,14 @@
 import copy
 from dman.persistent.serializables import serialize, deserialize
 from dman.persistent.modelclasses import modelclass, recordfield
-from dman.persistent.record import TemporaryContext
-from dman.utils import list_files
+from dman.persistent.record import RecordContext
+from dman.utils.display import list_files
+from tempfile import TemporaryDirectory
 
 from record import TestSto
 from dataclasses import field
 
-from dman import sjson
+from dman.utils import sjson
 
 
 @modelclass(storeable=True, compact=True)
@@ -41,7 +42,8 @@ class Boo:
 if __name__ == '__main__':
 
     print('\n====== model class tests =======\n')
-    with TemporaryContext() as ctx:
+    with TemporaryDirectory() as base:
+        ctx = RecordContext(base)
         foo = Foo(a='a', b=TestSto('b'), c=TestSto('c'), d=TestSto('d'))
         ser = serialize(foo, ctx)
         print(sjson.dumps(ser, indent=4))

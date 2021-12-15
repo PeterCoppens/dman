@@ -1,9 +1,10 @@
 from dataclasses import field
+from tempfile import TemporaryDirectory
 from dman.persistent.modelclasses import modelclass, recordfield
 from dman.persistent.configclasses import configclass, section
 from dman.persistent.storeables import read, write
-from dman.persistent.record import TemporaryContext
-from dman.utils import list_files
+from dman.persistent.record import RecordContext
+from dman.utils.display import list_files
 
 import os
 
@@ -36,7 +37,8 @@ if __name__ == '__main__':
     print(cfg2.info.a)
 
 
-    with TemporaryContext() as ctx:
+    with TemporaryDirectory() as base:
+        ctx = RecordContext(base)
         target = os.path.join(ctx.path, 'test.ini')
         write(cfg, target, ctx)
         list_files(ctx.path)

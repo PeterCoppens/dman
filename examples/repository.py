@@ -1,62 +1,69 @@
-from tempfile import TemporaryDirectory
+from dman.persistent.modelclasses import modelclass
+from dman.repository import repository, track
 from dman.utils import list_files
+from dman.persistent.storeables import write
+from tempfile import TemporaryDirectory
 
 from record.record import TestSto
-from dman.repository import Registry, Repository, Cache
+
+@modelclass
+class Model:
+    label: str
+    content: TestSto         
+
+
+@modelclass
+class SingModel:
+    label: str
+
+
+@modelclass(storable=True)
+class StoModel(Model):
+    pass
 
 
 if __name__ == '__main__':
-    # build gitignore files
-    with TemporaryDirectory() as base:
-        with Repository(path=base) as repo:
-            file = repo.join('test')
-            file.track()
-
-            sub_repo = repo.join('sub')
-            file = sub_repo.join('sub_test')
-            file.track()
-
-            sub_sub_repo = sub_repo.join('sub')
-            file = sub_sub_repo.join('sub_sub_test')
-            file.track()
-
-            repo.close()
-            list_files(base)
-
-    # registry usage
-    with TemporaryDirectory() as base:
-        with Registry.load(name='registry', gitignore=False, base=base) as reg:
-            reg.record('test0', TestSto(name='value0'))
-            reg.record('test1', TestSto(name='value1'), gitignore=False)
-            reg.record('test2', TestSto(name='value2'))
-            reg.record('test3', TestSto(name='value3'))
-            reg.remove('test3')
-
-            reg.close()
-            print(f'{"="*25} result {"="*25}')
-            list_files(reg.repo.path)
-
-            reg = Registry.load(name='registry', base=reg.repo.path)
-            reg.open()
-            print(reg.content)
-            print(reg.repo.path)
-
-            reg.remove('test2')
-            reg.close()
-            print(f'{"="*25} result {"="*25}')
-            list_files(reg.repo.path)
+    with repository() as repo:
+        print(repo)
     
-    with TemporaryDirectory() as dir: 
-        with Cache.load(base=dir) as cache:
-            cache.record('test', TestSto('test'))
-        print(f'{"="*25} cache {"="*25}')
-        list_files(dir)
+    with repository(generator=None) as repo:
+        print(repo)
+    
+    with TemporaryDirectory() as base:
+        with repository(base=base, gitignore=True) as repo:
+            print(repo)
+            ctx = repo.join('test.txt')
+            ctx.track()
+            write(TestSto(name='test'), ctx.path)
 
-        print(f'{"="*25} cache loaded {"="*25}')
-        with Cache.load(base=dir) as cache:
-            print(cache['test'])
-        print()
+        list_files(base)
 
-        print(f'{"="*25} cache cleared {"="*25}')
-        Cache.clear(base=dir)
-        list_files(dir)
+
+    with TemporaryDirectory() as base:
+        input('\n >>> continue?')
+        with track('tracked', default=Model(label='test', content=TestSto(name='hello world')), base=base) as model:
+            print(model)
+        
+        with track('singular', default=SingModel(label='singluar test'), base=base, cluster=False) as test:
+            print(test)
+        
+        list_files(base)
+
+        input('\n >>> continue?')
+        with track('tracked', base=base, gitignore=False) as model:
+            model: Model = model
+            model.content.name = 'found'
+
+        list_files(base)
+
+        input('\n >>> continue?')
+        try:
+            with track('not_found', base=base) as model:
+                print(model)
+        except FileNotFoundError as e:
+            print(str(e))
+
+
+
+
+

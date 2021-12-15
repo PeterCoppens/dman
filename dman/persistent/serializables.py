@@ -1,7 +1,7 @@
 import copy
 import inspect
 
-from dataclasses import fields, is_dataclass
+from dataclasses import dataclass, fields, is_dataclass
 
 
 SER_TYPE = '_ser__type'
@@ -32,9 +32,26 @@ def is_deserializable(serialized: dict):
     return serialized.get(SER_TYPE, None) in __serializable_types
 
 
+def register_serializable(name: str, type):
+    __serializable_types[name] = type
+
+
+@dataclass
+class Unserializable:
+    type: str
+
+
+def unserializable(type: str):
+    return Unserializable(type)
+
+
+def is_unserializable(obj):
+    return isinstance(obj, Unserializable)
+
+
 def serialize(ser, context: 'BaseContext' = None, content_only: bool = False):
     if not is_serializable(ser):
-        raise ValueError('object is not a serializable type')
+        return serialize(Unserializable(ser), context, content_only=content_only)
 
     ser_method = getattr(ser, SERIALIZE, lambda: {})
     sig = inspect.signature(ser_method)
@@ -45,22 +62,21 @@ def serialize(ser, context: 'BaseContext' = None, content_only: bool = False):
             context = BaseContext
         content = ser_method(context)
     else:
-        raise ValueError(
-            f'object has invalid signature for method {SERIALIZE}')
-    
+        return serialize(Unserializable(ser), context, content_only=content_only)
+
     if content_only:
         return content
 
     return {SER_TYPE: getattr(ser, SER_TYPE), SER_CONTENT: content}
 
 
-def deserialize(serialized: dict, context: 'BaseContext' = None, ser_type = None):
+def deserialize(serialized: dict, context: 'BaseContext' = None, ser_type=None):
     if ser_type is None:
         ser_type = serialized.get(SER_TYPE, None)
         if ser_type not in __serializable_types:
-            raise ValueError(f'unregistered type {ser_type}.')
+            return Unserializable(ser_type)
         serialized = serialized.get(SER_CONTENT, {})
-    
+
     if isinstance(ser_type, str):
         ser_type = __serializable_types.get(ser_type)
 
@@ -73,39 +89,7 @@ def deserialize(serialized: dict, context: 'BaseContext' = None, ser_type = None
             context = BaseContext
         return ser_method(serialized, context)
     else:
-        raise ValueError(
-            f'object has invalid signature for method {DESERIALIZE}')
-
-
-def register_serializable(name: str, type):
-    __serializable_types[name] = type
-
-
-def serializable(cls=None, /, *, name: str = None, ignore_dataclass: bool = False):
-    def wrap(cls):
-        local_name = name
-        if local_name is None:
-            local_name = getattr(cls, '__name__')
-        setattr(cls, SER_TYPE, local_name)
-        register_serializable(local_name, cls)
-
-        if not ignore_dataclass and is_dataclass(cls):
-            if getattr(cls, SERIALIZE, None) is None:
-                setattr(cls, SERIALIZE, _serialize__dataclass)
-            if getattr(cls, DESERIALIZE, None) is None:
-                setattr(cls, DESERIALIZE, _deserialize__dataclass)
-                setattr(cls, '_deserialize__dataclass__inner',
-                        _deserialize__dataclass__inner)
-
-        return cls
-
-    # See if we're being called as @serializable or @serializable().
-    if cls is None:
-        # We're called with parens.
-        return wrap
-
-    # We're called as @serializable without parens.
-    return wrap(cls)
+        return Unserializable(ser_type)
 
 
 def _serialize__dataclass(self, context: 'BaseContext' = None):
@@ -161,6 +145,36 @@ def _deserialize__dataclass__inner(cls, obj, context: 'BaseContext'):
         )
     else:
         return obj
+
+
+def serializable(cls=None, /, *, name: str = None, ignore_dataclass: bool = False):
+    def wrap(cls):
+        local_name = name
+        if local_name is None:
+            local_name = getattr(cls, '__name__')
+        setattr(cls, SER_TYPE, local_name)
+        register_serializable(local_name, cls)
+
+        if not ignore_dataclass and is_dataclass(cls):
+            if getattr(cls, SERIALIZE, None) is None:
+                setattr(cls, SERIALIZE, _serialize__dataclass)
+            if getattr(cls, DESERIALIZE, None) is None:
+                setattr(cls, DESERIALIZE, _deserialize__dataclass)
+                setattr(cls, '_deserialize__dataclass__inner',
+                        _deserialize__dataclass__inner)
+
+        return cls
+
+    # See if we're being called as @serializable or @serializable().
+    if cls is None:
+        # We're called with parens.
+        return wrap
+
+    # We're called as @serializable without parens.
+    return wrap(cls)
+
+
+Unserializable = serializable(Unserializable, name='__unserializable')
 
 
 class BaseContext:

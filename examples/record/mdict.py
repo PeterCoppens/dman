@@ -1,12 +1,14 @@
-from dman.persistent.record import TemporaryContext
+from tempfile import TemporaryDirectory
 from dman.persistent.modelclasses import mdict, serialize, deserialize
-from dman import sjson
-from dman.utils import list_files
+from dman.utils import sjson
+from dman.persistent.record import RecordContext, remove
+from dman.utils.display import list_files
 from record import TestSto
 
 if __name__ == '__main__':
     print('\n====== dict tests =======\n')
-    with TemporaryContext() as ctx:
+    with TemporaryDirectory() as base:
+        ctx = RecordContext(base)
         dct = mdict(a=5, b=TestSto('b'), c=TestSto('c'))
         ser = serialize(dct, ctx)
         print(sjson.dumps(ser, indent=4))
@@ -30,3 +32,39 @@ if __name__ == '__main__':
 
         print()
         list_files(ctx.path)
+
+    input('\n >>> continue?')
+
+    # removing items
+    with TemporaryDirectory() as base:
+        ctx = RecordContext(base)
+        dct = mdict(a=5, b=TestSto('b'), c=TestSto('c'), d=TestSto('d'), e='hello')
+        ser = serialize(dct, ctx)
+        print(sjson.dumps(ser, indent=4))
+        list_files(ctx.path)
+
+        print('==== delete items === ')
+        print(dct.pop('d'))
+        print(dct.pop('e'))
+        ser = serialize(dct, ctx)
+        print(sjson.dumps(ser, indent=4))
+        list_files(ctx.path)
+
+        print('==== delete dictionary === ')
+        remove(dct, ctx)
+        list_files(ctx.path)
+
+    input('\n >>> continue?')
+
+    # removing items
+    with TemporaryDirectory() as base:
+        ctx = RecordContext(base)
+        dct = mdict(subdir='stamps', store_by_key=True)
+        dct['test'] = TestSto(name='hello')
+        dct.record('other', TestSto(name='other'))
+        ser = serialize(dct, ctx)
+        print(sjson.dumps(ser, indent=4))
+        list_files(ctx.path)
+
+
+

@@ -1,4 +1,4 @@
-from dman.persistent.smartdataclasses import Wrapper, MISSING, wrapfield, wrappedclass
+from dman.utils.smartdataclasses import Wrapper, MISSING, wrapfield, wrappedclass
 
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-from dman.persistent.smartdataclasses import is_complete, overrideable
+from dman.utils.smartdataclasses import is_complete, overrideable
 
 
 if __name__ == '__main__':

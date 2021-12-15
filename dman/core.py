@@ -1,14 +1,14 @@
 import copy
 from pathlib import Path
-import time
 from dataclasses import field
 from datetime import datetime
 import os
-from dman.persistent.modelclasses import modelclass
+import textwrap
+from dman.persistent.modelclasses import mdict, modelclass
 from dman.persistent.serializables import serializable
-from dman.repository import Registry
+from dman.repository import track
 from dman.persistent.configclasses import dictsection, section, configclass
-from dman.utils import get_git_hash, get_git_url, list_files
+from dman.utils.git import get_git_hash, get_git_url
 
 
 LABEL_DT_STRING = "%y%m%d%H%M%S"
@@ -19,8 +19,11 @@ DESCR_DT_STRING = "%d/%m/%y %H:%M:%S"
 class DateTime(datetime):
     serialize_format = DESCR_DT_STRING
 
-    def __serialize__(self):
+    def __repr__(self):
         return self.strftime(self.serialize_format)
+
+    def __serialize__(self):
+        return self.__repr__()
     
     @classmethod
     def __deserialize__(cls, serialized: str):
@@ -58,6 +61,19 @@ class Stamp:
     @property
     def label(self):
         return self.info.name
+    
+    def display(self, indent=''):
+        print(indent+f'info on stamp "{self.info.name}"')
+        if len(self.info.msg) > 0:
+            print(indent+f'  - note: {self.info.msg}')
+        print(indent+f'  - hash: {self.stamp.hash}')
+        print(indent+f'  - time: {self.stamp.time}')
+        if len(self.dependencies) > 0:
+            print(indent+f'stamp dependencies:')
+            for k, dep in self.dependencies.items():
+                dep: Dependency = dep
+                dep.display(indent='  ', head = '- ')
+        
 
 @modelclass(name='_dman__dep', compact=True)
 class Dependency:
@@ -80,32 +96,58 @@ class Dependency:
     def update(self):
         self.hash = get_git_hash(cwd=self.path)
 
+    def display(self, indent: str = '', head: str = None):
+        if head is None:
+            print(f'info on dependency "{self.name}"')
+        else:
+            print(indent+head+f'{self.name}')
+        print(indent+f'  path: {self.path}')
+        print(indent+f'  repo: {self.remote}')
+        print(indent+f'  hash: {self.hash}')
+
 
 class DMan:
     def __init__(self, base: os.PathLike = None):
-        self.stamps = Registry.load('stamps', gitignore=False, base=base)
-        self.dependencies = Registry.load('dependencies', gitignore=False, base=base)
+        self.stamps = mdict(subdir='stamps', store_by_key=True)
+        self.__stamps = DMan.track('stamps', default=self.stamps, base=base)
+        self.dependencies = mdict(subdir='dependencies', store_by_key=True)
+        self.__dependencies = DMan.track('dependencies', default=self.dependencies, base=base)
+
+    @staticmethod
+    def track(key: str, default = None, base: os.PathLike = None):
+        return track(key, default=default, generator=None, cluster=False, gitignore=False, base=base)
     
-    def stamp(self, msg: str = ''):
-        stamp = Stamp(info=Stamp.Info(msg=msg), dependencies=self.minimal_dependencies)
-        self.stamps.record(stamp.label, stamp, gitignore=False)
+    def stamp(self, name: str = None, msg: str = ''):
+        info = Stamp.Info(msg=msg)
+        if name:
+            info.name = name
+        stamp = Stamp(info=info, dependencies=self.minimal_dependencies)
+        self.stamps.record(stamp.label, stamp)
+        self.stamps['__latest__'] = stamp.label
+    
+    def latest(self):
+        return self.stamps.get('__latest__', None)
     
     @property
     def minimal_dependencies(self):
-        res = copy.deepcopy(self.dependencies.files)
+        res = copy.deepcopy(self.dependencies)
         return res
     
     def add_dependency(self, path: os.PathLike):
         if not os.path.exists(path):
             raise ValueError(f'could not find git repository at: {path}')
         dep = Dependency.from_path(path)
-        self.dependencies.files[dep.name] = dep
+        self.dependencies[dep.name] = dep
 
     def __enter__(self):
-        self.stamps = self.stamps.__enter__()
-        self.dependencies = self.dependencies.__enter__()
+        self.stamps = self.__stamps.__enter__()
+        self.dependencies = self.__dependencies.__enter__()
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.stamps.__exit__(exc_type, exc_val, exc_tb)
-        self.dependencies.__exit__(exc_type, exc_val, exc_tb)
+        # clean up latest
+        if self.latest() not in self.stamps:
+            self.stamps.pop('__latest__', None)
+            
+        self.__stamps.__exit__(exc_type, exc_val, exc_tb)
+        self.__dependencies.__exit__(exc_type, exc_val, exc_tb)

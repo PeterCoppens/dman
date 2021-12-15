@@ -1,6 +1,5 @@
 import os
 from dman.persistent.modelclasses import modelclass
-from dman.repository import Cache
 
 
 class RunFactory:

@@ -1,15 +1,15 @@
 from collections.abc import MutableMapping
 from dataclasses import dataclass, field, is_dataclass, fields
 import inspect
-from typing import Dict
 
-from dman.persistent.storeables import WRITE, READ, storeable
+from dman.persistent.storeables import WRITE, READ, Unreadable, storeable
 from dman.persistent.modelclasses import modelclass
-from dman.persistent.serializables import BaseContext, is_deserializable, is_serializable, ser_str2type, serializable, ser_type2str, serialize, deserialize
+from dman.persistent.serializables import BaseContext, is_serializable, ser_str2type, ser_type2str, serialize, deserialize
 from dman.persistent.record import Record
 
+import os
 import configparser
-from dman import sjson
+from dman.utils import sjson
 
 SECTION_ATTR = '__sec__type'
 SECTION_NAME = '__sec__name'
@@ -57,7 +57,7 @@ def section(cls=None, /, *, name: str = None, **kwargs):
     return wrap(cls)
 
 
-def configclass(cls=None, /, *, name: str = None):
+def configclass(cls=None, /, *, name: str = None, repr: bool = True):
     def wrap(cls):
         setattr(cls, Record.EXTENSION, getattr(cls, Record.EXTENSION, '.ini'))
 
@@ -72,7 +72,7 @@ def configclass(cls=None, /, *, name: str = None):
         if getattr(cls, READ, None) is None:
             setattr(cls, READ, _read__config)
 
-        return storeable(dataclass(cls), name=name)
+        return storeable(dataclass(cls, repr=repr), name=name)
 
     # See if we're being called as @configclass or @configclass().
     if cls is None:
@@ -101,6 +101,8 @@ def _write__config(self, path: str, serializer: BaseContext = None):
 @classmethod
 def _read__config(cls, path: str, context: BaseContext = None):
     cfg = configparser.ConfigParser()
+    if not os.path.exists(path):
+        return Unreadable(path, 'configclass')
     cfg.read(path)
 
     res = cls()

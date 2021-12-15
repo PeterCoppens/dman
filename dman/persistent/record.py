@@ -1,25 +1,14 @@
-import copy
 import os
 
 from dataclasses import asdict, dataclass, field, is_dataclass
-from pathlib import Path
-from tempfile import TemporaryDirectory
 from typing import Any
 import uuid
-from dman.persistent.serializables import deserialize, is_serializable, serializable, BaseContext, serialize
-from dman.persistent.smartdataclasses import AUTO, overrideable
-from dman.persistent.storeables import is_storeable, storeable_type, read, write, is_storeable_type
+from dman.persistent.serializables import deserialize, is_serializable, serializable, BaseContext, serialize, unserializable
+from dman.utils.smartdataclasses import AUTO, overrideable
+from dman.persistent.storeables import is_storeable, is_unreadable, storeable_type, read, unreadable, write, is_storeable_type
 
 
 REMOVE = '__remove__'
-
-
-class TemporaryContext(TemporaryDirectory):
-    def __enter__(self) -> 'RecordContext':
-        return RecordContext(super().__enter__())
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return super().__exit__(exc_type, exc_val, exc_tb)
 
 
 @dataclass
@@ -32,9 +21,11 @@ class RecordContext(BaseContext):
         if self.parent is None:
             raise RuntimeError('cannot track root repository')
         self.parent.open()
+        return self
 
     def untrack(self, *args, **kwargs):
         self.parent.clean()
+        return self
     
     def open(self):
         if not os.path.isdir(self.path):
@@ -130,7 +121,7 @@ class Unloaded:
 class Record:
     EXTENSION = '__ext__'
 
-    def __init__(self, content: Any, config: RecordConfig = None, preload: bool = False, context_options: dict = None):
+    def __init__(self, content: Any, config: RecordConfig = None, preload: bool = False):
         self._content = content
 
         if config is None:
@@ -139,10 +130,9 @@ class Record:
         self._evaluated = False
 
         self.preload = preload
-
-        if context_options is None:
-            context_options = dict()
-        self.context_options = context_options
+    
+    def isvalid(self):
+        return not is_unreadable(self._content)
 
     @property
     def config(self):
@@ -188,40 +178,28 @@ class Record:
         target = local.join(config.name)
         return local, target
     
-
     def __remove__(self, context: BaseContext):
         if isinstance(context, RecordContext):
             local, target = Record.__parse(self.config, context)
+            # remove all subfiles of content
+            remove(self.content, local)
+
             if os.path.exists(target.path):
-                # remove all subfiles of content
-                remove(self.content, local)
-                
                 # remove file itself
                 os.remove(target.path)
-                target.untrack(**self.context_options)
-
-                # clean up the subdir (if empty)
-                steps = Path(self.config.subdir).joinpath('_').parents
-                for step in steps:
-                    if step == '.': continue
-                    step_dir = context.join(step).path
-                    if len(os.listdir(step_dir)) == 0:
-                        os.rmdir(step_dir)
-                
-        
+            target.untrack()
 
     def __serialize__(self, context: BaseContext):
         sto_type = storeable_type(self._content)
+        local, target = Record.__parse(self.config, context)
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
             sto_type = unloaded.type
-            local = unloaded.context
         elif isinstance(context, RecordContext):
-            local, target = Record.__parse(self.config, context)
-            target.track(**self.context_options)
+            target.track()
             write(self._content, target.path, context=local)
         else:
-            raise RuntimeWarning(f'invalid context for serialization of record {self}')
+            return serialize(unserializable(self), context)
 
         res = {
             'config': serialize(self.config, content_only=True),
@@ -229,40 +207,32 @@ class Record:
         }
         if self.preload:
             res['preload'] = self.preload
-        if len(self.context_options) > 0:
-            res = res | self.context_options
         return res
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        serialized = copy.deepcopy(serialized)
+        config = deserialize(serialized.get('config', dict()), ser_type=RecordConfig)
+        sto_type = serialized.get('sto_type')
+        preload = serialized.get('preload', False)
 
-        config = deserialize(serialized.pop('config', dict()), ser_type=RecordConfig)
-        sto_type = serialized.pop('sto_type')
-        preload = serialized.pop('preload', False)
-        options = serialized
-
-        if not is_storeable_type(sto_type):
-            raise ValueError('record does not contain storeable type.')
-
-        content = None
+        local, target = Record.__parse(config, context)
+        content = unreadable(target.path, type=sto_type)
         if isinstance(context, RecordContext):
-            local, target = Record.__parse(config, context)
             if preload:
                 content = read(sto_type, target.path, context=local)
             else:
                 content = Unloaded(sto_type, target.path, local)
 
-        return cls(content=content, config=config, preload=preload, context_options=options)
+        return cls(content=content, config=config, preload=preload)
 
 
-def record(content: Any, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False, **options):
+def record(content: Any, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False):
     if name != AUTO and (stem != AUTO or suffix != AUTO):
         raise ValueError('either provide a name or suffix + stem.')
 
     config = RecordConfig.from_name(name=name, subdir=subdir)
     config = config << RecordConfig(stem=stem, suffix=suffix)
-    return Record(content, config, preload, options)
+    return Record(content, config, preload)
 
 
 def is_removable(obj):

@@ -1,7 +1,7 @@
 from dman.persistent.serializables import serializable, serialize, deserialize
 from dataclasses import dataclass
 from typing import List, Dict, Tuple
-from dman import sjson
+from dman.utils import sjson
 
 if __name__ == '__main__':
     @serializable

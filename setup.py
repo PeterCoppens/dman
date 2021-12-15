@@ -23,7 +23,7 @@ setuptools.setup(
     description="Toolbox for experimental data management in Python",
     packages=setuptools.find_packages(),
     python_requires='>=3.8',
-    scripts=['bin/dstamp'],
+    scripts=['bin/dman'],
     cmdclass={
         'clean': CleanCommand,
     }
