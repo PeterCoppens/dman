@@ -1,5 +1,5 @@
 from dman.core import DMan, Stamp
-from dman.utils import list_files
+from dman.utils.display import list_files
 
 from tempfile import TemporaryDirectory
 

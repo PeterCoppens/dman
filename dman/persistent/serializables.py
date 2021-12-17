@@ -1,7 +1,11 @@
 import copy
 import inspect
 
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import dataclass, field, fields, is_dataclass
+import sys
+import traceback
+
+from dman.utils import sjson
 
 
 SER_TYPE = '_ser__type'
@@ -36,33 +40,88 @@ def register_serializable(name: str, type):
     __serializable_types[name] = type
 
 
-@dataclass
-class Unserializable:
-    type: str
+@dataclass(repr=False)
+class Invalid:
+    type: str = field(default='null')
+    info: str = field(default='')
+
+    @classmethod
+    def at_error(cls, type: str, info: str):
+        exc_tp, exc_vl, exc_tb = sys.exc_info()
+        result = info + '\n\n'
+        tb_str = traceback.format_tb(exc_tb)
+        if len(tb_str) > 1:
+            for tb in tb_str[1:]:
+                result += tb
+        else:
+            result += tb_str
+        result += f'{exc_tp.__name__}: {exc_vl}'
+        return cls(type=type, info=result)
+    
+    @classmethod
+    def from_dict(cls, type: str, info: str, dct: dict):
+        result = info + '\n\n'
+        result += sjson.dumps(dct, indent=4)
+        return cls(type=type, info=result)
+
+    def __serialize__(self):
+        res = {'type': self.type}
+        if len(self.info) > 0:
+            res['info'] = self.info
+        return res
+
+    @classmethod
+    def __deserialize__(cls, serialized: dict):
+        return cls(type=serialized.get('type', None), info=serialized.get('info', ''))
+    
+    def __repr__(self):
+        return f'Invalid: {self.type}'
+
+    def __str__(self):
+        result = f'Invalid: {self.type}\n\n'
+        result += self.info
+        return result
+
+def invalid(type: str, info: str = '', error: Exception = None):
+    return Invalid(type, info, error)
 
 
-def unserializable(type: str):
-    return Unserializable(type)
+def isvalid(obj):
+    return not isinstance(obj, Invalid)
 
 
-def is_unserializable(obj):
-    return isinstance(obj, Unserializable)
+class ValidationError(BaseException): ...
+
+def validate(obj, msg: str = 'Could not validate object'):
+    if isvalid(obj):
+        return
+    raise ValidationError(msg, str(obj))
 
 
 def serialize(ser, context: 'BaseContext' = None, content_only: bool = False):
     if not is_serializable(ser):
-        return serialize(Unserializable(ser), context, content_only=content_only)
+        result = Invalid(type=ser, info=f'Unserializable type: {repr(ser)}')
+        if context: context.error(str(result))
+        return serialize(result, context, content_only=content_only)
 
     ser_method = getattr(ser, SERIALIZE, lambda: {})
     sig = inspect.signature(ser_method)
-    if len(sig.parameters) == 0:
-        content = ser_method()
-    elif len(sig.parameters) == 1:
-        if context is None:
-            context = BaseContext
-        content = ser_method(context)
-    else:
-        return serialize(Unserializable(ser), context, content_only=content_only)
+    try:
+        if len(sig.parameters) == 0:
+            content = ser_method()
+        elif len(sig.parameters) == 1:
+            if context is None:
+                context = BaseContext
+            content = ser_method(context)
+        else:
+            result = Invalid(type=ser, info='Invalid inner serialize method')
+            if context: context.error(result.info)
+            return serialize(result, context, content_only=content_only)
+    except Exception:
+        info = 'Error during serialization:'
+        result = Invalid.at_error(ser, info=info)
+        if context: context.error(result.info)
+        return serialize(result, context, content_only=content_only)
 
     if content_only:
         return content
@@ -74,7 +133,10 @@ def deserialize(serialized: dict, context: 'BaseContext' = None, ser_type=None):
     if ser_type is None:
         ser_type = serialized.get(SER_TYPE, None)
         if ser_type not in __serializable_types:
-            return Unserializable(ser_type)
+            info = f'Unserializable type: {ser_type}'
+            result = Invalid.from_dict(type=ser_type, info=info, dct=serialized)
+            if context: context.error(result.info)
+            return result
         serialized = serialized.get(SER_CONTENT, {})
 
     if isinstance(ser_type, str):
@@ -89,7 +151,10 @@ def deserialize(serialized: dict, context: 'BaseContext' = None, ser_type=None):
             context = BaseContext
         return ser_method(serialized, context)
     else:
-        return Unserializable(ser_type)
+        info = f'Invalid inner serialize method'
+        result = Invalid.from_dict(type=ser_type, info=info, dct=serialized)
+        if context: context.error(result.info)
+        return result
 
 
 def _serialize__dataclass(self, context: 'BaseContext' = None):
@@ -174,12 +239,11 @@ def serializable(cls=None, /, *, name: str = None, ignore_dataclass: bool = Fals
     return wrap(cls)
 
 
-Unserializable = serializable(Unserializable, name='__unserializable')
+Invalid = serializable(Invalid, name='__unserializable')
 
 
 class BaseContext:
-    def track(self, *args, **kwargs):
-        return
-    
-    def untrack(self, *args, **kwargs):
-        return
+    def track(self, *args, **kwargs): ...
+    def untrack(self, *args, **kwargs): ...
+    def error(self, msg: str): ...
+    def log(self, msg: str): ...

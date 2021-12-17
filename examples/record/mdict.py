@@ -1,3 +1,4 @@
+import os
 from tempfile import TemporaryDirectory
 from dman.persistent.modelclasses import mdict, serialize, deserialize
 from dman.utils import sjson
@@ -64,7 +65,16 @@ if __name__ == '__main__':
         dct.record('other', TestSto(name='other'))
         ser = serialize(dct, ctx)
         print(sjson.dumps(ser, indent=4))
+
+        print('remove test.tst ...')
+        os.remove(os.path.join(base, 'stamps', 'test.tst'))
         list_files(ctx.path)
 
+        dct = deserialize(ser, ctx)
+        print('after de-serialization: ', repr(dct.get('test', None)))
+        ser = serialize(dct, ctx)
+        dct = deserialize(ser, ctx)
+        print('after re-serialization: ', repr(dct.get('test', None)))
+        
 
 

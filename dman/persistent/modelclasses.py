@@ -243,7 +243,7 @@ class _blist(MutableSequence):
 
         for itm in self:
             if isinstance(itm, Record):
-                if itm.isvalid():
+                if itm.exists():
                     lst.append({RECORD_FIELD: True, **serialize(itm, context)})
                 else:
                     self.unused.append(itm)
@@ -400,7 +400,7 @@ class _bdict(MutableMapping):
 
         for k, itm in self.store.items():
             if isinstance(itm, Record):
-                if itm.isvalid():
+                if itm.exists():
                     dct[k] = ({
                         RECORD_FIELD: True, 
                         **serialize(itm, context, content_only=True)

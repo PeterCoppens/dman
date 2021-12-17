@@ -3,9 +3,9 @@ import os
 from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any
 import uuid
-from dman.persistent.serializables import deserialize, is_serializable, serializable, BaseContext, serialize, unserializable
+from dman.persistent.serializables import deserialize, is_serializable, serializable, BaseContext, serialize, invalid
 from dman.utils.smartdataclasses import AUTO, overrideable
-from dman.persistent.storeables import is_storeable, is_unreadable, storeable_type, read, unreadable, write, is_storeable_type
+from dman.persistent.storeables import NoFile, is_storeable, storeable_type, read, unreadable, write
 
 
 REMOVE = '__remove__'
@@ -131,8 +131,8 @@ class Record:
 
         self.preload = preload
     
-    def isvalid(self):
-        return not is_unreadable(self._content)
+    def exists(self):
+        return not isinstance(self._content, NoFile)
 
     @property
     def config(self):
@@ -199,7 +199,7 @@ class Record:
             target.track()
             write(self._content, target.path, context=local)
         else:
-            return serialize(unserializable(self), context)
+            return serialize(invalid(self), context)
 
         res = {
             'config': serialize(self.config, content_only=True),

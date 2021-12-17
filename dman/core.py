@@ -3,7 +3,6 @@ from pathlib import Path
 from dataclasses import field
 from datetime import datetime
 import os
-import textwrap
 from dman.persistent.modelclasses import mdict, modelclass
 from dman.persistent.serializables import serializable
 from dman.repository import track

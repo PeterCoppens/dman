@@ -5,6 +5,7 @@ import logging
 import os
 
 from dman.core import DMan, Stamp, Dependency
+from dman.persistent.serializables import isvalid
 from dman.persistent.storeables import Unreadable
 from dman.repository import get_root_path
 from dman.utils.git import check_git_committed
@@ -83,7 +84,7 @@ def main():
                 logging.error(f'stamp {self.label} does not exist')
                 return None
             stamp: Stamp = dman.stamps[self.label]
-            if isinstance(stamp, Unreadable):
+            if not isvalid(stamp):
                 logging.error(f'stamp {self.label} does not exist')
                 return None
             return stamp
@@ -135,12 +136,17 @@ def main():
     def latest_stamp(_):
         with DMan() as dman:
             stamp: Stamp = dman.stamps.get(dman.latest(), None)
-            if stamp and not isinstance(stamp, Unreadable):
-                stamp.display()
+            if stamp:
+                if isvalid(stamp):
+                    stamp.display()
+                else:
+                    logging.error('the latest stamp is invalid')
                 return
             if '__latest__' in dman.stamps:
                 del dman.stamps['__latest__']
-            logging.error('there are no stamps')
+                logging.error('no latest stamp could be found')
+                return
+            logging.error('the latest stamp is invalid')
 
     latest_stamp_parser.set_defaults(execute=latest_stamp)
 
