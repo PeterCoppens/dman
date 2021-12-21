@@ -9,7 +9,7 @@ from dataclasses import MISSING, fields
 from dman.utils.smartdataclasses import AUTO, Wrapper, wrappedclass, WrappedField, attr_wrapper, attr_wrapped_field
 from dman.persistent.storeables import is_storeable, storeable
 from dman.persistent.record import Record, RecordConfig, record, REMOVE, remove
-from dman.persistent.serializables import SERIALIZE, DESERIALIZE, _deserialize__dataclass__inner, _serialize__dataclass__inner, NO_SERIALIZE
+from dman.persistent.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE
 from dman.persistent.serializables import BaseContext, serialize, deserialize, is_serializable, is_deserializable, serializable
 
 
@@ -92,7 +92,12 @@ def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, 
         setattr(res, SERIALIZE, ser)
     if getattr(res, DESERIALIZE, None) is None:
         setattr(res, DESERIALIZE, dser)
-        setattr(res, '_deserialize__dataclass__inner', _deserialize__dataclass__inner)
+    
+    post_init = getattr(res, '__post_init__', None)
+    setattr(
+        res, '__post_init__', 
+        lambda self: _post__init__modelclass(self, base=post_init)
+    )
 
     result = serializable(res, name=name)
     if as_storeable:
@@ -102,6 +107,26 @@ def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, 
 
 def recordfields(obj):
     return getattr(obj, STO_FIELD, [])
+
+
+def _post__init__modelclass(self, base = None):
+    for f in fields(self):
+        if f.name not in getattr(self, NO_SERIALIZE, []) \
+            and f.name in recordfields(self):
+
+            # wrap all record fields in records
+            value = getattr(self, attr_wrapped_field(f.name))      
+            if isinstance(value, Record):
+                continue
+
+            recwrapper: RecordWrapper = getattr(
+                self, attr_wrapper(f.name)
+            )
+            record = recwrapper.build(value)
+            setattr(self, attr_wrapped_field(f.name), record)
+
+    if base:
+        base(self)
 
 
 def _remove__modelclass(self, context: BaseContext = None):
@@ -120,45 +145,22 @@ def _serialize__modelclass_content_only(self, context: BaseContext = None):
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             if f.name in recordfields(self):
-                value = getattr(self, attr_wrapped_field(
-                    f.name))      # wrap the private value
-                if isinstance(value, Record):
-                    record = value
-                else:
-                    recwrapper: RecordWrapper = getattr(
-                        self, attr_wrapper(f.name))
-                    record = recwrapper.build(value)
-                res[f.name] = {
-                    RECORD_FIELD: True,
-                    **serialize(record, context, content_only=True)
-                }
+                value = getattr(self, attr_wrapped_field(f.name))
             else:
-                value = getattr(self, f.name)
-                if is_serializable(value):
-                    res[f.name] = serialize(value, context, content_only=True)
-                else:
-                    res[f.name] = _serialize__dataclass__inner(
-                        getattr(self, f.name), context
-                    )
+                value = getattr(self, f.name)        
+            res[f.name] = serialize(value, context, content_only=True)
 
     return res
 
 
 @classmethod
 def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseContext):
-    processed = copy.deepcopy(serialized)
+    processed = dict()
     for f in fields(cls):
-        v = processed.get(f.name, None)
-        if v is None:
+        value = serialized.get(f.name, None)
+        if value is None:
             continue
-        if isinstance(v, dict) and v.get(RECORD_FIELD, False):
-            rec = deserialize(v, context, ser_type=Record)
-            processed[f.name] = rec
-        elif is_serializable(f.type):
-            processed[f.name] = deserialize(v, context, ser_type=f.type)
-        else:
-            processed[f.name] = getattr(
-                cls, '_deserialize__dataclass__inner')(v, context)
+        processed[f.name] = deserialize(value, context, ser_type=f.type)
 
     return cls(**processed)
 
@@ -168,36 +170,19 @@ def _serialize__modelclass(self, context: BaseContext = None):
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             if f.name in recordfields(self):
-                value = getattr(self, attr_wrapped_field(
-                    f.name))      # wrap the private value
-                if isinstance(value, Record):
-                    record = value
-                else:
-                    recwrapper: RecordWrapper = getattr(
-                        self, attr_wrapper(f.name))
-                    record = recwrapper.build(value)
-                res[f.name] = {
-                    RECORD_FIELD: True,
-                    **serialize(record, context, content_only=True)
-                }
+                value = getattr(self, attr_wrapped_field(f.name))
             else:
-                res[f.name] = _serialize__dataclass__inner(
-                    getattr(self, f.name), context
-                )
+                value = getattr(self, f.name)
+            res[f.name] = serialize(value, context)
                     
     return res
 
 
 @classmethod
 def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
-    processed = copy.deepcopy(serialized)
-    for k, v in processed.items():
-        if isinstance(v, dict) and v.get(RECORD_FIELD, False):
-            rec = deserialize(v, context, ser_type=Record)
-            processed[k] = rec
-        else:
-            processed[k] = getattr(
-                cls, '_deserialize__dataclass__inner')(v, context)
+    processed = dict()
+    for k, v in serialized.items():
+        processed[k] = deserialize(v, context)
 
     return cls(**processed)
 
@@ -244,13 +229,11 @@ class _blist(MutableSequence):
         for itm in self:
             if isinstance(itm, Record):
                 if itm.exists():
-                    lst.append({RECORD_FIELD: True, **serialize(itm, context)})
+                    lst.append(serialize(itm, context))
                 else:
                     self.unused.append(itm)
-            elif is_serializable(itm):
-                lst.append(serialize(itm))
             else:
-                lst.append(itm)
+                lst.append(serialize(itm, context))
 
         for itm in self.unused:
             remove(itm, context)
@@ -267,14 +250,7 @@ class _blist(MutableSequence):
         res = cls(subdir=subdir, preload=preload)
 
         for itm in lst:
-            if isinstance(itm, dict) and is_deserializable(itm):
-                if itm.get(RECORD_FIELD, False):
-                    rec: Record = deserialize(itm, context)
-                    res.append(rec)
-                else:
-                    res.append(deserialize(itm, context))
-            else:
-                res.append(itm)
+            res.append(deserialize(itm, context))
 
         return res
 
@@ -401,16 +377,11 @@ class _bdict(MutableMapping):
         for k, itm in self.store.items():
             if isinstance(itm, Record):
                 if itm.exists():
-                    dct[k] = ({
-                        RECORD_FIELD: True, 
-                        **serialize(itm, context, content_only=True)
-                    })
+                    dct[k] = serialize(itm, context)
                 else:
                     self.unused.append(itm)
-            elif is_serializable(itm):
-                dct[k] = serialize(itm, context)
             else:
-                dct[k] = itm
+                dct[k] = serialize(itm, context)
 
         for itm in self.unused:
             remove(itm, context)
@@ -430,13 +401,7 @@ class _bdict(MutableMapping):
         )
 
         for k, v in dct.items():
-            if isinstance(v, dict):
-                res[k] = deserialize(
-                    v, context, 
-                    ser_type=Record if v.get(RECORD_FIELD, False) else None
-                )
-            else:
-                res[k] = v
+            res[k] = deserialize(v, context)
 
         return res
 

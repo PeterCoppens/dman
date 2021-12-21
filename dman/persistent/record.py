@@ -3,7 +3,7 @@ import os
 from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any
 import uuid
-from dman.persistent.serializables import deserialize, is_serializable, serializable, BaseContext, serialize, invalid
+from dman.persistent.serializables import Unserializable, deserialize, is_serializable, serializable, BaseContext, serialize
 from dman.utils.smartdataclasses import AUTO, overrideable
 from dman.persistent.storeables import NoFile, is_storeable, storeable_type, read, unreadable, write
 
@@ -199,7 +199,7 @@ class Record:
             target.track()
             write(self._content, target.path, context=local)
         else:
-            return serialize(invalid(self), context)
+            return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
 
         res = {
             'config': serialize(self.config, content_only=True),

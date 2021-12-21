@@ -10,5 +10,14 @@ def dump(obj, *args, **kwargs):
     return json.dump(obj, *args, default=default, **kwargs)
 
 
+atomic_types = (
+    str, int, float, bool
+)
+
+
+def atomic_type(obj):
+    return isinstance(obj, atomic_types)
+
+
 load = json.load
 loads = json.loads

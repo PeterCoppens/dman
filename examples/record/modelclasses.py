@@ -10,6 +10,10 @@ from dataclasses import field
 
 from dman.utils import sjson
 
+@modelclass
+class Other:
+    a: str
+
 
 @modelclass(storeable=True, compact=True)
 class Foo:
@@ -20,6 +24,7 @@ class Foo:
     c: TestSto = recordfield(stem='field_c')
     # if a field is serializable and storeable you can avoid storage by making it a normal field
     d: TestSto = field()
+    e: dict = field(default_factory=dict)
 
     def __write__(self, path, context):
         print(f'..writing foo to {path}')
@@ -44,7 +49,8 @@ if __name__ == '__main__':
     print('\n====== model class tests =======\n')
     with TemporaryDirectory() as base:
         ctx = RecordContext(base)
-        foo = Foo(a='a', b=TestSto('b'), c=TestSto('c'), d=TestSto('d'))
+        foo = Foo(a=Other('c'), b=TestSto('b'), c=TestSto('c'), d=TestSto('d'))
+        foo.e['test'] = 'hello'
         ser = serialize(foo, ctx)
         print(sjson.dumps(ser, indent=4))
 

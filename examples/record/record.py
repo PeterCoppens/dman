@@ -88,13 +88,13 @@ if __name__ == '__main__':
         print(sjson.dumps(ser, indent=4))
         
         rec = deserialize(ser, ctx)
-        print('valid:', rec.isvalid())  # we have not loaded the file (so still assumes valid)
+        print('exists:', rec.exists())  # we have not loaded the file (so still assumes valid)
         ser = serialize(rec, ctx)
         print(sjson.dumps(ser, indent=4))
 
         rec = deserialize(ser, ctx)
         print(rec.content)
-        print('valid:', rec.isvalid())
+        print('exists:', rec.exists())
 
     input('\n >>> continue?')
 
@@ -109,7 +109,7 @@ if __name__ == '__main__':
         import os
         os.remove(os.path.join(base, 'test.txt'))
         rec = deserialize(ser, ctx)
-        print('valid: ', rec.isvalid())
+        print('exists: ', rec.exists())
 
     input('\n >>> continue?')
 

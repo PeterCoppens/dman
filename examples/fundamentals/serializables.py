@@ -1,6 +1,6 @@
 from dman.persistent.serializables import BaseContext, serializable, serialize, deserialize
 from dataclasses import dataclass
-from typing import List, Dict, Tuple
+from typing import List, Dict
 from dman.utils import sjson
 
 if __name__ == '__main__':
@@ -17,7 +17,6 @@ if __name__ == '__main__':
         b: Test
         c: List[Test]
         d: Dict[str, Test]
-        e: Tuple[Test]
     
     class Unusable:
         pass
@@ -25,6 +24,9 @@ if __name__ == '__main__':
     @serializable
     class UnusableError:
         def __serialize__(self):
+            self.wrong()
+
+        def wrong(self):
             raise ValueError('unusable')
 
     @serializable
@@ -35,20 +37,26 @@ if __name__ == '__main__':
 
     class PrintContext(BaseContext):
         def error(self, msg: str):
-            print('error:')
             print(msg)
+
+    print('basic str:', deserialize(serialize('a')))
+    print('basic int:', deserialize(serialize(25)))
+    print('list: ', deserialize(serialize([1, 'hello'])))
+    print('dict: ', deserialize(serialize({'a': 1, 'b': 'hello'})))
     
     test = Test('a', 5)
-    print(serialize(test))
-    print(deserialize(serialize(test)))
+    print('dataclass serialized:', serialize(test))
+    print('dataclass deserialized:', deserialize(serialize(test)))
 
-    foo = Foo('b', test, [test, test], {'a': test, 'b': test}, (test, test))
+    foo = Foo('b', test, [test, test], {'a': test, 'b': test})
     print(sjson.dumps(serialize(foo), indent=4))
     print(deserialize(serialize(foo)))
 
+    print('\n'*3)
     broken = Unusable()
-    print(serialize(broken, context=PrintContext()))
+    print(sjson.dumps(serialize(broken, context=PrintContext()), indent=4))
 
+    print('\n'*3)
     broken = Broken(a='a', b=Unusable())
     res = sjson.dumps(serialize(broken, context=PrintContext()), indent=4)
     print(res)
@@ -56,9 +64,11 @@ if __name__ == '__main__':
     res: Broken = deserialize(res)
     print(res)
 
+    print('\n'*3)
     broken = Broken(a='a', b=UnusableError())
     res = sjson.dumps(serialize(broken, context=PrintContext()), indent=4)
     print(res)
     res = sjson.loads(res)
     res: Broken = deserialize(res)
     print(res)
+    print(res.b)

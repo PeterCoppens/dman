@@ -5,7 +5,7 @@ from os import PathLike
 import os
 import traceback
 
-from dman.persistent.serializables import Invalid, is_serializable, serializable, serialize, deserialize, BaseContext, isvalid
+from dman.persistent.serializables import BaseInvalid, ExcUnserializable, Unserializable, is_serializable, serializable, serialize, deserialize, BaseContext, isvalid
 from dman.utils import sjson
 
 STO_TYPE = '_sto__type'
@@ -64,19 +64,23 @@ def storeable(cls=None, /, *, name: str = None, ignore_serializable: bool = None
 
 @storeable(name='__unreadable', ignore_serializable=True)
 @serializable(name='__unreadable')
-class Unreadable(Invalid):
+class Unreadable(Unserializable):
     def __init__(self, type: str = 'null', info: str = '', path: str = ''):
-        Invalid.__init__(self, type=type, info=f'{path}: {info}')
+        Unserializable.__init__(self, type=type, info=f'{path}: {info}')
+
+    def __write__(self, _: PathLike):
+        pass
 
     @classmethod
-    def at_error(cls, type: str = 'null', info: str = '', path: str = ''):
-        res = Invalid.at_error(type, info)
-        return cls(type=res.type, info=res.info, path=path)
-    
-    @classmethod
-    def from_dict(cls, type: str = 'null', info: str = '', path: str = '', dct: dict = None):
-        res = Invalid.from_dict(type, info, dct)
-        return cls(type=res.type, info=res.info, path=path)
+    def __read__(cls, path: PathLike):
+        return cls(path=path)
+
+
+@storeable(name='__exc_unreadable', ignore_serializable=True)
+@serializable(name='__exc_unreadable')
+class ExcUnreadable(ExcUnserializable):
+    def __init__(self, type: str = 'null', info: str = '', path: str = ''):
+        Unserializable.__init__(self, type=type, info=f'{path}: {info}')
 
     def __write__(self, _: PathLike):
         pass
@@ -88,7 +92,7 @@ class Unreadable(Invalid):
 
 @storeable(name='__no_file', ignore_serializable=True)
 @serializable(name='__no_file')
-class NoFile(Unreadable): ...
+class NoFile(ExcUnreadable): ...
 
 
 def unreadable(path: PathLike, type: str):
@@ -128,7 +132,7 @@ def write(storeable, path: PathLike, context: BaseContext = None):
             inner_write(path)
         elif len(sig.parameters) == 2:
             if context is None:
-                context = BaseContext
+                context = BaseContext()
             inner_write(path, context)    
         elif context: context.error('Invalid write method')
 
@@ -157,17 +161,17 @@ def read(type: str, path: PathLike, context: BaseContext = None):
             return inner_read(path)
         elif len(sig.parameters) == 2:
             if context is None:
-                context = BaseContext
+                context = BaseContext()
             return inner_read(path, context)
         else:
             result = Unreadable(type=type, info='Invalid read method', path=path)
             if context: context.error(str(result))
             return result
     except FileNotFoundError:
-            result = NoFile.at_error(type=type, info='File not found', path=path)
+            result = NoFile(type=type, info='File not found', path=path)
             if context: context.error(str(result))
             return result
     except Exception:
-        result = Unreadable.at_error(type=type, info='Invalid read method', path=path)
+        result = ExcUnreadable(type=type, info='Invalid read method', path=path)
         if context: context.error(str(result))
         return result
