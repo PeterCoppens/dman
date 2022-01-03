@@ -400,6 +400,11 @@ options                                                 target
     to omit it and leave the selection up to the ``record``. That way you
     will not accidentally re-use existing files. 
 
+.. note::
+
+    The ``dman.remove`` method supports deletion of the file(s) associated 
+    with a ``record``. A ``context`` needs to be provided to allow evaluation 
+    of the pointers registered in the ``record``. 
 
 Model Containers
 --------------------------------
@@ -417,7 +422,7 @@ further use.
 Model List
 ^^^^^^^^^^^^^
 
-Let us begin with the ``mlist`` container. We gain will be using the 
+Let us begin with the ``mlist`` container. We again will be using the 
 ``ManualFile`` class specified :ref:`here <manual-file-def>`.
 
 .. code-block:: python
@@ -519,10 +524,10 @@ depending on whether an index is passed).
 .. autofunction:: dman.mlist.record
     :noindex:
 
-We can also pass a ``subdir`` at this level, which overrides the
-value of ``subdir`` set during initialization. Similarly 
-we can again specify whether to ``preload`` the value.
-Now the ``name`` can also be specified. 
+We can also pass a ``subdir`` at this level, which is appended
+value of ``subdir`` set during initialization (which is ``'.''`` by default). 
+Similarly we can again specify whether to ``preload`` the value.
+Now the ``stem`` and ``suffix`` or ``name`` can also be specified. 
 
 So, below you can find an example giving an overview of these features
 
@@ -530,10 +535,251 @@ So, below you can find an example giving an overview of these features
 
     lst = mlist([1, 2], subdir='lst', preload=False, auto_clean=True)
     lst.append(ManualFile(value='stored in lst'))
-    lst.record(ManualFile(value='stored in root'), subdir='')
+    lst.record(ManualFile(value='stored in root'), subdir='../')
     lst.record(ManualFile(value='preloaded'), preload=True)
 
 You can repeat the steps from before the examine how the list is serialized. 
 
+.. note:: 
+
+    The ``mlist`` also supports item deletion (either through ``pop`` or ``del``). 
+    The files associated with the deleted record will be removed 
+    when the ``mlist`` is serialized again. You can access the records scheduled 
+    for removal by using ``lst.unused``. 
+
+    To clean the contents of the list you can use 
+    
+    .. code-block:: python
+
+        lst.clear()
+        serialize(lst, ctx)
+    
+    Specifically ``clear`` schedules all records in the ``mlist`` for removal.
+    When we serialize, the files are then actually removed.
 
 
+Model Dictionary 
+^^^^^^^^^^^^^^^^^^^
+
+The ``mdict`` container extends the classical ``dict`` and can contain 
+``storable`` types. The syntax is similar to that of ``mlist``. 
+We again will be using the ``ManualFile`` class specified :ref:`here <manual-file-def>`.
+
+.. code-block:: python
+
+    from dman import mdict, serialize, sjson
+    from dman import record_context
+    from dman.utils.display import list_files
+    from tempfile import TemporaryDirectory
+
+    dct = mdict()
+    dct['key'] = 'value'
+    dct['manual'] = ManualFile(value='hello world!')
+
+    with TemporaryDirectory() as base:
+        ctx = record_context(base)
+        ser = serialize(dct, ctx)
+
+        print(sjson.dumps(ser, indent=4))
+        list_files(base)
+
+
+The serialization looks like this
+
+.. code-block:: json
+
+    {
+        "_ser__type": "_ser__mdict",
+        "_ser__content": {
+            "store": {
+                "key": "value",
+                "manual": {
+                    "_ser__type": "_ser__record",
+                    "_ser__content": {
+                        "target": "e55aa3df-c3fd-408d-861d-b77015280382",
+                        "sto_type": "manual"
+                    }
+                }
+            }
+        }
+    }
+
+Similar to ``mlist``, ``store`` contains the string and then a dictionary,
+with specified type ``_ser__record``. It provides a pointer to the 
+file. The output of ``list_files`` is then:
+
+.. code-block:: text
+    
+    file tree of /tmp/tmpr6yrk1gv
+    >>> e55aa3df-c3fd-408d-861d-b77015280382
+
+    contents of /tmp/tmpr6yrk1gv/e55aa3df-c3fd-408d-861d-b77015280382
+    >>> hello world!
+
+We can access the record as follows:
+
+.. code-block:: python
+
+    rec = dct.store['manual']
+
+The loading behavior is analogous to the behavior for ``mlist``. 
+The additional options for initializing an ``mdict`` however slightly differ.
+
+.. autofunction:: dman.mdict.__init__
+    :noindex:
+
+We again have the option to set a ``subdir`` and to specify whether 
+values should be preloaded through ``preload``. Two other options are provided:
+``store_by_key`` and ``store_subdir``. These influence the place 
+where files are stored. We list all cases below for the ``mdict`` created 
+above. 
+
++--------------------------+--------------------------+---------------------------+
+|                          | ``store_by_key == True`` | ``store_by_key == False`` |
++--------------------------+--------------------------+---------------------------+
+| ``store_subdir == True`` | <base>/manual/manual     | <base>/manual/<uuid4>     |
++--------------------------+--------------------------+---------------------------+
+| ``store_subdir == False``| <base>/manual            | <base>/<uuid4>            |
++--------------------------+--------------------------+---------------------------+
+
+Here, ``<base>`` denotes the directory specified in the ``record_context``
+and ``<uuid4>`` depicts a unique automatic file name (e.g. ``e55aa3df-c3fd-408d-861d-b77015280382`` as above).
+Note that, if we additionally set ``subdir='test'`` then the effect of 
+the options are stacked. For example the top-left cell would 
+become ``<base>/test/manual/manual``. 
+
+All of these options can be overridden using the ``record`` method as with ``mlist``.
+We list the documentation below for completeness sake. Note that the value of ``subdir``
+passed there is also stacked. So continuing the example above, 
+``record(..., subdir='end')`` gives ``<base>/test/manual/manual/end``. 
+
+.. autofunction:: dman.mdict.record
+    :noindex:
+
+The options are mostly analogous to those for ``mlist.record``. 
+
+.. note:: 
+    
+    The ``mdict`` also supports item deletion through ``del``.
+    Similarly to how it worked for ``mlist``, the files associated with the 
+    deleted record will be removed when the ``mdict`` is serialized again. 
+    When a key previously containing a record is overridden, then 
+    the old record will similarly be scheduled for removal. The records
+    scheduled for removal are stored in ``dct.unused``. 
+
+    Similarly to ``mlist``, ``mdict`` also has a ``clear`` method. 
+
+
+Model Classes
+^^^^^^^^^^^^^^^
+
+We finally consider a generalization of a serializable ``dataclass``
+that has ``storable`` types as fields. 
+
+We can define a ``modelclass`` as follows:
+
+.. code-block:: python
+
+    from dman import modelclass, record_context, serialize, sjson
+    from tempfile import TemporaryDirectory
+
+    @modelclass(name='model')
+    class Model:
+        name: str
+        content: ManualFile
+
+    with TemporaryDirectory() as base:
+        ctx = record_context(base)
+        model = Model(name='test', content=ManualFile(value='hello world!'))
+        ser = serialize(model, ctx)
+        print(sjson.dumps(ser, indent=4))
+
+The serialization then looks as follows
+
+.. code-block:: json
+
+    {
+        "_ser__type": "model",
+        "_ser__content": {
+            "name": "test",
+            "content": {
+                "_ser__type": "_ser__record",
+                "_ser__content": {
+                    "target": "1a3c0e93-f20d-438f-a6dc-b23acdde5202",
+                    "sto_type": "manual"
+                }
+            }
+        }
+    }
+
+Once again, we can see that the ``storable`` has automatically been wrapped 
+in a ``record`` for storage. 
+
+The way this is done is through a ``recordfield``. The same behavior is recovered by 
+using 
+
+.. code-block:: python
+
+    from dman import recordfield
+
+    @modelclass(name='model')
+    class Model:
+        name: str
+        content: ManualFile = recordfield()
+
+The ``recordfield`` method has similar arguments to the ``record`` methods
+for ``mlist`` and ``mdict``
+
+.. autofunction:: dman.recordfield
+    :noindex:
+
+The ``modelclass`` decorator also has all the options that ``dataclass`` 
+has. 
+
+.. autofunction:: dman.modelclass
+    :noindex:
+
+Setting ``compact=True`` in the above example results in the following serialization
+
+.. code-block:: json
+
+    {
+        "_ser__type": "model",
+        "_ser__content": {
+            "name": "test",
+            "content": {
+                "target": "1a3c0e93-f20d-438f-a6dc-b23acdde5202",
+                "sto_type": "manual"
+            }
+        }
+    }
+
+.. warning::
+    
+    Usage of ``compact`` is not recommended. Serialization 
+    should always work. When deserializing however, if the 
+    field did not have the type specified in the ``modelclass``
+    definition, the resulting value will be invalid. 
+
+.. note::
+
+    It is possible for an object to be both ``serializable``
+    and ``storable``. When a field is specified with a 
+    ``storable`` type it will automatically be wrapped in a ``recordfield``.
+    This can be avoided.
+
+    .. code-block:: python
+
+        from dman import recordfield, modelclass, field
+
+        @modelclass(name='field', storable=True)
+        class Field:
+            value: str
+
+        @modelclass(name='model')
+        class Model:
+            first: Field
+            second: Field = field()
+        
+    When serializing the second field will be serialized, while the first 
+    will be stored in a file. 

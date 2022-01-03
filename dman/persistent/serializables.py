@@ -1,6 +1,6 @@
 import inspect
 
-from dataclasses import dataclass, field, fields, is_dataclass
+from dataclasses import MISSING, dataclass, field, fields, is_dataclass
 import sys
 import traceback
 from typing import List
@@ -176,33 +176,16 @@ def serialize(ser, context: 'BaseContext' = None, content_only: bool = False):
     """
     if isinstance(ser, (list, tuple)):
         return _serialize__list(ser, context)
-    elif isinstance(ser, dict):
+        
+    if isinstance(ser, dict):
         return _serialize__dict(ser, context)
-    elif sjson.atomic_type(ser):
-        return ser
 
-    if not is_serializable(ser):
-        result = Unserializable(type=ser, info=f'Unserializable type: {repr(ser)}.')
-        if context: context.error(str(result))
-        return serialize(result, context, content_only=content_only)
+    if sjson.atomic_type(ser):
+        return _serialize__atomic(ser, context)
 
-    ser_method = getattr(ser, SERIALIZE, lambda: {})
-    sig = inspect.signature(ser_method)
-    try:
-        if len(sig.parameters) == 0:
-            content = ser_method()
-        elif len(sig.parameters) == 1:
-            if context is None:
-                context = BaseContext()
-            content = ser_method(context)
-        else:
-            result = Unserializable(type=ser, info='Invalid inner serialize method.')
-            if context: context.error(result.info)
-            return serialize(result, context, content_only=content_only)
-    except Exception:
-        result = ExcUnserializable(type=ser, info='Error during serialization:')
-        if context: context.error(msg=result.info)
-        return serialize(result, context, content_only=content_only)
+    content = _serialize__object(ser, context) 
+    if isinstance(content, Unserializable):
+        return serialize(content, context, content_only=False)
 
     if content_only:
         return content
@@ -210,14 +193,36 @@ def serialize(ser, context: 'BaseContext' = None, content_only: bool = False):
     return {SER_TYPE: getattr(ser, SER_TYPE), SER_CONTENT: content}
 
 
+@dataclass
 class Undeserializable(Unserializable):
+    serialized: dict = None
+
     def __repr__(self):
         return f'Undeserializable: {self.type}'
+    
+    def __str__(self):
+        res = super().__str__()
+        if self.serialized:
+            res += '\n'
+            res += 'Serialized: \n'
+            res += textwrap.indent(sjson.dumps(self.serialized), ' '*4)
+        return res
 
 
+@dataclass
 class ExcUndeserializable(ExcUnserializable):
+    serialized: dict = None
+
     def __repr__(self):
         return f'Undeserializable: {self.type}'
+
+    def __str__(self):
+        res = super().__str__()
+        if self.serialized:
+            res += '\n'
+            res += 'Serialized: \n'
+            res += textwrap.indent(sjson.dumps(self.serialized), ' '*4)
+        return res
 
 
 def deserialize(serialized, context: 'BaseContext' = None, ser_type=None):
@@ -238,44 +243,90 @@ def deserialize(serialized, context: 'BaseContext' = None, ser_type=None):
     if ser_type is None:
         if isinstance(serialized, (list, tuple)):
             return _deserialize__list(list, serialized, context)
-        
+
         if sjson.atomic_type(serialized):
-            return serialized
-    
+            return _deserialize__atomic(serialized, type(serialized), context)
+
         if not isinstance(serialized, dict):
             exc = Undeserializable(type=ser_type, 
-                info=f'Unexpected type for serialized: {type(serialized)}. Expected either list, tuple, atomic type or dict.'
+                info=f'Unexpected type for serialized: {type(serialized)}. \
+                    Expected either list, tuple, atomic type or dict.'
             )
             context.error(exc)
             return exc
-
-        ser_type = serialized.get(SER_TYPE, None)
-        if ser_type is None:
+            
+        ser_type = serialized.get(SER_TYPE, MISSING)
+        if ser_type is MISSING:
             return _deserialize__dict(dict, serialized, context)
-        elif ser_type not in __serializable_types:
-            exc = Undeserializable(type=ser_type, info=f'Unregistered type.')
-            context.error(exc)
-            return exc
-        serialized = serialized.get(SER_CONTENT, {})
-    elif ser_type is dict:
+        else:
+            serialized = serialized.get(SER_CONTENT, {})
+            ser_type = __serializable_types.get(ser_type, None)
+            if ser_type is None:
+                exc = Undeserializable(type=ser_type, info=f'Unregistered type stored in serialized.', serialized=serialized)
+                context.error(exc)
+                return exc
+            return _deserialize__object(serialized, ser_type, context)
+
+    if ser_type is dict:
         return _deserialize__dict(dict, serialized, context)
 
-    if isinstance(ser_type, str):
+    if ser_type in (list, tuple):
+        return _deserialize__list(list, serialized, context)
+    
+    if isinstance(ser_type, str) and type(serialized) is not str:
         ser_type = __serializable_types.get(ser_type, None)
         if ser_type is None:
-            exc = Undeserializable(type=ser_type, info=f'Unregistered type.')
+            exc = Undeserializable(type=ser_type, info=f'Unregistered type provided as argument.', serialized=serialized)
             context.error(exc)
             return exc
-    
-    if ser_type in sjson.atomic_types:
-        exc = Undeserializable(type=ser_type, info=f'Specified atomic type, but got {type(serialized)}.')
-        context.error(exc)
-        return exc
+        return _deserialize__object(serialized, ser_type, context)
 
+    if ser_type in sjson.atomic_types:
+        return _deserialize__atomic(serialized, ser_type, context)
+    
+    return _deserialize__object(serialized, ser_type, context)
+
+
+def _serialize__object(ser, context: 'BaseContext'):
+    if not is_serializable(ser):
+        result = Unserializable(
+            type=ser, info=f'Unserializable type: {repr(ser)}.')
+        if context:
+            context.error(str(result))
+        return result
+
+    ser_method = getattr(ser, SERIALIZE, lambda: {})
+    sig = inspect.signature(ser_method)
     try:
-        ser_method = getattr(ser_type, DESERIALIZE, None)
+        if len(sig.parameters) == 0:
+            content = ser_method()
+        elif len(sig.parameters) == 1:
+            if context is None:
+                context = BaseContext()
+            content = ser_method(context)
+        else:
+            result = Unserializable(
+                type=ser, info='Invalid inner serialize method.')
+            if context:
+                context.error(result.info)
+            return result
+    except Exception:
+        result = ExcUnserializable(
+            type=ser, info='Error during serialization:')
+        if context:
+            context.error(msg=result.info)
+        return result
+    
+    return content
+
+
+
+def _deserialize__object(serialized, expected, context: 'BaseContext'):
+    try:
+        ser_method = getattr(expected, DESERIALIZE, None)
         if ser_method is None:
-            exc = Undeserializable(type=ser_type, info=f'Type has no deserialize method.')
+            exc = Undeserializable(
+                type=expected, info=f'Type {expected} has no deserialize method.', serialized=serialized)
             context.error(exc)
             return exc
 
@@ -285,13 +336,27 @@ def deserialize(serialized, context: 'BaseContext' = None, ser_type=None):
         elif len(sig.parameters) == 2:
             return ser_method(serialized, context)
         else:
-            exc = ExcUndeserializable(type=ser_type, info=f'Type has invalid deserialize method.')
+            exc = ExcUndeserializable(
+                type=expected, info=f'Type {expected} has invalid deserialize method.', serialized=serialized)
             context.error(exc)
             return exc
     except Exception:
-        exc = ExcUndeserializable(type=ser_type, info=f'Exception encountered while deserializing:')
+        exc = ExcUndeserializable(
+            type=expected, info=f'Exception encountered while deserializing {expected}:', serialized=serialized)
         context.error(exc)
         return exc
+
+
+def _serialize__atomic(ser, context: 'BaseContext'):
+    return ser
+
+
+def _deserialize__atomic(serialized, expected, context: 'BaseContext'):
+    if expected is not type(serialized):
+        exc = Undeserializable(type=expected, info=f'Specified type {expected}, but got {type(serialized)}.', serialized=serialized)
+        context.error(exc)
+        return exc
+    return serialized
 
 
 def _serialize__list(self: list, context: 'BaseContext' = None):

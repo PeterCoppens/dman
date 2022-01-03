@@ -3,6 +3,7 @@ import pytest
 
 
 from dman import serializable, serialize, deserialize, sjson, dataclass
+from dman.persistent.serializables import SER_TYPE, SER_CONTENT, ExcUndeserializable, Undeserializable
 
 
 atomics = [
@@ -80,12 +81,20 @@ def test_basic_classes(arg):
     assert(isinstance(res, arg))
     assert(res.value == make().value)
 
+    res = recreate_compact(make())
+    assert(isinstance(res, arg))
+    assert(res.value == make().value)
+
     lst = [make(), make(val='b')]
     tpl = (make(val='c'), make(val='d'))
     dct = {'a': make(val='r'), 'b': make(val='g')}
     assert(lst == recreate(lst))
     assert(dct == recreate(dct))
     assert(list(tpl) == recreate(tpl))
+    
+    assert(lst == recreate_compact(lst))
+    assert(dct == recreate_compact(dct))
+    assert(list(tpl) == recreate_compact(tpl))
 
 
 @dataclass
@@ -118,6 +127,9 @@ def test_complex_class(arg, at, col):
     res = recreate(make())
     assert(compare() == res)
 
+    res = recreate_compact(make())
+    assert(compare() == res)
+
 
 @pytest.mark.parametrize('base', [Dataclass])
 def test_nested_class(base):
@@ -146,3 +158,40 @@ def test_nested_class(base):
 
     res = recreate(nested)
     assert(nested == res)
+
+    res = recreate_compact(nested)
+    assert(nested == res)
+
+
+def test_fail_deserialize():
+    @serializable(name='__base')
+    @dataclass
+    class Base:
+        a: str = 'test'
+
+    serialized = {
+        SER_TYPE: '__base',
+        SER_CONTENT: {'b': 25}
+    }
+    res = deserialize(serialized)
+    assert(isinstance(res, ExcUndeserializable))
+
+    serialized = {
+        SER_TYPE: '__base',
+        SER_CONTENT: {'a': 'hello'}
+    }
+    
+    res = deserialize(serialized, ser_type=str)
+    assert(isinstance(res, Undeserializable))
+
+    serialized = {
+        SER_TYPE: '__base',
+        SER_CONTENT: {'a': {
+            SER_TYPE: '__base',
+            SER_CONTENT: {'b': 25}   
+        }}
+    }
+
+    res: Base = deserialize(serialized)
+    assert(isinstance(res.a, ExcUndeserializable))
+

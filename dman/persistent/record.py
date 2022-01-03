@@ -237,6 +237,14 @@ class Record:
         return cls(content=content, config=config, preload=preload)
 
 
+def recordconfig(*, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = ''):
+    if name != AUTO and (stem != AUTO or suffix != AUTO):
+        raise ValueError('either provide a name or suffix + stem.')
+
+    config = RecordConfig.from_name(name=name, subdir=subdir)
+    return config << RecordConfig(stem=stem, suffix=suffix)
+
+
 def record(content: Any, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False):
     """
     Wrap a storable object in a serializable record.
@@ -255,12 +263,7 @@ def record(content: Any, /, *, stem: str = AUTO, suffix: str = AUTO, name: str =
 
     :raises ValueError:     if a name and a stem and/or suffix are specified. 
     """
-    if name != AUTO and (stem != AUTO or suffix != AUTO):
-        raise ValueError('either provide a name or suffix + stem.')
-
-    config = RecordConfig.from_name(name=name, subdir=subdir)
-    config = config << RecordConfig(stem=stem, suffix=suffix)
-    return Record(content, config, preload)
+    return Record(content, recordconfig(stem=stem, suffix=suffix, name=name, subdir=subdir), preload)
 
 
 def is_removable(obj):

@@ -8,7 +8,7 @@ from dataclasses import MISSING, fields
 
 from dman.utils.smartdataclasses import AUTO, NO_STORE, Wrapper, wrappedclass, WrappedField, attr_wrapper, attr_wrapped_field
 from dman.persistent.storables import is_storable, storable
-from dman.persistent.record import Record, RecordConfig, record, REMOVE, remove
+from dman.persistent.record import Record, RecordConfig, record, REMOVE, remove, recordconfig
 from dman.persistent.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE
 from dman.persistent.serializables import BaseContext, serialize, deserialize, is_serializable, is_deserializable, serializable
 
@@ -55,6 +55,30 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
                 hash: bool = False, compare: bool = False, metadata=None,
                 stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False
                 ):
+    """
+    Return an object to identify modelclass fields.
+
+    All arguments of the ``field`` method from ``dataclasses`` are provided
+
+    :param default: is the default value of the field.
+    :param default_factory: is a 0-argument function called to initialize.
+    :param bool init:       Include in the class's __init__().
+    :param bool repr:       Include in the object's repr().
+    :param bool hash:       Include in the object's hash().
+    :param bool compare:    Include in comparison functions.
+    :param metadata:        Additional information.
+
+    Moreover, ``record`` specific options are provided
+    
+    :param str stem:        The stem of the file.
+    :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
+    :param str name:        The full name of the file.
+    :param str subdir:      The subdirectory in which to store te file. 
+    :param bool preload:    When ``True`` the file will be loaded during deserialization.
+
+    :raises ValueError: if both default and default_factory are specified.
+    :raises ValueError:     if a name and a stem and/or suffix are specified. 
+    """
 
     return WrappedField(
         RecordWrapper(stem=stem, suffix=suffix, name=name,
@@ -67,6 +91,26 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
 
 def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, order=False,
                unsafe_hash=False, frozen=False, storable: bool = False, compact: bool = False, **kwargs):
+    """
+    Returns the same class as was passed in, with dunder methods
+    added based on the fields defined in the class.
+
+    The class is automatically made ``serializable`` by adding ``__serialize__``
+    and ``__deserialize__``.
+
+    The arguments of the ``dataclass`` decorator are provided.
+
+    :param bool init: add an ``__init__`` method. 
+    :param bool repr: add a ``__repr__`` method. 
+    :param bool order: rich comparison dunder methods are added. 
+    :param bool unsafe_hash: add a ``__hash__`` method function.
+    :param bool frozen: fields may not be assigned to after instance creation.
+
+    Moreover two additional arguments are provided.
+
+    :param bool storable: make the class storable with a ``__write__`` and ``__read__``.
+    :param bool compact: do not include serializable types during serialization (results in more compact serializations).
+    """
 
     def wrap(cls):
         return _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, storable, compact, **kwargs)
@@ -259,15 +303,19 @@ class _blist(MutableSequence):
 
         return res
 
-    def record(self, value, idx: int = None, /, *, name: str = None, subdir: os.PathLike = AUTO, preload: bool = None):
+    def record(self, value, idx: int = None, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False):
         """
         Record a storable into this list.
 
-        :param value: The value to store.
-        :param int: The index at which to store it (if not specified, the value is appended).
-        :param str name: The file name to write the storable to during serialization.
-        :param str subdir: The subdirectory to store the file in.
-        :param bool preload: Preload the value during deserialization.
+        :param value:           The value to store.
+        :param int:             The index at which to store it (if not specified, the value is appended).
+        :param str stem:        The stem of a file.
+        :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
+        :param str name:        The full name of the file.
+        :param str subdir:      The subdirectory in which to store te file. 
+        :param bool preload:    When ``True`` the file will be loaded during deserialization.
+
+        :raises ValueError:     if a name and a stem and/or suffix are specified. 
         """
         if idx is None:
             self.append(value)
@@ -277,12 +325,8 @@ class _blist(MutableSequence):
 
         if is_storable(value):
             rec: Record = self.store.__getitem__(idx)
-
-            if name:
-                name_cfg = RecordConfig.from_name(name=name)
-                rec._config = rec._config << name_cfg
-            rec._config = rec._config << RecordConfig(subdir=subdir)
-                    
+            cfg = recordconfig(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._config.subdir, subdir))
+            rec._config = rec._config << cfg
             if preload:
                 rec.preload = preload
 
@@ -342,6 +386,16 @@ class _bdict(MutableMapping):
     def __init__(self, *, subdir: os.PathLike = '', preload: bool = False, 
             store_by_key: bool = False, store_subdir: bool = False, 
             auto_clean: bool = False, **kwargs):
+        """
+        Create an instance of this model dictionary.
+
+        :param str subdir: Specify the default sub-subdirectory for storables.
+        :param bool preload: Specify whether storables should be preloaded.
+        :param bool store_by_key: Sets the stem to the key in the dictionary. 
+        :param bool store_subdir: Stores files in dedicated subdir based on key. 
+        :param bool auto_clean: Automatically remove records with dangling pointers on serialization.
+        :param kwargs: Initial content of the dict.
+        """
         self.subdir = subdir
         self.preload = preload
         self.auto_clean = auto_clean
@@ -467,14 +521,25 @@ class _bdict(MutableMapping):
             value = self.__make_record__(key, value)
         self.store.__setitem__(key, value)
 
-    def record(self, key, value, /, *, name: str = None, subdir: os.PathLike = '', preload: bool = None):
+    def record(self, key, value, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False):  
+        """
+        Record a storable into this dict.
+
+        :param key: The key at which to store the value.
+        :param value: The value to store.
+        :param str stem:        The stem of a file.
+        :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
+        :param str name:        The full name of the file.
+        :param str subdir:      The subdirectory in which to store te file. 
+        :param bool preload:    When ``True`` the file will be loaded during deserialization.
+
+        :raises ValueError:     if a name and a stem and/or suffix are specified. 
+        """
         self.__setitem__(key, value)
         if is_storable(value):
             rec: Record = self.store.__getitem__(key)
-            if name:
-                rec._config = rec._config << RecordConfig.from_name(name=name)
-            if subdir:
-                rec._config = rec._config << RecordConfig(subdir=os.path.join(rec._config.subdir, subdir))
+            cfg = recordconfig(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._config.subdir, subdir))
+            rec._config = rec._config << cfg
             if preload:
                 rec.preload = preload
 

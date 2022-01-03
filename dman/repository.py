@@ -228,5 +228,3 @@ class Track:
 
 def track(key: str, *, default = MISSING, default_factory = MISSING, subdir: os.PathLike = '', cluster: bool = True, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
     return Track(key, default, default_factory, subdir, cluster, gitignore, generator, base)
-        
-
