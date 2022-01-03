@@ -15,14 +15,14 @@ class Other:
     a: str
 
 
-@modelclass(storeable=True, compact=True)
+@modelclass(storable=True, compact=True)
 class Foo:
     __ext__ = '.foo'
 
     a: str
     b: TestSto = recordfield(preload=True, repr=True)
     c: TestSto = recordfield(stem='field_c')
-    # if a field is serializable and storeable you can avoid storage by making it a normal field
+    # if a field is serializable and storable you can avoid storage by making it a normal field
     d: TestSto = field()
     e: dict = field(default_factory=dict)
 
@@ -38,7 +38,7 @@ class Foo:
             return deserialize(sjson.load(f), context, ser_type=cls)
 
 
-@modelclass(storeable=True)
+@modelclass(storable=True)
 class Boo:
     a: Foo = recordfield(name='file.a', subdir='foo')
     b: Foo = field()

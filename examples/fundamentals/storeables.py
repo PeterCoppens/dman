@@ -1,16 +1,16 @@
 from dataclasses import dataclass
-from dman.persistent.storeables import storeable, write, read
+from dman.persistent.storables import storable, write, read
 import os
 
 from tempfile import TemporaryDirectory
 
 
-@storeable(name='test')
+@storable(name='test')
 @dataclass
 class TestSto:
     value: str
 
-@storeable(name='broken')
+@storable(name='broken')
 class Broken:
     def __write__(self, path: str):
         pass

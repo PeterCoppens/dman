@@ -2,7 +2,7 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass, field, is_dataclass, fields
 import inspect
 
-from dman.persistent.storeables import WRITE, READ, Unreadable, storeable
+from dman.persistent.storables import WRITE, READ, Unreadable, storable
 from dman.persistent.modelclasses import modelclass
 from dman.persistent.serializables import BaseContext, is_serializable, ser_str2type, ser_type2str, serialize, deserialize
 from dman.persistent.record import Record
@@ -72,7 +72,7 @@ def configclass(cls=None, /, *, name: str = None, repr: bool = True):
         if getattr(cls, READ, None) is None:
             setattr(cls, READ, _read__config)
 
-        return storeable(dataclass(cls, repr=repr), name=name)
+        return storable(dataclass(cls, repr=repr), name=name)
 
     # See if we're being called as @configclass or @configclass().
     if cls is None:

@@ -1,0 +1,1 @@
+.. |pylib_name| replace:: ``dman``

@@ -7,7 +7,7 @@ from typing import Union
 
 from dman.persistent.record import RecordContext, record
 from dman.persistent.serializables import deserialize, is_serializable, serialize
-from dman.persistent.storeables import is_storeable
+from dman.persistent.storables import is_storable
 from dman.utils import sjson
 
 ROOT_FOLDER = '.dman'
@@ -35,6 +35,8 @@ def get_root_path(create: bool = False):
 
 
 def script_label(base: os.PathLike):
+    if base is None:
+        base = get_root_path()
     try:
         script = Path(sys.argv[0])\
             .resolve()\
@@ -47,7 +49,7 @@ def script_label(base: os.PathLike):
     directory = str(script.parent)
     name = str(script.stem)
 
-    return f'{directory.replace(os.sep, ":")}:{name}'
+    return os.path.join('cache', f'{directory.replace(os.sep, ":")}:{name}')
 
 
 @dataclass
@@ -158,7 +160,7 @@ def repository(*, name: str = '', subdir: str = '', generator: str = MISSING, ba
   
 
 def save(key: str, obj, *, subdir: os.PathLike = '', cluster: bool = True, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
-    if is_storeable(obj):
+    if is_storable(obj):
         obj = record(obj)
     
     if not is_serializable(obj):
@@ -180,7 +182,7 @@ def save(key: str, obj, *, subdir: os.PathLike = '', cluster: bool = True, gitig
             sjson.dump(ser, f, indent=4)
 
 
-def load(key: str, *, default=MISSING, subdir: os.PathLike = '', cluster: bool = True, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
+def load(key: str, *, default=MISSING, default_factory=MISSING, subdir: os.PathLike = '', cluster: bool = True, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
     if generator is MISSING:
         generator = script_label(base)
 
@@ -193,18 +195,23 @@ def load(key: str, *, default=MISSING, subdir: os.PathLike = '', cluster: bool =
     with repository(name=name, subdir=subdir, generator=generator, base=base, gitignore=gitignore) as repo:
         target = repo.join(f'{key}.json')
         if not os.path.exists(target.path):
-            if default is MISSING:
+            if default is MISSING and default_factory is MISSING:
                 raise FileNotFoundError(f'could not find tracked file {target.path}')
-            return default
+            elif default is MISSING:
+                return default_factory()
+            else:
+                return default
         with open(target.path, 'r') as f:
             ser = sjson.load(f)
             return deserialize(ser, repo)
 
 
 class Track:
-    def __init__(self, key: str, obj, subdir: os.PathLike, cluster: bool, gitignore: bool, generator: str, base: os.PathLike) -> None:
+    def __init__(self, key: str, default, default_factory, subdir: os.PathLike, cluster: bool, gitignore: bool, generator: str, base: os.PathLike) -> None:
         self.key = key
-        self.obj = obj
+        self.obj = None
+        self.default = default
+        self.default_factory = default_factory
         self.subdir = subdir
         self.cluster = cluster
         self.gitignore = gitignore
@@ -212,14 +219,14 @@ class Track:
         self.base = base
 
     def __enter__(self):
-        self.obj = load(self.key, default=self.obj, subdir=self.subdir, generator=self.generator, base=self.base, cluster=self.cluster, gitignore=self.gitignore)
+        self.obj = load(self.key, default=self.default, default_factory=self.default_factory, subdir=self.subdir, generator=self.generator, base=self.base, cluster=self.cluster, gitignore=self.gitignore)
         return self.obj
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         return save(self.key, self.obj, subdir=self.subdir, gitignore=self.gitignore, generator=self.generator, base=self.base, cluster=self.cluster)
 
 
-def track(key: str, *, default = MISSING, subdir: os.PathLike = '', cluster: bool = True, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
-    return Track(key, default, subdir, cluster, gitignore, generator, base)
+def track(key: str, *, default = MISSING, default_factory = MISSING, subdir: os.PathLike = '', cluster: bool = True, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
+    return Track(key, default, default_factory, subdir, cluster, gitignore, generator, base)
         
 

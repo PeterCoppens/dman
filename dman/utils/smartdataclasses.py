@@ -84,7 +84,7 @@ def _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen):
         if isinstance(value, WrappedField):
             wrapper: Wrapper = value.wrapper
 
-            # add to list of storeable fields
+            # add to list of storable fields
             lst = wrapped_fields.get(wrapper.WRAPPED_FIELDS_NAME, list())
             lst.append(attr)
             wrapped_fields[wrapper.WRAPPED_FIELDS_NAME] = lst
@@ -96,7 +96,7 @@ def _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen):
     res = dataclass(cls, init=init, repr=repr, eq=eq,
                     order=order, unsafe_hash=unsafe_hash, frozen=frozen)
 
-    # replace attr fields by the storeable properties
+    # replace attr fields by the storable properties
     for k, v in wrapped_fields.items():
         for attr in v:
             setattr(res, attr, property(

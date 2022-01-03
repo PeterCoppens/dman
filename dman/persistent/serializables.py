@@ -35,11 +35,11 @@ def ser_str2type(ser):
 
 def is_serializable(ser):
     """
-    Check if an object or class is registered as a serializable type.
+    Check if an object supports serialization
     """
     if getattr(ser, SER_TYPE, None) in __serializable_types:
         return True
-    if isinstance(ser, list) or isinstance(ser, dict):
+    if isinstance(ser, (list, dict, tuple)):
         return True
     return sjson.atomic_type(ser)
 
@@ -48,7 +48,7 @@ def is_deserializable(serialized: dict):
     """
     Check if a dictionary has been produced through serialization.
     """
-    if sjson.atomic_type(serialized) or isinstance(serialized, list):
+    if sjson.atomic_type(serialized) or isinstance(serialized, (list, tuple)):
         return True
     if not isinstance(serialized, dict):
         return False
@@ -174,7 +174,7 @@ def serialize(ser, context: 'BaseContext' = None, content_only: bool = False):
     :param context: The serialization context
     :param bool content_only: Do not include type information when true
     """
-    if isinstance(ser, list):
+    if isinstance(ser, (list, tuple)):
         return _serialize__list(ser, context)
     elif isinstance(ser, dict):
         return _serialize__dict(ser, context)
@@ -220,7 +220,7 @@ class ExcUndeserializable(ExcUnserializable):
         return f'Undeserializable: {self.type}'
 
 
-def deserialize(serialized: dict, context: 'BaseContext' = None, ser_type=None):
+def deserialize(serialized, context: 'BaseContext' = None, ser_type=None):
     """
     Deserialize a dictionary produced through serialization.
 
@@ -232,21 +232,30 @@ def deserialize(serialized: dict, context: 'BaseContext' = None, ser_type=None):
     :param ser_type: Class or string representing the expected type. If set to 
                         None the type is received from the dictionary. 
     """
-    if isinstance(serialized, list):
-        return _deserialize__list(list, serialized, context)
-    
-    if sjson.atomic_type(serialized):
-        return serialized
-    
-    if not isinstance(serialized, dict):
-        raise ValueError('expected list or dict to deserialize')
+    if context is None:
+        context = BaseContext()
 
     if ser_type is None:
+        if isinstance(serialized, (list, tuple)):
+            return _deserialize__list(list, serialized, context)
+        
+        if sjson.atomic_type(serialized):
+            return serialized
+    
+        if not isinstance(serialized, dict):
+            exc = Undeserializable(type=ser_type, 
+                info=f'Unexpected type for serialized: {type(serialized)}. Expected either list, tuple, atomic type or dict.'
+            )
+            context.error(exc)
+            return exc
+
         ser_type = serialized.get(SER_TYPE, None)
         if ser_type is None:
             return _deserialize__dict(dict, serialized, context)
         elif ser_type not in __serializable_types:
-            raise Undeserializable(type=ser_type, info=f'Unregistered type.')
+            exc = Undeserializable(type=ser_type, info=f'Unregistered type.')
+            context.error(exc)
+            return exc
         serialized = serialized.get(SER_CONTENT, {})
     elif ser_type is dict:
         return _deserialize__dict(dict, serialized, context)
@@ -254,27 +263,35 @@ def deserialize(serialized: dict, context: 'BaseContext' = None, ser_type=None):
     if isinstance(ser_type, str):
         ser_type = __serializable_types.get(ser_type, None)
         if ser_type is None:
-            return Undeserializable(type=ser_type, info=f'Unregistered type.')
+            exc = Undeserializable(type=ser_type, info=f'Unregistered type.')
+            context.error(exc)
+            return exc
     
     if ser_type in sjson.atomic_types:
-        return Undeserializable(type=ser_type, info=f'Specified atomic type, but got {type(serialized)}.')
+        exc = Undeserializable(type=ser_type, info=f'Specified atomic type, but got {type(serialized)}.')
+        context.error(exc)
+        return exc
 
     try:
         ser_method = getattr(ser_type, DESERIALIZE, None)
         if ser_method is None:
-            Undeserializable(type=ser_type, info=f'Type has no deserialize method.')
+            exc = Undeserializable(type=ser_type, info=f'Type has no deserialize method.')
+            context.error(exc)
+            return exc
 
         sig = inspect.signature(ser_method)
         if len(sig.parameters) == 1:
             return ser_method(serialized)
         elif len(sig.parameters) == 2:
-            if context is None:
-                context = BaseContext()
             return ser_method(serialized, context)
         else:
-            return ExcUndeserializable(type=ser_type, info=f'Type has invalid deserialize method.')
+            exc = ExcUndeserializable(type=ser_type, info=f'Type has invalid deserialize method.')
+            context.error(exc)
+            return exc
     except Exception:
-        return ExcUndeserializable(type=ser_type, info=f'Exception encountered while deserializing:')
+        exc = ExcUndeserializable(type=ser_type, info=f'Exception encountered while deserializing:')
+        context.error(exc)
+        return exc
 
 
 def _serialize__list(self: list, context: 'BaseContext' = None):
@@ -338,9 +355,9 @@ def serializable(cls=None, /, *, name: str = None):
     serializable type. 
 
     Serialization and Deserialization methods are added automatically if cls
-    is a dataclass. Otherwise a __serialize__ or __deserialize__ method
-    should be provided for serialization. If these are not provided 
-    a deepcopy will be made during serialization instead. 
+    is a dataclass. Otherwise a ``__serialize__`` or ``__deserialize__``
+    method should be provided for serialization. If these are not provided 
+    serialization will fail.
 
     :param cls: The class to process.
     :param str name: The name of the serializable type.
@@ -398,6 +415,7 @@ class BaseContext:
 
         :param str msg: The error message.
         """
+        # print(msg)
         pass
 
     def log(self, msg: str):

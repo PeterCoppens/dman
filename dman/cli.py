@@ -6,7 +6,7 @@ import os
 
 from dman.core import DMan, Stamp, Dependency
 from dman.persistent.serializables import isvalid
-from dman.persistent.storeables import Unreadable
+from dman.persistent.storables import Unreadable
 from dman.repository import get_root_path
 from dman.utils.git import check_git_committed
 from dman.utils.user import add_to_parser, arg, parse, prompt_user

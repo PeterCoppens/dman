@@ -2,7 +2,7 @@ from dataclasses import field
 from tempfile import TemporaryDirectory
 from dman.persistent.modelclasses import modelclass, recordfield
 from dman.persistent.configclasses import configclass, section
-from dman.persistent.storeables import read, write
+from dman.persistent.storables import read, write
 from dman.persistent.record import RecordContext
 from dman.utils.display import list_files
 
@@ -10,7 +10,7 @@ import os
 
 
 if __name__ == '__main__':
-    @modelclass(storeable=True)
+    @modelclass(storable=True)
     class TestModel:
         a: str = 25
 

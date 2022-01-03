@@ -5,7 +5,7 @@ from typing import Any
 import uuid
 from dman.persistent.serializables import Unserializable, deserialize, is_serializable, serializable, BaseContext, serialize
 from dman.utils.smartdataclasses import AUTO, overrideable
-from dman.persistent.storeables import NoFile, is_storeable, storeable_type, read, unreadable, write
+from dman.persistent.storables import NoFile, is_storable, storable_type, read, unreadable, write
 
 
 REMOVE = '__remove__'
@@ -60,6 +60,10 @@ class RecordContext(BaseContext):
         return res
 
 
+def record_context(path: str):
+    return RecordContext(path=path)
+
+
 @serializable(name='__ser_rec_config')
 @overrideable(frozen=True)
 class RecordConfig:
@@ -68,7 +72,15 @@ class RecordConfig:
     stem: str
 
     @classmethod
+    def from_target(cls, /, *, target: str):
+        subdir, name = os.path.split(target)
+        return cls.from_name(name=name, subdir=subdir)
+
+    @classmethod
     def from_name(cls, /, *, name: str, subdir: os.PathLike = AUTO):
+        if name == AUTO:
+            return cls(subdir=subdir)
+
         split = name.split('.')
         if len(split) == 1:
             split.append('')
@@ -83,20 +95,16 @@ class RecordConfig:
             return AUTO
         return self.stem + ('' if self.suffix == AUTO else self.suffix)
     
+    @property
+    def target(self):
+        return os.path.normpath(os.path.join(".", self.subdir, self.name))
+    
     def __serialize__(self):
-        res = {'stem': self.stem}
-        if self.subdir != '' and self.subdir != AUTO:
-            res['subdir'] = self.subdir
-        if self.suffix != '' and self.suffix != AUTO:
-            res['suffix'] = self.suffix
-        return res
+        return self.target
     
     @classmethod
-    def __deserialize__(cls, serialized: dict):
-        stem = serialized.get('stem')
-        subdir = serialized.get('subdir', '')
-        suffix = serialized.get('suffix', '')
-        return cls(stem=stem, subdir=subdir, suffix=suffix)
+    def __deserialize__(cls, serialized):
+        return cls.from_target(target=serialized)
 
 
 def is_unloaded(obj):
@@ -160,17 +168,20 @@ class Record:
 
     @content.setter
     def content(self, value: Any):
-        if not is_storeable(value):
+        if not is_storable(value):
             raise ValueError('expected storable type')
         self._content = value
 
     def __repr__(self) -> str:
         content = self._content
+        preload_str = ''
+        if self.preload:
+            preload_str=', preload'
         if content is None:
-            return f'Record(content=None, config={self.config}, preload={self.preload})'
+            return f'Record(None, target={self.config.target}{preload_str})'
         if is_unloaded(content):
-            return f'Record(content={content}, command={self.config}, preload={self.preload})'
-        return f'Record(content={storeable_type(content)}, command={self.config}, preload={self.preload})'
+            return f'Record({content}, target={self.config.target}{preload_str})'
+        return f'Record({storable_type(content)}, target={self.config.target}{preload_str})'
     
     @staticmethod
     def __parse(config: RecordConfig, context: RecordContext):
@@ -190,7 +201,7 @@ class Record:
             target.untrack()
 
     def __serialize__(self, context: BaseContext):
-        sto_type = storeable_type(self._content)
+        sto_type = storable_type(self._content)
         local, target = Record.__parse(self.config, context)
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
@@ -202,7 +213,7 @@ class Record:
             return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
 
         res = {
-            'config': serialize(self.config, content_only=True),
+            'target': serialize(self.config, content_only=True),
             'sto_type': sto_type
         }
         if self.preload:
@@ -211,7 +222,7 @@ class Record:
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        config = deserialize(serialized.get('config', dict()), ser_type=RecordConfig)
+        config = deserialize(serialized.get('target', ''), ser_type=RecordConfig)
         sto_type = serialized.get('sto_type')
         preload = serialized.get('preload', False)
 
@@ -227,6 +238,23 @@ class Record:
 
 
 def record(content: Any, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False):
+    """
+    Wrap a storable object in a serializable record.
+
+    The target path is specified as (the ``stem+suffix`` option takes precedence):
+       
+       * ``./subdir/stem+suffix`` or
+       * ``./subdir/name``.
+
+    :param content:         The storable object.
+    :param str stem:        The stem of a file.
+    :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
+    :param str name:        The full name of the file.
+    :param str subdir:      The subdirectory in which to store te file. 
+    :param bool preload:    When ``True`` the file will be loaded during deserialization.
+
+    :raises ValueError:     if a name and a stem and/or suffix are specified. 
+    """
     if name != AUTO and (stem != AUTO or suffix != AUTO):
         raise ValueError('either provide a name or suffix + stem.')
 

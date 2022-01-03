@@ -6,8 +6,8 @@ import os
 from typing import Iterable
 from dataclasses import MISSING, fields
 
-from dman.utils.smartdataclasses import AUTO, Wrapper, wrappedclass, WrappedField, attr_wrapper, attr_wrapped_field
-from dman.persistent.storeables import is_storeable, storeable
+from dman.utils.smartdataclasses import AUTO, NO_STORE, Wrapper, wrappedclass, WrappedField, attr_wrapper, attr_wrapped_field
+from dman.persistent.storables import is_storable, storable
 from dman.persistent.record import Record, RecordConfig, record, REMOVE, remove
 from dman.persistent.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE
 from dman.persistent.serializables import BaseContext, serialize, deserialize, is_serializable, is_deserializable, serializable
@@ -15,6 +15,7 @@ from dman.persistent.serializables import BaseContext, serialize, deserialize, i
 
 STO_FIELD = '_record__fields'
 RECORD_FIELD = '__record__'
+MODELCLASS = '__modelclass__'
 
 
 class RecordWrapper(Wrapper):
@@ -39,6 +40,15 @@ class RecordWrapper(Wrapper):
 
         return wrapped
 
+    def __store__(self, obj, value, currentvalue):
+        if is_storable(value):
+            if isinstance(currentvalue, Record):
+                currentvalue.content = value
+                return NO_STORE
+            return self.build(value)
+        else:
+            return value
+
 
 def recordfield(*, default=MISSING, default_factory=MISSING,
                 init: bool = True, repr: bool = False,
@@ -56,10 +66,10 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
 
 
 def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, order=False,
-               unsafe_hash=False, frozen=False, storeable: bool = False, compact: bool = False, **kwargs):
+               unsafe_hash=False, frozen=False, storable: bool = False, compact: bool = False, **kwargs):
 
     def wrap(cls):
-        return _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, storeable, compact, **kwargs)
+        return _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, storable, compact, **kwargs)
 
     # See if we're being called as @modelclass or @modelclass().
     if cls is None:
@@ -70,12 +80,16 @@ def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, 
     return wrap(cls)
 
 
-def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, as_storeable, compact, **kwargs):
+def is_modelclass(cls):
+    return getattr(cls, MODELCLASS, False)
+
+
+def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, as_storable, compact, **kwargs):
     annotations: dict = cls.__dict__
     annotations: dict = annotations.get('__annotations__', dict())
 
     for k, v in annotations.items():
-        if is_storeable(v) and getattr(cls, k, None) is None:
+        if is_storable(v) and getattr(cls, k, None) is None:
             setattr(cls, k, recordfield())
 
     res = wrappedclass(cls, init=init, repr=repr, eq=eq,
@@ -86,47 +100,22 @@ def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, 
     if compact:
         ser, dser = _serialize__modelclass_content_only, _deserialize__modelclass_content_only
 
+    setattr(res, MODELCLASS, True)
     if getattr(res, REMOVE, None) is None:
         setattr(res, REMOVE, _remove__modelclass)
     if getattr(res, SERIALIZE, None) is None:
         setattr(res, SERIALIZE, ser)
     if getattr(res, DESERIALIZE, None) is None:
         setattr(res, DESERIALIZE, dser)
-    
-    post_init = getattr(res, '__post_init__', None)
-    setattr(
-        res, '__post_init__', 
-        lambda self: _post__init__modelclass(self, base=post_init)
-    )
 
     result = serializable(res, name=name)
-    if as_storeable:
-        result = storeable(result, name=name)
+    if as_storable:
+        result = storable(result, name=name)
     return result
 
 
 def recordfields(obj):
     return getattr(obj, STO_FIELD, [])
-
-
-def _post__init__modelclass(self, base = None):
-    for f in fields(self):
-        if f.name not in getattr(self, NO_SERIALIZE, []) \
-            and f.name in recordfields(self):
-
-            # wrap all record fields in records
-            value = getattr(self, attr_wrapped_field(f.name))      
-            if isinstance(value, Record):
-                continue
-
-            recwrapper: RecordWrapper = getattr(
-                self, attr_wrapper(f.name)
-            )
-            record = recwrapper.build(value)
-            setattr(self, attr_wrapped_field(f.name), record)
-
-    if base:
-        base(self)
 
 
 def _remove__modelclass(self, context: BaseContext = None):
@@ -187,10 +176,23 @@ def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
     return cls(**processed)
 
 
+def is_model(cls):
+    return isinstance(cls, (_blist, _bdict)) or is_modelclass(cls) or isinstance(cls, Record)
+
+
 class _blist(MutableSequence):
-    def __init__(self, iterable: Iterable = None, subdir: os.PathLike = '', preload: bool = False):
+    def __init__(self, iterable: Iterable = None, subdir: os.PathLike = '', preload: bool = False, auto_clean: bool = False):
+        """
+        Create an instance of this model list.
+
+        :param iterable: Initial content of the list.
+        :param str subdir: Specify the default sub-subdirectory for storables.
+        :param bool preload: Specify whether storables should be preloaded.
+        :param bool auto_clean: Automatically remove records with dangling pointers on serialization.
+        """
         self.subdir = subdir
         self.preload = preload
+        self.auto_clean = auto_clean
 
         if iterable is None:
             iterable = list()
@@ -216,11 +218,13 @@ class _blist(MutableSequence):
     def __serialize__(self, context: BaseContext):
         lst = []
 
-        res = {'list': lst}
+        res = {'store': lst}
         if self.subdir != '':
             res['subdir'] = self.subdir
         if self.preload:
             res['preload'] = self.preload
+        if self.auto_clean:
+            res['auto_clean'] = self.auto_clean
 
         for itm in self.unused:
             remove(itm, context)
@@ -228,7 +232,7 @@ class _blist(MutableSequence):
 
         for itm in self:
             if isinstance(itm, Record):
-                if itm.exists():
+                if not self.auto_clean or itm.exists():
                     lst.append(serialize(itm, context))
                 else:
                     self.unused.append(itm)
@@ -245,27 +249,39 @@ class _blist(MutableSequence):
     def __deserialize__(cls, serialized: dict, context: BaseContext):
         subdir = serialized.get('subdir', '')
         preload = serialized.get('preload', False)
+        auto_clean = serialized.get('auto_clean', False)
 
-        lst = serialized.get('list', list())
-        res = cls(subdir=subdir, preload=preload)
+        lst = serialized.get('store', list())
+        res = cls(subdir=subdir, preload=preload, auto_clean=auto_clean)
 
         for itm in lst:
             res.append(deserialize(itm, context))
 
         return res
 
-    def record(self, value, idx: int = None, /, *, name: str = None, subdir: os.PathLike = '', preload: bool = None):
+    def record(self, value, idx: int = None, /, *, name: str = None, subdir: os.PathLike = AUTO, preload: bool = None):
+        """
+        Record a storable into this list.
+
+        :param value: The value to store.
+        :param int: The index at which to store it (if not specified, the value is appended).
+        :param str name: The file name to write the storable to during serialization.
+        :param str subdir: The subdirectory to store the file in.
+        :param bool preload: Preload the value during deserialization.
+        """
         if idx is None:
             self.append(value)
             idx = -1
         else:
             self.insert(idx, value)
 
-        if is_storeable(value):
+        if is_storable(value):
             rec: Record = self.store.__getitem__(idx)
+
             if name:
-                name_cfg = RecordConfig.from_name(name=name, subdir=subdir)
+                name_cfg = RecordConfig.from_name(name=name)
                 rec._config = rec._config << name_cfg
+            rec._config = rec._config << RecordConfig(subdir=subdir)
                     
             if preload:
                 rec.preload = preload
@@ -275,8 +291,8 @@ class _blist(MutableSequence):
             remove(itm, context)
         
     def clear(self):
-        for k in list(self.store):
-            del self[k]
+        for _ in range(len(self)):
+            self.pop()
 
     def __getitem__(self, key):
         itm = self.store.__getitem__(key)
@@ -287,21 +303,21 @@ class _blist(MutableSequence):
     def __setitem__(self, key, value):
         if key < self.__len__():
             itm = self.store.__getitem__(key)
-            if isinstance(itm, Record):
+            if is_model(itm):
                 self.unused.append(itm)
 
-        if is_storeable(value):
+        if is_storable(value):
             value = self.__make_record__(value)
         self.store.__setitem__(key, value)
     
     def insert(self, key, value):
-        if is_storeable(value):
+        if is_storable(value):
             value = self.__make_record__(value)
         self.store.insert(key, value)
 
     def __delitem__(self, key):
         itm = self.store.pop(key)
-        if isinstance(itm, Record):
+        if is_model(itm):
             self.unused.append(itm)
 
     def __iter__(self):
@@ -316,16 +332,19 @@ class mlist(_blist):
     pass
 
 
-@storeable(name='_sto__mlist')
+@storable(name='_sto__mlist')
 @serializable(name='_ser__smlist')
 class smlist(mlist):
     pass
 
 
 class _bdict(MutableMapping):
-    def __init__(self, *, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False, **kwargs):
+    def __init__(self, *, subdir: os.PathLike = '', preload: bool = False, 
+            store_by_key: bool = False, store_subdir: bool = False, 
+            auto_clean: bool = False, **kwargs):
         self.subdir = subdir
         self.preload = preload
+        self.auto_clean = auto_clean
 
         self._store_by_key = store_by_key
         self._store_subdir = store_subdir
@@ -336,8 +355,11 @@ class _bdict(MutableMapping):
         self.unused = list()
 
     @classmethod
-    def from_dict(cls, content: dict, /, *, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False):
-        return cls.__init__(subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir, **content)
+    def from_dict(cls, content: dict, /, *, subdir: os.PathLike = '', preload: bool = False, 
+            store_by_key: bool = False, store_subdir: bool = False, auto_clean: bool = False):
+        return cls.__init__(subdir=subdir, preload=preload, 
+            store_by_key=store_by_key, store_subdir=store_subdir, 
+            auto_clean=auto_clean, **content)
 
     def store_by_key(self, subdir: bool = False):
         self._store_by_key = True
@@ -360,7 +382,7 @@ class _bdict(MutableMapping):
     def __serialize__(self, context: BaseContext):
         dct = dict()
 
-        res = {'dict': dct}
+        res = {'store': dct}
         if self.subdir != '':
             res['subdir'] = self.subdir
         if self.preload:
@@ -369,6 +391,8 @@ class _bdict(MutableMapping):
             res['store_by_key'] = self._store_by_key
         if self._store_subdir:
             res['store_subdir'] = self._store_subdir
+        if self.auto_clean:
+            res['auto_clean'] = self.auto_clean
 
         for itm in self.unused:
             remove(itm, context)
@@ -376,7 +400,7 @@ class _bdict(MutableMapping):
 
         for k, itm in self.store.items():
             if isinstance(itm, Record):
-                if itm.exists():
+                if not self.auto_clean or itm.exists():
                     dct[k] = serialize(itm, context)
                 else:
                     self.unused.append(itm)
@@ -391,13 +415,14 @@ class _bdict(MutableMapping):
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        dct: dict = serialized.get('dict', list())
+        dct: dict = serialized.get('store', dict())
 
         res = cls(
             subdir=serialized.get('subdir', ''),
             preload=serialized.get('preload', False),
             store_by_key=serialized.get('store_by_key', False),
-            store_subdir=serialized.get('store_subdir', False)
+            store_subdir=serialized.get('store_subdir', False),
+            auto_clean=serialized.get('auto_clean', False)
         )
 
         for k, v in dct.items():
@@ -435,16 +460,16 @@ class _bdict(MutableMapping):
 
     def __setitem__(self, key, value):
         itm = self.store.pop(key, None)
-        if isinstance(itm, Record):
+        if is_model(itm):
             self.unused.append(itm)
 
-        if is_storeable(value):
+        if is_storable(value):
             value = self.__make_record__(key, value)
         self.store.__setitem__(key, value)
 
     def record(self, key, value, /, *, name: str = None, subdir: os.PathLike = '', preload: bool = None):
         self.__setitem__(key, value)
-        if is_storeable(value):
+        if is_storable(value):
             rec: Record = self.store.__getitem__(key)
             if name:
                 rec._config = rec._config << RecordConfig.from_name(name=name)
@@ -455,7 +480,7 @@ class _bdict(MutableMapping):
 
     def __delitem__(self, key):
         itm = self.store.pop(key)
-        if isinstance(itm, Record):
+        if is_model(itm):
             self.unused.append(itm)
 
     def __iter__(self):
@@ -470,7 +495,7 @@ class mdict(_bdict):
     pass
 
 
-@storeable(name='_sto__smdict')
+@storable(name='_sto__smdict')
 @serializable(name='_ser__smdict')
 class smdict(_bdict):
     pass

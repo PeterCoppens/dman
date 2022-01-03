@@ -1,12 +1,12 @@
 from dman.persistent.record import Record, record, RecordContext, remove
 from dman.persistent.serializables import serializable, serialize, deserialize
-from dman.persistent.storeables import storeable
+from dman.persistent.storables import storable
 from tempfile import TemporaryDirectory
 
 from dman.utils import sjson
 from dman.utils.display import list_files
 
-@storeable
+@storable
 @serializable
 class TestSto:
     __ext__ = '.tst'

@@ -107,9 +107,9 @@ class Dependency:
 
 class DMan:
     def __init__(self, base: os.PathLike = None):
-        self.stamps = mdict(subdir='stamps', store_by_key=True)
+        self.stamps = mdict(subdir='stamps', store_by_key=True, auto_clean=True)
         self.__stamps = DMan.track('stamps', default=self.stamps, base=base)
-        self.dependencies = mdict(subdir='dependencies', store_by_key=True)
+        self.dependencies = mdict(subdir='dependencies', store_by_key=True, auto_clean=True)
         self.__dependencies = DMan.track('dependencies', default=self.dependencies, base=base)
 
     @staticmethod

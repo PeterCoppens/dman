@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field, is_dataclass
 from os import PathLike
 import os
 import traceback
+from typing import Type, Union
 
 from dman.persistent.serializables import BaseInvalid, ExcUnserializable, Unserializable, is_serializable, serializable, serialize, deserialize, BaseContext, isvalid
 from dman.utils import sjson
@@ -13,29 +14,29 @@ WRITE = '__write__'
 READ = '__read__'
 LOAD = '__load__'
 
-__storeable_types = dict()
+__storable_types = dict()
 
 
-def storeable_type(obj):
+def storable_type(obj):
     return getattr(obj, STO_TYPE, None)
 
 
-def is_storeable(obj):
-    return storeable_type(obj) in __storeable_types
+def is_storable(obj):
+    return storable_type(obj) in __storable_types
 
 
-def is_storeable_type(type: str):
-    return type in __storeable_types
+def is_storable_type(type: str):
+    return type in __storable_types
 
 
-def storeable(cls=None, /, *, name: str = None, ignore_serializable: bool = None, ignore_dataclass: bool = False):
+def storable(cls=None, /, *, name: str = None, ignore_serializable: bool = None, ignore_dataclass: bool = False):
     def wrap(cls):
         local_name = name
         if local_name is None:
             local_name = getattr(cls, '__name__')
 
         setattr(cls, STO_TYPE, local_name)
-        __storeable_types[local_name] = cls
+        __storable_types[local_name] = cls
 
         if not ignore_serializable and is_serializable(cls):
             if getattr(cls, WRITE, None) is None:
@@ -53,16 +54,16 @@ def storeable(cls=None, /, *, name: str = None, ignore_serializable: bool = None
 
         return cls
 
-    # See if we're being called as @storeable or @storeable().
+    # See if we're being called as @storable or @storable().
     if cls is None:
         # We're called with parens.
         return wrap
 
-    # We're called as @storeable without parens.
+    # We're called as @storable without parens.
     return wrap(cls)
 
 
-@storeable(name='__unreadable', ignore_serializable=True)
+@storable(name='__unreadable', ignore_serializable=True)
 @serializable(name='__unreadable')
 class Unreadable(Unserializable):
     def __init__(self, type: str = 'null', info: str = '', path: str = ''):
@@ -76,7 +77,7 @@ class Unreadable(Unserializable):
         return cls(path=path)
 
 
-@storeable(name='__exc_unreadable', ignore_serializable=True)
+@storable(name='__exc_unreadable', ignore_serializable=True)
 @serializable(name='__exc_unreadable')
 class ExcUnreadable(ExcUnserializable):
     def __init__(self, type: str = 'null', info: str = '', path: str = ''):
@@ -90,7 +91,7 @@ class ExcUnreadable(ExcUnserializable):
         return cls(path=path)
 
 
-@storeable(name='__no_file', ignore_serializable=True)
+@storable(name='__no_file', ignore_serializable=True)
 @serializable(name='__no_file')
 class NoFile(ExcUnreadable): ...
 
@@ -121,8 +122,8 @@ def _read__serializable(cls, path: PathLike, context: BaseContext = None):
         return deserialize(sjson.load(f), context, ser_type=cls)
 
 
-def write(storeable, path: PathLike, context: BaseContext = None):
-    inner_write = getattr(storeable, WRITE, None)
+def write(storable, path: PathLike, context: BaseContext = None):
+    inner_write = getattr(storable, WRITE, None)
     if inner_write is None:
         if context: context.error('Invalid write method')
         return
@@ -141,9 +142,9 @@ def write(storeable, path: PathLike, context: BaseContext = None):
             context.error(traceback.format_exc())
 
 
-def read(type: str, path: PathLike, context: BaseContext = None):
+def read(type: Union[str, Type], path: PathLike, context: BaseContext = None):
     if isinstance(type, str):
-        type = __storeable_types.get(type, None)
+        type = __storable_types.get(type, None)
         if type is None:
             result = Unreadable(type=type, info='Unregistered type', path=path)
             if context: context.error(str(result))
