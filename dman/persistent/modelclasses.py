@@ -3,7 +3,7 @@ from collections.abc import MutableSequence
 import copy
 import os
 
-from typing import Iterable
+from typing import Iterable, Union
 from dataclasses import MISSING, fields
 
 from dman.utils.smartdataclasses import AUTO, NO_STORE, Wrapper, wrappedclass, WrappedField, attr_wrapper, attr_wrapped_field
@@ -57,8 +57,8 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
                 ):
     """
     Return an object to identify modelclass fields.
-
-    All arguments of the ``field`` method from ``dataclasses`` are provided
+        All arguments of the ``field`` method from ``dataclasses`` are provided.
+        Moreover, ``record`` specific options are provided
 
     :param default: is the default value of the field.
     :param default_factory: is a 0-argument function called to initialize.
@@ -68,8 +68,6 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
     :param bool compare:    Include in comparison functions.
     :param metadata:        Additional information.
 
-    Moreover, ``record`` specific options are provided
-    
     :param str stem:        The stem of the file.
     :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
     :param str name:        The full name of the file.
@@ -92,22 +90,20 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
 def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, order=False,
                unsafe_hash=False, frozen=False, storable: bool = False, compact: bool = False, **kwargs):
     """
-    Returns the same class as was passed in, with dunder methods
-    added based on the fields defined in the class.
+    Convert a class to a modelclass.
+        Returns the same class as was passed in, with dunder methods added based on the fields
+        defined in the class.
+        The class is automatically made ``serializable`` by adding ``__serialize__``
+        and ``__deserialize__``.
 
-    The class is automatically made ``serializable`` by adding ``__serialize__``
-    and ``__deserialize__``.
-
-    The arguments of the ``dataclass`` decorator are provided.
+        The arguments of the ``dataclass`` decorator are provided. Two additional 
+        arguments are also available.
 
     :param bool init: add an ``__init__`` method. 
     :param bool repr: add a ``__repr__`` method. 
     :param bool order: rich comparison dunder methods are added. 
     :param bool unsafe_hash: add a ``__hash__`` method function.
     :param bool frozen: fields may not be assigned to after instance creation.
-
-    Moreover two additional arguments are provided.
-
     :param bool storable: make the class storable with a ``__write__`` and ``__read__``.
     :param bool compact: do not include serializable types during serialization (results in more compact serializations).
     """
@@ -193,7 +189,10 @@ def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseCo
         value = serialized.get(f.name, None)
         if value is None:
             continue
-        processed[f.name] = deserialize(value, context, ser_type=f.type)
+        if f.name in recordfields(cls):
+            processed[f.name] = deserialize(value, context, ser_type=Record)
+        else:
+            processed[f.name] = deserialize(value, context, ser_type=f.type)
 
     return cls(**processed)
 
@@ -524,7 +523,7 @@ class _bdict(MutableMapping):
     def record(self, key, value, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False):  
         """
         Record a storable into this dict.
-
+    
         :param key: The key at which to store the value.
         :param value: The value to store.
         :param str stem:        The stem of a file.
@@ -566,6 +565,83 @@ class smdict(_bdict):
     pass
 
 
+@serializable(name='_ser__mruns')
+class mruns(_bdict):
+    RUN_COUNT = '__run_count'
+    LATEST = '__latest'
+    STEM = '__stem'
+
+    def __init__(self, *, stem: str = None, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = True, auto_clean: bool = False, **kwargs):
+        """
+        Create an instance of this run dictionary.
+
+        :param str stem: The stem for the automatically generated keys.
+        :param str subdir: Specify the default sub-subdirectory for storables.
+        :param bool preload: Specify whether storables should be preloaded.
+        :param bool store_by_key: Sets the stem to the key in the dictionary. 
+        :param bool store_subdir: Stores files in dedicated subdir based on key. 
+        :param bool auto_clean: Automatically remove records with dangling pointers on serialization.
+        :param kwargs: Initial content of the dict.
+        """
+        super().__init__(subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir, auto_clean=auto_clean, **kwargs)
+        if stem is not None:
+            self[self.STEM] = stem
+    
+    @property
+    def stem(self):
+        return self.store.get(self.STEM, 'run')
+    
+    def __getitem__(self, key: Union[int, str]):
+        if isinstance(key, int):
+            key = f'{self.stem}-{key}'
+        return super().__getitem__(key)
+    
+    def __setitem__(self, key: Union[int, str], value):
+        if isinstance(key, int):
+            key = f'{self.stem}-{key}'
+        return super().__setitem__(key, value)
+
+    def append(self, itm):
+        run_count = len(self)
+        label = f'{self.stem}-{run_count}'
+        if self._store_by_key:
+            self.record(label, itm)
+        else:
+            self.record(label, itm, stem=self.stem)
+        self[self.RUN_COUNT] = run_count + 1
+        self[self.LATEST] = label
+    
+    def pop(self):
+        idx = self.store.get(self.LATEST)
+        res = self.get(idx)
+        self.__delitem__(idx)
+        self.store[self.RUN_COUNT] = len(self) - 1
+        return res
+
+    def __repr__(self):
+        lst = []
+        for i in range(len(self)):
+            res = self.__getitem__(i)
+            if isinstance(res, Record):
+                res = res._content
+            lst.append(res)
+
+        return list.__repr__(lst)
+    
+    def __len__(self):
+        return self.store.get(self.RUN_COUNT, 0)
+    
+    def __iter__(self):
+        return (self.__getitem__(i) for i in range(len(self)))
+    
+    @property
+    def latest(self):
+        label = self.store.get(self.LATEST, None)
+        if label:
+            return super().get(label, None)
+        return None
+
+
 def smlist_factory(subdir: os.PathLike = '', preload: bool = False):
     def factory():
         return smlist(subdir=subdir, preload=preload)
@@ -581,4 +657,10 @@ def mdict_factory(subdir: os.PathLike = '', preload: bool = False, store_by_key:
 def smdict_factory(subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = False):
     def factory():
         return smdict(subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir)
+    return factory
+
+
+def mruns_factory(stem: str = None, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = True):
+    def factory():
+        return mruns(stem=stem, subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir)
     return factory

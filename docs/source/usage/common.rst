@@ -15,9 +15,10 @@ To setup the example we will need to following imports:
 
 .. code-block:: python
 
-    from dman import modelclass, track, storable
+    from dman import modelclass, track, load, storable, save
     from dman import recordfield, smdict_factory, smdict
 
+    from dataclasses import field
     import numpy as np
 
 The first step is to describe how arrays are stored. We do so by 
@@ -53,12 +54,14 @@ lets specify the run type.
     class Run:
         input: sarray = recordfield(default=None)
         output: sarray = recordfield(default=None)
-
-        def execute(self, input: np.ndarray, rng: np.random.Generator):
-            self.input = self.input.view(sarray)
-            transform = rng.standard_normal(size=(100, self.input.shape[0]))
-            self.output = transform @ self.input
-            self.output = self.output.view(sarray)
+        
+        @classmethod
+        def execute(cls, input: np.ndarray, rng: np.random.Generator):
+            input = input.view(sarray)
+            transform = rng.standard_normal(size=(100, input.shape[0]))
+            output = transform @ input
+            output = output.view(sarray)
+            return cls(input, output)
 
 Simple enough. A run is a ``modelclass``, which is like a ``dataclass``,
 but with some additional features enabling it to be stored automatically. 
@@ -81,13 +84,15 @@ how the results are stored.
 
 .. code-block:: python
 
-    @modelclass(name='experiment')
-    class Experiment:
-        seed: int = 124
+    @modelclass(name='config')
+    class Configuration:
+        seed: int = 1234
         size: int = 20
         nsample: int = 1000     
         nrepeats: int = 2
 
+    @modelclass(name='experiment')
+    class Experiment:
         results: smdict = recordfield(
             default_factory=smdict_factory(subdir='results', store_by_key=True), 
             stem='results'
@@ -111,33 +116,39 @@ We can run the experiment as follows:
 
 .. code-block:: python
 
+    cfg: Configuration = load('config', default_factory=Configuration, cluster=False)
     with track('experiment', default_factory=Experiment) as content:
         experiments: Experiment = content
         if len(experiments.results) > 0:
             print('results already available')
             return
 
-        rng = np.random.default_rng(12345)
-        for _ in range(experiments.nrepeats):
+        rng = np.random.default_rng(cfg.seed)
+        for _ in range(cfg.nrepeats):
             input = rng.random(
-                size=(experiments.size, experiments.nsample)
+                size=(cfg.size, cfg.nsample)
             )
-            run = Run(input.view(sarray))
-            run.execute(rng)
+            run = Run.execute(input.view(sarray), rng)
             experiments.results[f'run-{len(experiments.results)}'] = run
 
 We provide an overview of the above code segment:
 
-1. The ``track`` command 
-    is the only non-standard component here. 
-    It specifies a file key and a default value that is used when the object can 
-    not be loaded from the file key (when it doesn't exist yet). Once the context exists, the file is then saved again.
+1. The ``load`` command
+    It specifies a file key, based on which an object will be loaded.
+    If the file does not exist, it will be created based on ``default_factory``.
+    We add the ``cluster=False`` since the ``Configuration`` 
+    only needs a single file. So no dedicated subfolder (i.e. cluster) should
+    be created. 
 
-2. We specify the loaded type.
+2. The ``track`` command 
+    Similarly to ``load`` it specifies a file key and a default value that is used when the object can 
+    not be loaded from the file key. Once the context exists, the file is saved automatically.
+
+3. Note that we specify the loaded type.
     The interpreter can not know in advance what the loaded type will be, so we specify 
     it manually. This is good practice since it makes refactoring more convenient. 
 
-3. We check whether some results are already available. 
+4. We check whether some results are already available. 
     a) If so, we can exit the program. 
     b) Otherwise we create some and store them in the ``results`` dictionary. 
 
@@ -161,11 +172,6 @@ Its content is as follows
     {
         "_ser__type": "experiment",
         "_ser__content": {
-            "mode": "random",
-            "seed": 124,
-            "size": 20,
-            "nsample": 1000,
-            "nrepeats": 2,
             "results": {
                 "_ser__type": "_ser__record",
                 "_ser__content": {
@@ -176,10 +182,8 @@ Its content is as follows
         }
     }
 
-You can see that all of the basic field types have been stored here. 
-They can be adjusted and the result will be loaded next time the 
-script is executed. Note that the ``results`` are not 
-recorded here however. Instead we have a ``_ser__record`` that 
+Note that the ``results`` are not 
+recorded here directly. Instead we have a ``_ser__record`` that 
 specifies the location of ``results.json`` relative to the 
 file ``experiment.json``. 
 
@@ -214,6 +218,34 @@ again defers to another file. Specifically ``'results/run-#.json'``.
 You can continue like this and see that the ``run-#.json`` files contain 
 info about the files containing the ``sarray`` types. These file names 
 are specified automatically using ``uuid4`` to guarantee uniqueness.
+
+
+The Configuration File
+------------------------------
+
+We can create a configuration file in the expected location using the ``save``
+command. 
+
+.. code-block:: python
+
+    save('config', Configuration(), cluster=False)
+
+You should see a ``config.json`` file appear in your ``.dman`` folder. 
+You can re-run the code above, after tweaking some values. The experiment
+behavior changes. It could be useful to also include the configuration 
+in the experiment as a field. Then you can trace what values were used 
+to produce the data.
+
+.. code-block:: python
+
+    @modelclass(name='experiment')
+    class Experiment:
+        cfg: Configuration = field(default_factory=Configuration)
+        results: smdict = recordfield(
+            default_factory=smdict_factory(subdir='results', store_by_key=True), 
+            stem='results'
+        )
+
 
 Specifying Storage Folder
 -------------------------------

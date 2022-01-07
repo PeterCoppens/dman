@@ -33,7 +33,7 @@ if __name__ == '__main__':
         with repository(base=base, gitignore=True) as repo:
             print(repo)
             ctx = repo.join('test.txt')
-            ctx.track()
+            ctx.touch()
             write(TestSto(name='test'), ctx.path)
 
         list_files(base)

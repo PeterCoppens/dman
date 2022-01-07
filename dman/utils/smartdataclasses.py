@@ -9,6 +9,24 @@ class _NO_STORE_TYPE:
 NO_STORE = _NO_STORE_TYPE()
 
 
+def idataclass(cls=None, /, *, init=True, repr=True, eq=True, order=False, 
+                unsafe_hash=False, frozen=False):
+
+    def wrap(cls):
+        res = dataclass(cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen)
+        setattr(res, '__iter__', lambda self: (getattr(self, f.name) for f in fields(self)))
+        return res
+
+    # See if we're being called as @idataclass or @idataclass().
+    if cls is None:
+        # We're called with parens.
+        return wrap
+
+    # We're called as @idataclass without parens.
+    return wrap(cls)
+
+
+
 class Wrapper:
     WRAPPED_FIELDS_NAME = '_wrapped__fields'
 

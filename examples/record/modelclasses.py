@@ -1,7 +1,7 @@
 import copy
 from dman.persistent.serializables import serialize, deserialize
 from dman.persistent.modelclasses import modelclass, recordfield
-from dman.persistent.record import RecordContext
+from dman.persistent.record import Context
 from dman.utils.display import list_files
 from tempfile import TemporaryDirectory
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     print('\n====== model class tests =======\n')
     with TemporaryDirectory() as base:
-        ctx = RecordContext(base)
+        ctx = Context(base)
         foo = Foo(a=Other('c'), b=TestSto('b'), c=TestSto('c'), d=TestSto('d'))
         foo.e['test'] = 'hello'
         ser = serialize(foo, ctx)
@@ -56,6 +56,7 @@ if __name__ == '__main__':
 
         foo: Foo = deserialize(ser, ctx)
         print(foo)
+        print(foo.a)
         print(foo.b)
         print(foo.c)
 

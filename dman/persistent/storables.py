@@ -1,12 +1,12 @@
 import inspect
 
-from dataclasses import asdict, dataclass, field, is_dataclass
+from dataclasses import asdict, is_dataclass
 from os import PathLike
 import os
 import traceback
 from typing import Type, Union
 
-from dman.persistent.serializables import BaseInvalid, ExcUnserializable, Unserializable, is_serializable, serializable, serialize, deserialize, BaseContext, isvalid
+from dman.persistent.serializables import ExcUnserializable, Unserializable, is_serializable, serializable, serialize, deserialize, BaseContext
 from dman.utils import sjson
 
 STO_TYPE = '_sto__type'

@@ -2,14 +2,14 @@ import os
 from tempfile import TemporaryDirectory
 from dman.persistent.modelclasses import mdict, serialize, deserialize
 from dman.utils import sjson
-from dman.persistent.record import RecordContext, remove
+from dman.persistent.record import Context, remove
 from dman.utils.display import list_files
 from record import TestSto
 
 if __name__ == '__main__':
     print('\n====== dict tests =======\n')
     with TemporaryDirectory() as base:
-        ctx = RecordContext(base)
+        ctx = Context(base)
         dct = mdict(a=5, b=TestSto('b'), c=TestSto('c'))
         ser = serialize(dct, ctx)
         print(sjson.dumps(ser, indent=4))
@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     # removing items
     with TemporaryDirectory() as base:
-        ctx = RecordContext(base)
+        ctx = Context(base)
         dct = mdict(a=5, b=TestSto('b'), c=TestSto('c'), d=TestSto('d'), e='hello')
         ser = serialize(dct, ctx)
         print(sjson.dumps(ser, indent=4))
@@ -59,8 +59,8 @@ if __name__ == '__main__':
 
     # removing items
     with TemporaryDirectory() as base:
-        ctx = RecordContext(base)
-        dct = mdict(subdir='stamps', store_by_key=True)
+        ctx = Context(base)
+        dct = mdict(subdir='stamps', store_by_key=True, auto_clean=True)
         dct['test'] = TestSto(name='hello')
         dct.record('other', TestSto(name='other'))
         ser = serialize(dct, ctx)
@@ -71,10 +71,10 @@ if __name__ == '__main__':
         list_files(ctx.path)
 
         dct = deserialize(ser, ctx)
-        print('after de-serialization: ', repr(dct.get('test', None)))
+        print('after de-serialization:\n', dct.get('test', None))
         ser = serialize(dct, ctx)
         dct = deserialize(ser, ctx)
-        print('after re-serialization: ', repr(dct.get('test', None)))
+        print('after re-serialization:\n', dct.get('test', None))
         
 
 

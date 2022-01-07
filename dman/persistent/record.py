@@ -12,18 +12,31 @@ REMOVE = '__remove__'
 
 
 @dataclass
-class RecordContext(BaseContext):
+class Context(BaseContext):
     path: os.PathLike
-    parent: 'RecordContext' = field(default=None, repr=False)
+    parent: 'Context' = field(default=None, repr=False)
     children: dict = field(default_factory=dict, repr=False, init=False)
 
-    def track(self, *args, **kwargs):
+    def touch(self):
         if self.parent is None:
-            raise RuntimeError('cannot track root repository')
+            raise RuntimeError('cannot write to root repository')
         self.parent.open()
         return self
 
-    def untrack(self, *args, **kwargs):
+    def write(self, storable):
+        self.touch()
+        write(storable, self.path, self.parent)
+    
+    def read(self, sto_type):
+        if self.parent is None:
+            raise RuntimeError('cannot read root repository')
+        return read(sto_type, self.path, self)
+
+    def remove(self):
+        if self.parent is None:
+            raise RuntimeError('cannot remove root repository')
+        if os.path.exists(self.path):
+            os.remove(self.path)
         self.parent.clean()
         return self
     
@@ -41,7 +54,7 @@ class RecordContext(BaseContext):
     def normalize(self, other: os.PathLike):
         return os.path.relpath(os.path.join(self.path, other), start=self.path)
     
-    def join(self, other: os.PathLike) -> 'RecordContext':
+    def join(self, other: os.PathLike) -> 'Context':
         # normalize
         other = self.normalize(other)
         if other == '.':
@@ -60,8 +73,8 @@ class RecordContext(BaseContext):
         return res
 
 
-def record_context(path: str):
-    return RecordContext(path=path)
+def context(path: str):
+    return Context(path=path)
 
 
 @serializable(name='__ser_rec_config')
@@ -115,7 +128,7 @@ def is_unloaded(obj):
 class Unloaded:
     type: str
     path: str
-    context: BaseContext
+    context: Context
 
     def __load__(self):
         # print(f'loading {self.type} from {self.path}')
@@ -184,31 +197,26 @@ class Record:
         return f'Record({storable_type(content)}, target={self.config.target}{preload_str})'
     
     @staticmethod
-    def __parse(config: RecordConfig, context: RecordContext):
+    def __parse(config: RecordConfig, context: Context):
         local = context.join(config.subdir)
         target = local.join(config.name)
-        return local, target
+        return target
     
     def __remove__(self, context: BaseContext):
-        if isinstance(context, RecordContext):
-            local, target = Record.__parse(self.config, context)
+        if isinstance(context, Context):
+            target = Record.__parse(self.config, context)
             # remove all subfiles of content
-            remove(self.content, local)
-
-            if os.path.exists(target.path):
-                # remove file itself
-                os.remove(target.path)
-            target.untrack()
+            remove(self.content, target.parent)
+            target.remove()
 
     def __serialize__(self, context: BaseContext):
         sto_type = storable_type(self._content)
-        local, target = Record.__parse(self.config, context)
+        target = Record.__parse(self.config, context)
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
             sto_type = unloaded.type
-        elif isinstance(context, RecordContext):
-            target.track()
-            write(self._content, target.path, context=local)
+        elif isinstance(context, Context):
+            target.write(self._content)
         else:
             return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
 
@@ -222,17 +230,19 @@ class Record:
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        config = deserialize(serialized.get('target', ''), ser_type=RecordConfig)
+        config: RecordConfig = deserialize(
+            serialized.get('target', ''), ser_type=RecordConfig
+        )
         sto_type = serialized.get('sto_type')
         preload = serialized.get('preload', False)
 
-        local, target = Record.__parse(config, context)
-        content = unreadable(target.path, type=sto_type)
-        if isinstance(context, RecordContext):
+        content = unreadable(config.target, type=sto_type)
+        if isinstance(context, Context):
+            target = Record.__parse(config, context)
             if preload:
-                content = read(sto_type, target.path, context=local)
+                content = target.read(sto_type)
             else:
-                content = Unloaded(sto_type, target.path, local)
+                content = Unloaded(sto_type, target.path, context=target.parent)
 
         return cls(content=content, config=config, preload=preload)
 
@@ -248,11 +258,10 @@ def recordconfig(*, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subd
 def record(content: Any, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False):
     """
     Wrap a storable object in a serializable record.
-
-    The target path is specified as (the ``stem+suffix`` option takes precedence):
-       
-       * ``./subdir/stem+suffix`` or
-       * ``./subdir/name``.
+        The target path is specified as (the ``stem+suffix`` option takes precedence):
+        
+        * ``./subdir/stem+suffix`` or
+        * ``./subdir/name``.
 
     :param content:         The storable object.
     :param str stem:        The stem of a file.
@@ -285,8 +294,8 @@ def remove(obj, context: BaseContext = None):
 
     if isinstance(obj, (tuple, list)):
         for x in obj[:]:
-            remove(x)
+            remove(x, context)
     elif isinstance(obj, dict):
         for k in obj.keys():
-            remove(obj[k])
+            remove(obj[k], context)
 

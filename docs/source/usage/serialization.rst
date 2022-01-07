@@ -783,3 +783,52 @@ Setting ``compact=True`` in the above example results in the following serializa
         
     When serializing the second field will be serialized, while the first 
     will be stored in a file. 
+
+
+Saving and Loading Serializables
+----------------------------------------
+
+To avoid the hassle with defining a folder structure, ``dman`` provides
+some tools that automate the process. These components are 
+used in :ref:`common-use`. 
+
+The first basic component is ``save`` which stores a serializable (or storable)
+to a file. 
+
+.. autofunction:: dman.save
+    :noindex:
+
+As specified, the location of a file 
+is determined based on the arguments ``subdir``, ``cluster``, ``generator``, ``key`` and ``base``.
+Be sure to use the same arguments when loading from a file with
+
+.. autofunction:: dman.load
+    :noindex:
+
+In some cases it will be convenient to both load and save an object 
+at the start and the end of a script. For example if you wish to add
+experimental results to some ``mdict``. To do so use ``track``:
+
+.. autofunction:: dman.track
+    :noindex:
+
+To see these components in practice, refer to :ref:`common-use`. 
+
+.. note::
+    It is possible to call the ``save`` and ``load`` functionality 
+    of ``track`` manually. This can be useful when you want 
+    to save intermediate results. 
+
+    .. code-block:: python
+
+        tracker = track(...)
+        with tracker as obj:
+            for i in range(nrepeats):
+                ... # create some data and add it to obj
+                tracker.save(unload=True)
+
+    When the ``unload`` option in ``save`` is set to true, then 
+    ``tracker.load`` is called automatically after saving. 
+    This causes (non preloaded) storables to be unloaded, which can reduce
+    overhead time during the next save (since they will not need to be 
+    stored again). 

@@ -1,4 +1,4 @@
-from dman import record_context, record
+from dman import context, record
 from dman import storable
 from dman import serialize, deserialize, sjson
 from dman import dataclass
@@ -6,7 +6,7 @@ from dman import dataclass
 from tempfile import TemporaryDirectory
 import os
 
-from dman.persistent.record import Record, RecordContext, is_unloaded
+from dman.persistent.record import Record, Context, is_unloaded
 
 
 @storable(name='test')
@@ -24,13 +24,13 @@ class TestExt:
 
 def assert_creates_file(rec: Record):
     with TemporaryDirectory() as base:
-        ctx = record_context(base)
+        ctx = context(base)
         serialize(rec, ctx)
         target = os.path.join(base, rec.config.target)
         assert(os.path.exists(target))
 
 
-def recreate(rec: Record, ctx: RecordContext):
+def recreate(rec: Record, ctx: Context):
     ser = serialize(rec, ctx)
     res: Record = deserialize(
         sjson.loads(sjson.dumps(ser)), 
@@ -105,7 +105,7 @@ def test_re_serialize():
     test = Test(value='hello world!')
     rec = record(test, preload=True)
     with TemporaryDirectory() as base:
-        res = recreate(rec, record_context(base))
+        res = recreate(rec, context(base))
         assert(not is_unloaded(res._content))
         assert_equals(res, rec)
 
@@ -114,14 +114,14 @@ def test_no_preload():
     test = Test(value='hello world!')
     rec = record(test)
     with TemporaryDirectory() as base:
-        res = recreate(rec, record_context(base))
+        res = recreate(rec, context(base))
         assert(is_unloaded(res._content))
         assert_equals(res, rec)
         assert(not is_unloaded(res._content))
 
         res = rec
         for _ in range(10):
-            res = recreate(res, record_context(base))
+            res = recreate(res, context(base))
             assert(is_unloaded(res._content))
         assert_equals(res, rec)
         assert(not is_unloaded(res._content))
@@ -131,7 +131,7 @@ def test_exists():
     test = Test(value='hello world!')
     rec = record(test, name='temp.txt', preload=False)
     with TemporaryDirectory() as base:
-        ctx = record_context(base)
+        ctx = context(base)
         ser = serialize(rec, ctx)
         os.remove(os.path.join(base, rec.config.target))
         res: Record = deserialize(ser, ctx)

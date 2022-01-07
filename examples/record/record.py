@@ -1,4 +1,4 @@
-from dman.persistent.record import Record, record, RecordContext, remove
+from dman.persistent.record import Record, record, Context, remove
 from dman.persistent.serializables import serializable, serialize, deserialize
 from dman.persistent.storables import storable
 from tempfile import TemporaryDirectory
@@ -36,14 +36,21 @@ class TestSto:
             return cls(f.read())
 
 
+@storable(name='unstorable')
 class UnStorable:
-    pass
+    def __write__(self, path: str):
+        return
+    
+    @classmethod
+    def __read__(cls, path: str):
+        with open(path, 'r') as f:
+            return f.read()
 
 
 if __name__ == '__main__':
     # re-serialization
     with TemporaryDirectory() as base:
-        ctx = RecordContext(base)
+        ctx = Context(base)
         rec = record(TestSto(name='hello'), preload=False)
         ser = serialize(rec, ctx)
         print('== first serialization ==')
@@ -67,7 +74,7 @@ if __name__ == '__main__':
 
     # sub directories
     with TemporaryDirectory() as base:
-        ctx = RecordContext(base)
+        ctx = Context(base)
         rec = record(TestSto(name='test'), preload=True, subdir='test')
         ser = serialize(rec, ctx)
         print(sjson.dumps(ser, indent=4))
@@ -82,7 +89,7 @@ if __name__ == '__main__':
 
     # invalid stores
     with TemporaryDirectory() as base:
-        ctx = RecordContext(base)
+        ctx = Context(base)
         rec = record(UnStorable())
         ser = serialize(rec, ctx)
         print(sjson.dumps(ser, indent=4))
@@ -100,7 +107,7 @@ if __name__ == '__main__':
 
     # loading removed file
     with TemporaryDirectory() as base:
-        ctx = RecordContext(base)
+        ctx = Context(base)
         rec = record(TestSto(name='test'), name='test.txt', preload=True)
         ser = serialize(rec, ctx)
         print(sjson.dumps(ser, indent=4))
@@ -115,7 +122,7 @@ if __name__ == '__main__':
 
     # removing record
     with TemporaryDirectory() as base:
-        ctx = RecordContext(base)
+        ctx = Context(base)
         rec = record(TestSto(name='test'), name='test.txt', preload=True)
         ser = serialize(rec, ctx)
         print(sjson.dumps(ser, indent=4))
