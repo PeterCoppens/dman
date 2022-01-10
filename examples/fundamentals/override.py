@@ -1,7 +1,8 @@
-from dman.utils.smartdataclasses import is_complete, overrideable
+from dman.utils.smartdataclasses import is_complete, overrideable, dataclass
 
 
 if __name__ == '__main__':
+    @dataclass
     @overrideable
     class Over:
         a: str

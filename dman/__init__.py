@@ -1,4 +1,4 @@
-from dman.persistent.modelclasses import modelclass, recordfield, mdict, smdict, mlist, smlist, mruns
+from dman.persistent.modelclasses import modelclass, recordfield, mdict, smdict, mlist, smlist, mruns, serializefield
 from dman.persistent.modelclasses import smlist_factory, smdict_factory, mruns_factory, mdict_factory
 from dman.persistent.serializables import serializable, serialize, deserialize
 from dman.persistent.record import record, context, remove

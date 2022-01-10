@@ -113,8 +113,11 @@ def overrideable(cls=None, /, *, init=True, repr=True, eq=True, order=False,
             if fld is None:
                 setattr(cls, k, field(default=AUTO))
             elif isinstance(fld, Field):
-                setattr(cls, k, field(default=fld.default, default_factory=fld.default_factory,
-                        init=True, repr=fld.repr, hash=fld.hash, compare=fld.compare, metadata=fld.metadata))
+                if fld.default is MISSING and fld.default_factory is MISSING:
+                    fld.default=AUTO
+                else:
+                    setattr(cls, k, field(default=fld.default, default_factory=fld.default_factory,
+                            init=True, repr=fld.repr, hash=fld.hash, compare=fld.compare, metadata=fld.metadata))
             else:
                 setattr(cls, k, field(default=fld))
 
