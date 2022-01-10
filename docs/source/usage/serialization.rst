@@ -770,7 +770,7 @@ Setting ``compact=True`` in the above example results in the following serializa
 
     .. code-block:: python
 
-        from dman import recordfield, modelclass, field
+        from dman import recordfield, modelclass, serializefield
 
         @modelclass(name='field', storable=True)
         class Field:
@@ -779,10 +779,30 @@ Setting ``compact=True`` in the above example results in the following serializa
         @modelclass(name='model')
         class Model:
             first: Field
-            second: Field = field()
+            second: Field = serializefield()
         
     When serializing the second field will be serialized, while the first 
-    will be stored in a file. 
+    will be stored in a file. The method ``serializefield`` has the same  
+    arguments as ``field``. 
+
+
+.. note::
+
+    In some IDEs, using ``modelclass`` will confuse the linter. Specifically,
+    it will not provide suggestions for the ``__init__`` method. 
+    You can fix this by using the (more verbose) syntax:
+
+    .. code-block:: python
+
+        @modelclass(name='model')
+        @dataclasss
+        class Model:
+            name: str
+            content: ManualFile = recordfield()
+    
+    It is also good practice to put ``recordfield`` and ``serializefield`` 
+    last (since some linters consider it as a field with a default value). 
+
 
 
 Saving and Loading Serializables

@@ -1,12 +1,12 @@
 import copy
 from dman.persistent.serializables import serialize, deserialize
-from dman.persistent.modelclasses import modelclass, recordfield
+from dman.persistent.modelclasses import modelclass, recordfield, serializefield
 from dman.persistent.record import Context
 from dman.utils.display import list_files
 from tempfile import TemporaryDirectory
 
 from record import TestSto
-from dataclasses import field
+from dataclasses import dataclass, field
 
 from dman.utils import sjson
 
@@ -16,15 +16,17 @@ class Other:
 
 
 @modelclass(storable=True, compact=True)
+@dataclass
 class Foo:
     __ext__ = '.foo'
 
     a: str
+    e: TestSto = field()
     b: TestSto = recordfield(preload=True, repr=True)
     c: TestSto = recordfield(stem='field_c')
     # if a field is serializable and storable you can avoid storage by making it a normal field
-    d: TestSto = field()
-    e: dict = field(default_factory=dict)
+    d: TestSto = serializefield()
+    f: dict = field(default_factory=dict)
 
     def __write__(self, path, context):
         print(f'..writing foo to {path}')
@@ -39,9 +41,10 @@ class Foo:
 
 
 @modelclass(storable=True)
+@dataclass
 class Boo:
     a: Foo = recordfield(name='file.a', subdir='foo')
-    b: Foo = field()
+    b: Foo = serializefield()
 
 
 if __name__ == '__main__':
@@ -49,8 +52,8 @@ if __name__ == '__main__':
     print('\n====== model class tests =======\n')
     with TemporaryDirectory() as base:
         ctx = Context(base)
-        foo = Foo(a=Other('c'), b=TestSto('b'), c=TestSto('c'), d=TestSto('d'))
-        foo.e['test'] = 'hello'
+        foo = Foo(a=Other('c'), b=TestSto('b'), c=TestSto('c'), d=TestSto('d'), e=TestSto('e'))
+        foo.f['test'] = 'hello'
         ser = serialize(foo, ctx)
         print(sjson.dumps(ser, indent=4))
 

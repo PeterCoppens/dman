@@ -1,12 +1,6 @@
 from dataclasses import dataclass, field, Field, MISSING, is_dataclass, fields
 import copy
-
-
-class _NO_STORE_TYPE:
-    pass
-
-
-NO_STORE = _NO_STORE_TYPE()
+from typing import Union
 
 
 def idataclass(cls=None, /, *, init=True, repr=True, eq=True, order=False, 
@@ -26,36 +20,35 @@ def idataclass(cls=None, /, *, init=True, repr=True, eq=True, order=False,
     return wrap(cls)
 
 
-
-class Wrapper:
-    WRAPPED_FIELDS_NAME = '_wrapped__fields'
-
-    def __process__(self, obj, wrapped):
-        return wrapped
-
-    def __store_process__(self, obj, processed):
-        return NO_STORE
-
-    def __store__(self, obj, value, currentvalue):
-        return value
+BASE_KEY = '__base'
+PROP_KEY = '__property'
+LABEL_KEY = '__label'
+WRAPPED_DICT_KEY = '__wrapped_fields'
 
 
-class WrappedField(Field):
-    def __init__(self, wrapper: Wrapper, default, default_factory, init, repr, hash, compare, metadata) -> None:
-        Field.__init__(self, default, default_factory,
-                       init, repr, hash, compare, metadata)
-        self.wrapper = wrapper
-
-    def __repr__(self):
-        return f'wrapped(wrapper={self.wrapper}, field={Field.__repr__(self)})'
+class WrapField:
+    def __call__(self, key = None) -> property:
+        return property()
 
 
-def wrapfield(wrapper: Wrapper, *, default=MISSING, default_factory=MISSING, init=True, repr=False, hash=False, compare=False, metadata=None):
-    return WrappedField(wrapper, default, default_factory, init, repr, hash, compare, metadata)
+def wrapfield(wrap: Union[WrapField, property], /, *, label: str = None, 
+    default=MISSING, default_factory=MISSING, init=True, repr=False, 
+    hash=False, compare=False, metadata: dict = None) -> Field:
+
+    _metadata = {PROP_KEY: wrap}
+    if metadata is not None: _metadata[BASE_KEY] = metadata
+    if label is not None: _metadata[LABEL_KEY] = label
+
+    return field(default=default, default_factory=default_factory, 
+        init=init, repr=repr, hash=hash, compare=compare, metadata=_metadata)
+
+
+def is_wrapfield(fld: Field):
+    return fld.metadata.get(PROP_KEY, None) is not None
 
 
 def wrappedclass(cls=None, /, *, init=True, repr=True, eq=True, order=False,
-                 unsafe_hash=False, frozen=False):
+    unsafe_hash=False, frozen=False):
 
     def wrap(cls):
         return _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen)
@@ -69,84 +62,36 @@ def wrappedclass(cls=None, /, *, init=True, repr=True, eq=True, order=False,
     return wrap(cls)
 
 
-def attr_wrapped_field(attr: str):
-    return f'_wrapped__{attr}'
-
-
-def attr_wrapper(attr: str):
-    return f'_wrapper__{attr}'
-
-
-def get_wrapper(obj, attr: str):
-    return getattr(obj, attr_wrapper(attr), None)
-
-
-def set_wrapper(obj, attr: str, value: Wrapper):
-    return setattr(obj, attr_wrapper(attr), value)
-
-
-def get_wrapped_field(obj, attr: str):
-    return getattr(obj, attr_wrapped_field(attr))
-
-
-def set_wrapped_field(obj, attr: str, value):
-    return setattr(obj, attr_wrapped_field(attr), value)
-
-
 def _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen):
-    attributes = [a for a in dir(cls) if not a.startswith('__')]
-    wrapped_fields = {}
-
-    for attr in attributes:
-        value = getattr(cls, attr, None)
-        if isinstance(value, WrappedField):
-            wrapper: Wrapper = value.wrapper
-
-            # add to list of storable fields
-            lst = wrapped_fields.get(wrapper.WRAPPED_FIELDS_NAME, list())
-            lst.append(attr)
-            wrapped_fields[wrapper.WRAPPED_FIELDS_NAME] = lst
-
-            # store wrapper
-            set_wrapper(cls, attr, wrapper)
-
     # convert to dataclass
-    res = dataclass(cls, init=init, repr=repr, eq=eq,
-                    order=order, unsafe_hash=unsafe_hash, frozen=frozen)
+    res = cls
+    if not is_dataclass(cls):
+        res = dataclass(cls, init=init, repr=repr, eq=eq,
+            order=order, unsafe_hash=unsafe_hash, frozen=frozen)
+    
+    # go through fields and process wrapped fields
+    for f in fields(res):
+        if is_wrapfield(f):
+            prop = f.metadata.get(PROP_KEY)
+            if isinstance(prop, WrapField):
+                prop = prop(key=f.name)
+            label = f.metadata.get(LABEL_KEY, None)
+            f.metadata = f.metadata.get(BASE_KEY, None)
+            setattr(res, f.name, prop)
 
-    # replace attr fields by the storable properties
-    for k, v in wrapped_fields.items():
-        for attr in v:
-            setattr(res, attr, property(
-                _attr__getter(attr), _attr__setter(attr)
-            ))
-        setattr(res, k, v)
+            if label is not None:
+                wrapped = getattr(res, WRAPPED_DICT_KEY, dict())
+                lst = wrapped.get(label, list())
+                lst.append(f.name)
+                wrapped[label] = lst
+                setattr(res, WRAPPED_DICT_KEY, wrapped)
 
     return res
 
 
-def _attr__getter(attr: str):
-    def _wrapped__getter(self):
-        wrapper: Wrapper = get_wrapper(self, attr)
-        value = wrapper.__process__(
-            self, getattr(self, attr_wrapped_field(attr)))
-        to_store = wrapper.__store_process__(self, value)
-        if to_store is not NO_STORE:
-            setattr(self, attr_wrapped_field(attr), to_store)
-        return value
-
-    return _wrapped__getter
-
-
-def _attr__setter(attr: str):
-    def _wrapped__setter(self, value):
-        wrapper: Wrapper = get_wrapper(self, attr)
-        to_store = wrapper.__store__(self, value, getattr(
-            self, attr_wrapped_field(attr), MISSING))
-        if to_store is not NO_STORE:
-            setattr(self, attr_wrapped_field(attr), to_store)
-
-    return _wrapped__setter
+def wrappedfields(cls, label: str):
+    wrapped = getattr(cls, WRAPPED_DICT_KEY, dict())
+    return wrapped.get(label, list())
 
 
 AUTO = '_merg__auto'
@@ -222,19 +167,3 @@ def _override__rshift__(self, other):
 
 def _override__lshift__(self, other):
     return _override__rshift__(other, self)
-
-
-class OverrideWrapper(Wrapper):
-    def __init__(self, default_wrapper) -> None:
-        Wrapper.__init__(self)
-        self.default_wrapper = default_wrapper
-
-    def __store__(self, obj, value, currentvalue):
-        if currentvalue is MISSING:
-            currentvalue = self.default_wrapper()
-
-        return super().__store__(obj, currentvalue << value, currentvalue)
-
-
-def overridefield(*, default_factory, init=True, repr=False, hash=False, compare=False, metadata=None):
-    return WrappedField(OverrideWrapper(default_factory), MISSING, default_factory, init, repr, hash, compare, metadata)

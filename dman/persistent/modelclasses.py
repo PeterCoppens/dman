@@ -4,23 +4,37 @@ import copy
 import os
 
 from typing import Iterable, Union
-from dataclasses import MISSING, fields
+from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field
 
-from dman.utils.smartdataclasses import AUTO, NO_STORE, Wrapper, wrappedclass, WrappedField, attr_wrapper, attr_wrapped_field
+from dman.utils.smartdataclasses import WrapField, wrappedclass, wrappedfields, wrapfield, AUTO, is_wrapfield
 from dman.persistent.storables import is_storable, storable
 from dman.persistent.record import Record, RecordConfig, record, REMOVE, remove, recordconfig
-from dman.persistent.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE
-from dman.persistent.serializables import BaseContext, serialize, deserialize, is_serializable, is_deserializable, serializable
+from dman.persistent.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE, is_serializable
+from dman.persistent.serializables import BaseContext, serialize, deserialize, serializable
 
 
 STO_FIELD = '_record__fields'
 RECORD_FIELD = '__record__'
 MODELCLASS = '__modelclass__'
+RECORD_PRE = '_record_field__'
 
 
-class RecordWrapper(Wrapper):
-    WRAPPED_FIELDS_NAME = STO_FIELD
 
+def _record_key(key: str):
+    return f'{RECORD_FIELD}{key}'
+
+def get_record(self, key: str, default= MISSING):
+    key = _record_key(key)
+    if default is MISSING:
+        return getattr(self, key)
+    else:
+        return getattr(self, key, default)
+
+def set_record(self, key: str, value):
+    setattr(self, _record_key(key), value)
+
+
+class RecordField(WrapField):
     def __init__(self, stem: str, suffix: str, name: str, subdir: os.PathLike, preload: str):
         self.stem = stem
         self.suffix = suffix
@@ -30,33 +44,64 @@ class RecordWrapper(Wrapper):
 
     def build(self, content):
         return record(content, stem=self.stem, suffix=self.suffix, name=self.name, subdir=self.subdir, preload=self.preload)
+    
+    def __call__(self, key: str):
+        def _get_record(obj):
+            rec = get_record(obj, key)
+            if isinstance(rec, Record):
+                return rec.content
+            return rec
 
-    def __process__(self, obj, wrapped):
-        if wrapped is None:
-            return None
+        def _set_record(obj, value):
+            if is_storable(value):
+                rec = get_record(obj, key, None)
+                if isinstance(rec, Record):
+                    rec.content = value
+                else:
+                    rec = self.build(value)
+                set_record(obj, key, rec)
+            else:
+                set_record(obj, key, value)
+        
+        return property(fget=_get_record, fset=_set_record)
 
-        if isinstance(wrapped, Record):
-            return wrapped.content
 
-        return wrapped
+def serializefield(*, default=MISSING, default_factory=MISSING,
+                   init: bool = True, repr: bool = True,
+                   hash: bool = False, compare: bool = False, metadata=None) -> Field:
+    """
+    Return an object to identify serializable modelclass fields.
+        All arguments of the ``field`` method from ``dataclasses`` are provided.
+        Moreover, ``record`` specific options are provided
 
-    def __store__(self, obj, value, currentvalue):
-        if is_storable(value):
-            if isinstance(currentvalue, Record):
-                currentvalue.content = value
-                return NO_STORE
-            return self.build(value)
-        else:
-            return value
+    :param default: is the default value of the field.
+    :param default_factory: is a 0-argument function called to initialize.
+    :param bool init:       Include in the class's __init__().
+    :param bool repr:       Include in the object's repr().
+    :param bool hash:       Include in the object's hash().
+    :param bool compare:    Include in comparison functions.
+    :param metadata:        Additional information.
+
+    :raises ValueError: if both default and default_factory are specified.
+    """
+    _metadata = {'__ser_field': True}
+    if metadata is not None:
+        _metadata['__base'] = metadata
+    return field(default=default, default_factory=default_factory, 
+        init=init, repr=repr, hash=hash, compare=compare, metadata=_metadata)
+
+
+def is_serializable_field(fld: Field):
+    return fld.metadata.get('__ser_field', False)
 
 
 def recordfield(*, default=MISSING, default_factory=MISSING,
                 init: bool = True, repr: bool = False,
                 hash: bool = False, compare: bool = False, metadata=None,
                 stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False
-                ):
+                ) -> Field:
     """
-    Return an object to identify modelclass fields.
+    Return an object to identify storable modelclass fields.
         All arguments of the ``field`` method from ``dataclasses`` are provided.
         Moreover, ``record`` specific options are provided
 
@@ -78,13 +123,9 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
     :raises ValueError:     if a name and a stem and/or suffix are specified. 
     """
 
-    return WrappedField(
-        RecordWrapper(stem=stem, suffix=suffix, name=name,
-                      subdir=subdir, preload=preload),
-        default=default, default_factory=default_factory,
-        init=init, repr=repr, hash=hash,
-        compare=compare, metadata=metadata
-    )
+    wrap = RecordField(stem=stem, suffix=suffix, name=name, subdir=subdir, preload=preload)
+    return wrapfield(wrap, label=STO_FIELD, default=default, default_factory=default_factory, 
+        init=init, repr=repr, hash=hash, compare=compare, metadata=metadata)
 
 
 def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, order=False,
@@ -125,15 +166,26 @@ def is_modelclass(cls):
 
 
 def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, as_storable, compact, **kwargs):
-    annotations: dict = cls.__dict__
-    annotations: dict = annotations.get('__annotations__', dict())
+    # convert to dataclass
+    res = cls
+    if not is_dataclass(cls):
+        res = dataclass(cls, init=init, repr=repr, eq=eq,
+                        order=order, unsafe_hash=unsafe_hash, frozen=frozen)
 
-    for k, v in annotations.items():
-        if is_storable(v) and getattr(cls, k, None) is None:
-            setattr(cls, k, recordfield())
+    # auto convert fields if necessary
+    for f in fields(res):
+        if is_wrapfield(f):
+            continue
 
-    res = wrappedclass(cls, init=init, repr=repr, eq=eq,
-                       order=order, unsafe_hash=unsafe_hash, frozen=frozen)
+        if is_serializable_field(f):
+            ser_field: Field = field(metadata=f.metadata.get('__base', None))
+            f.metadata = ser_field.metadata            
+        elif is_storable(f.type):
+            wrapped_field: Field = recordfield(metadata=f.metadata)
+            f.metadata = wrapped_field.metadata
+
+    # wrap the fields
+    res = wrappedclass(res)
 
     # assign serialize and deserialize methods
     ser, dser = _serialize__modelclass, _deserialize__modelclass
@@ -155,14 +207,14 @@ def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, 
 
 
 def recordfields(obj):
-    return getattr(obj, STO_FIELD, [])
+    return wrappedfields(obj, label=STO_FIELD)
 
 
 def _remove__modelclass(self, context: BaseContext = None):
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             if f.name in recordfields(self):
-                value = getattr(self, attr_wrapped_field(f.name))
+                value = getattr(self, _record_key(f.name))
                 remove(value, context)
             else:
                 value = getattr(self, f.name)
@@ -174,7 +226,7 @@ def _serialize__modelclass_content_only(self, context: BaseContext = None):
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             if f.name in recordfields(self):
-                value = getattr(self, attr_wrapped_field(f.name))
+                value = getattr(self, _record_key(f.name))
             else:
                 value = getattr(self, f.name)        
             res[f.name] = serialize(value, context, content_only=True)
@@ -202,7 +254,7 @@ def _serialize__modelclass(self, context: BaseContext = None):
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             if f.name in recordfields(self):
-                value = getattr(self, attr_wrapped_field(f.name))
+                value = getattr(self, _record_key(f.name))
             else:
                 value = getattr(self, f.name)
             res[f.name] = serialize(value, context)
