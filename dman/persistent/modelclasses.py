@@ -265,8 +265,10 @@ def _serialize__modelclass(self, context: BaseContext = None):
 @classmethod
 def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
     processed = dict()
-    for k, v in serialized.items():
-        processed[k] = deserialize(v, context)
+    for f in fields(cls):
+        v = serialized.get(f.name, None)
+        if v is not None:
+            processed[f.name] = deserialize(v, context)
 
     return cls(**processed)
 
@@ -325,7 +327,7 @@ class _blist(MutableSequence):
             remove(itm, context)
         self.unused = []
 
-        for itm in self:
+        for itm in self.store:
             if isinstance(itm, Record):
                 if not self.auto_clean or itm.exists():
                     lst.append(serialize(itm, context))
@@ -416,7 +418,7 @@ class _blist(MutableSequence):
             self.unused.append(itm)
 
     def __iter__(self):
-        return iter(self.store)
+        return (itm.content if isinstance(itm, Record) else itm for itm in self.store)
 
     def __len__(self):
         return len(self.store)
@@ -617,81 +619,96 @@ class smdict(_bdict):
     pass
 
 
-@serializable(name='_ser__mruns')
-class mruns(_bdict):
-    RUN_COUNT = '__run_count'
-    LATEST = '__latest'
-    STEM = '__stem'
-
-    def __init__(self, *, stem: str = None, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = True, auto_clean: bool = False, **kwargs):
+class _bruns(_blist):
+    def __init__(self, iterable: Iterable = None, stem: str = 'run', subdir: os.PathLike = '', preload: bool = False, store_subdir: bool = True, auto_clean: bool = False):
         """
-        Create an instance of this run dictionary.
+        Create an instance of this labeled model list.
 
-        :param str stem: The stem for the automatically generated keys.
+        :param iterable: Initial content of the list.
+        :param str stem: The stem used to determine file keys (e.g. stem-0, stem-1, ...).
         :param str subdir: Specify the default sub-subdirectory for storables.
         :param bool preload: Specify whether storables should be preloaded.
-        :param bool store_by_key: Sets the stem to the key in the dictionary. 
-        :param bool store_subdir: Stores files in dedicated subdir based on key. 
+        :param bool store_subdir: Specify whether each item should be stored in a separate directory.
         :param bool auto_clean: Automatically remove records with dangling pointers on serialization.
-        :param kwargs: Initial content of the dict.
         """
-        super().__init__(subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir, auto_clean=auto_clean, **kwargs)
-        if stem is not None:
-            self[self.STEM] = stem
-    
-    @property
-    def stem(self):
-        return self.store.get(self.STEM, 'run')
-    
-    def __getitem__(self, key: Union[int, str]):
-        if isinstance(key, int):
-            key = f'{self.stem}-{key}'
-        return super().__getitem__(key)
-    
-    def __setitem__(self, key: Union[int, str], value):
-        if isinstance(key, int):
-            key = f'{self.stem}-{key}'
-        return super().__setitem__(key, value)
+        self.stem = stem
+        self.run_count = 0
+        self.store_subdir = store_subdir
 
-    def append(self, itm):
-        run_count = len(self)
-        label = f'{self.stem}-{run_count}'
-        if self._store_by_key:
-            self.record(label, itm)
-        else:
-            self.record(label, itm, stem=self.stem)
-        self[self.RUN_COUNT] = run_count + 1
-        self[self.LATEST] = label
-    
-    def pop(self):
-        idx = self.store.get(self.LATEST)
-        res = self.get(idx)
-        self.__delitem__(idx)
-        self.store[self.RUN_COUNT] = len(self) - 1
+        super().__init__(iterable=iterable, subdir=subdir, preload=preload, auto_clean=auto_clean)
+        
+    @property
+    def config(self):
+        return RecordConfig(subdir=self.subdir)
+
+    def __make_record__(self, itm):
+        key = f'{self.stem}-{self.run_count}'
+        self.run_count += 1
+        key_config = RecordConfig(stem=key)
+        if self.store_subdir:
+            key_config = key_config << RecordConfig(
+                stem=self.stem,
+                subdir=os.path.join(self.subdir, key)
+            )
+
+        config = self.config << key_config
+        return Record(itm, config, self.preload)
+
+    def __serialize__(self, context: BaseContext):
+        res = {'stem': self.stem, 'run_count': self.run_count}
+        if not self.store_subdir: res['store_subdir'] = False
+        return res | super().__serialize__(context)
+
+    @classmethod
+    def __deserialize__(cls, serialized: dict, context: BaseContext):
+        res: _bruns = super(_bruns, cls).__deserialize__(serialized, context)
+        res.stem = serialized.get('stem')
+        res.run_count = serialized.get('run_count')
+        res.store_subdir = serialized.get('store_subdir', True)
         return res
 
-    def __repr__(self):
-        lst = []
-        for i in range(len(self)):
-            res = self.__getitem__(i)
-            if isinstance(res, Record):
-                res = res._content
-            lst.append(res)
+    def record(self, value, idx: int = None, /, *, suffix: str = AUTO, subdir: os.PathLike = '', preload: str = False):
+        """
+        Record a storable into this list.
 
-        return list.__repr__(lst)
-    
-    def __len__(self):
-        return self.store.get(self.RUN_COUNT, 0)
-    
-    def __iter__(self):
-        return (self.__getitem__(i) for i in range(len(self)))
-    
-    @property
-    def latest(self):
-        label = self.store.get(self.LATEST, None)
-        if label:
-            return super().get(label, None)
-        return None
+        :param value:           The value to store.
+        :param int:             The index at which to store it (if not specified, the value is appended).
+        :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
+        :param str subdir:      The subdirectory in which to store te file. 
+        :param bool preload:    When ``True`` the file will be loaded during deserialization.
+
+        :raises ValueError:     if a name and a stem and/or suffix are specified. 
+        """
+        if idx is None:
+            self.append(value)
+            idx = -1
+        else:
+            self.insert(idx, value)
+
+        if is_storable(value):
+            rec: Record = self.store.__getitem__(idx)
+            cfg = recordconfig(
+                suffix=suffix, 
+                subdir=os.path.join(rec._config.subdir, subdir)
+            )
+            rec._config = rec._config << cfg
+            if preload:
+                rec.preload = preload
+
+    def clear(self):
+        super().clear()
+        self.run_count = 0
+
+
+@serializable(name='_ser__mruns')
+class mruns(_bruns):
+    pass
+
+
+@storable(name='_sto__smruns')
+@serializable(name='_ser__smruns')
+class smruns(_bruns):
+    pass
 
 
 def smlist_factory(subdir: os.PathLike = '', preload: bool = False):
@@ -712,7 +729,13 @@ def smdict_factory(subdir: os.PathLike = '', preload: bool = False, store_by_key
     return factory
 
 
-def mruns_factory(stem: str = None, subdir: os.PathLike = '', preload: bool = False, store_by_key: bool = False, store_subdir: bool = True):
+def mruns_factory(stem: str = None, subdir: os.PathLike = '', preload: bool = False, store_subdir: bool = True):
     def factory():
-        return mruns(stem=stem, subdir=subdir, preload=preload, store_by_key=store_by_key, store_subdir=store_subdir)
+        return mruns(stem=stem, subdir=subdir, preload=preload, store_subdir=store_subdir)
+    return factory
+
+
+def smruns_factory(stem: str = None, subdir: os.PathLike = '', preload: bool = False, store_subdir: bool = True):
+    def factory():
+        return mruns(stem=stem, subdir=subdir, preload=preload, store_subdir=store_subdir)
     return factory
