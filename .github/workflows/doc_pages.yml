@@ -2,7 +2,7 @@ name: doc_pages
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   build_docs_job:
