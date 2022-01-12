@@ -8,7 +8,7 @@ mkdir -p "$output_folder"
 # Function that builds the sphinx documentation.
 # usage:    generate_docs <branch-name> <output-directory>
 function generate_docs {
-    if [ "$1" = "main" ]; then dir=""; else dir="$1/"; fi
+    if [ "$1" = "main" ]; then dir="docs"; else dir="$1/docs"; fi
     pushd ../
     python setup.py install
     sphinx-build -M html docs/source /tmp/sphinx-build
@@ -40,15 +40,15 @@ echo "Documentation for" \
 # Always have a link to main, it's at the root of the docs folder
 echo -e '\n### Main Branch\n' >> "$README"
 echo "- **main**  " >> "$README"
-echo "  [Sphinx](index.html)" >> "$README"
+echo "  [Sphinx](docs/index.html)" >> "$README"
 # Find all tags with documentation (version numbers)
 echo -e '\n### Tags and Releases\n' >> "$README"
 git tag -l --sort=-creatordate \
  | while read tag; do
-    index="$output_folder/$tag/index.html"
+    index="$output_folder/$tag/docs/index.html"
     if [ -e "$index" ]; then
         echo "- **$tag**  " >> "$README"
-        echo "  [Sphinx]($tag/index.html)" >> "$README"
+        echo "  [Sphinx]($tag/docs/index.html)" >> "$README"
     else
         echo "tag $tag has no documentation"
     fi
@@ -58,10 +58,10 @@ echo -e '\n### Other Branches\n' >> "$README"
 git branch -r --sort=-committerdate | cut -d / -f 2 \
  | while read branch
 do
-    index="$output_folder/$branch/index.html"
+    index="$output_folder/$branch/docs/index.html"
     if [ -e "$index" ]; then
         echo "- **$branch**  " >> "$README"
-        echo "  [Sphinx]($branch/index.html)" >> "$README"
+        echo "  [Sphinx]($branch/docs/index.html)" >> "$README"
     else
         echo "branch $branch has no documentation"
     fi
