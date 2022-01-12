@@ -30,7 +30,9 @@ jobs:
           git checkout ${GITHUB_REF##*/}
 
       - name: Generate documentation
-        run: ./ci/generate_docs.sh /tmp/staging
+        run: |
+          chmod +x ./ci/generate_docs.sh
+          ./ci/generate_docs.sh /tmp/staging
 
       - name: Commit and push documention
         run: |
