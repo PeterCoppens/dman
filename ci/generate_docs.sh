@@ -34,9 +34,7 @@ git fetch
 git fetch --tags
 
 README="$output_folder/README.md"
-echo "Documentation for" \
+echo "[Documentation](docs/index.html) for" \
      "[**$GITHUB_REPOSITORY**](https://github.com/$GITHUB_REPOSITORY)." \
 > "$README"
-# Always have a link to main, it's at the root of the docs folder
-echo "[Documentation](docs/index.html)" >> "$README"
 
