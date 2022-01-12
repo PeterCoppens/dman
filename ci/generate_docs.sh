@@ -38,41 +38,5 @@ echo "Documentation for" \
      "[**$GITHUB_REPOSITORY**](https://github.com/$GITHUB_REPOSITORY)." \
 > "$README"
 # Always have a link to main, it's at the root of the docs folder
-echo -e '\n### Main Branch\n' >> "$README"
-echo "- **main**  " >> "$README"
-echo "  [Sphinx](docs/index.html)" >> "$README"
-# Find all tags with documentation (version numbers)
-echo -e '\n### Tags and Releases\n' >> "$README"
-git tag -l --sort=-creatordate \
- | while read tag; do
-    index="$output_folder/$tag/docs/index.html"
-    if [ -e "$index" ]; then
-        echo "- **$tag**  " >> "$README"
-        echo "  [Sphinx]($tag/docs/index.html)" >> "$README"
-    else
-        echo "tag $tag has no documentation"
-    fi
-done
-# Find other branches (not version numbers)
-echo -e '\n### Other Branches\n' >> "$README"
-git branch -r --sort=-committerdate | cut -d / -f 2 \
- | while read branch
-do
-    index="$output_folder/$branch/docs/index.html"
-    if [ -e "$index" ]; then
-        echo "- **$branch**  " >> "$README"
-        echo "  [Sphinx]($branch/docs/index.html)" >> "$README"
-    else
-        echo "branch $branch has no documentation"
-    fi
-done
+echo "[Documentation](docs/index.html)" >> "$README"
 
-echo -e "\n***\n" >> "$README"
-# echo "<sup>Updated on $(date)</sup>" >> "$README"
-cat > "$output_folder/_config.yml" << EOF
-include:
-  - "_modules"
-  - "_sources"
-  - "_static"
-  - "_images"
-EOF
