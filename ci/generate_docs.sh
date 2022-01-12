@@ -8,7 +8,7 @@ mkdir -p "$output_folder"
 # Function that builds the sphinx documentation.
 # usage:    generate_docs <branch-name> <output-directory>
 function generate_docs {
-    if [ "$1" = "main" ]; then dir="docs/build"; else dir="$1/"; fi
+    if [ "$1" = "main" ]; then dir=""; else dir="$1/"; fi
     pushd ../
     python setup.py install
     sphinx-build -M html docs/source /tmp/sphinx-build
