@@ -10,7 +10,7 @@ jobs:
  
     steps:
       - uses: actions/checkout@v2
-      
+
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9.7'
@@ -21,6 +21,7 @@ jobs:
           python -m pip install sphinx-rtd-theme
 
       - name: Create staging area
+        run: |
           rm -rf /tmp/staging
           git fetch origin gh-pages:gh-pages ||:
           git checkout gh-pages || \
