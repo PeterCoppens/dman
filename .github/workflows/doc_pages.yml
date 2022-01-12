@@ -1,0 +1,43 @@
+name: doc_pages
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build_docs_job:
+    runs-on: ubuntu-latest
+ 
+    steps:
+      - uses: actions/checkout@v2
+      
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.9.7'
+
+      - name: Install Python Dependencies
+        run: |
+          sudo apt-get install python3-sphinx
+          python -m pip install sphinx-rtd-theme
+
+      - name: Create staging area
+          rm -rf /tmp/staging
+          git fetch origin gh-pages:gh-pages ||:
+          git checkout gh-pages || \
+          { git checkout --orphan gh-pages && git rm -rf . && git clean -fxd; }
+          cp -ar $GITHUB_WORKSPACE/ /tmp/staging
+          git checkout ${GITHUB_REF##*/}
+
+      - name: Generate documentation
+        run: ./ci/generate_docs.sh /tmp/staging
+
+      - name: Commit and push documention
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          commithash=$(git rev-parse HEAD)
+          cd /tmp/staging
+          git add .
+          git commit -m "Documentation for ${commithash}" && \
+          git reset $(git commit-tree HEAD^{tree} -m "Documentation for ${commithash}") && \
+          git push -f origin gh-pages ||:
