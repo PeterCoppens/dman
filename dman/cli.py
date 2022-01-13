@@ -4,9 +4,8 @@ import logging
 
 import os
 
-from dman.core import DMan, Stamp, Dependency
+from dman.core import DMan, Stamp, Dependency, init_dman
 from dman.persistent.serializables import isvalid
-from dman.persistent.storables import Unreadable
 from dman.repository import get_root_path
 from dman.utils.git import check_git_committed
 from dman.utils.user import add_to_parser, arg, parse, prompt_user
@@ -44,7 +43,7 @@ def main():
         help='initialize dman in this folder'
     )
     init_parser.set_defaults(
-        execute=lambda _: get_root_path(create=True)
+        execute=lambda _: init_dman()
     )
 
     # == new command ===========================================================

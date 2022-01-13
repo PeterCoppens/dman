@@ -3,7 +3,7 @@ import os
 from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any
 import uuid
-from dman.persistent.serializables import deserialize, is_serializable, serializable, BaseContext, serialize
+from dman.persistent.serializables import BaseInvalid, deserialize, is_serializable, serializable, BaseContext, serialize
 from dman.persistent.serializables import ExcUndeserializable, ExcUnserializable, Unserializable, Undeserializable
 from dman.utils.smartdataclasses import AUTO, overrideable
 from dman.persistent.storables import is_storable, storable_type, read, write
@@ -13,7 +13,33 @@ REMOVE = '__remove__'
 
 
 @serializable(name='__no_file')
-class NoFile(ExcUndeserializable): ...
+class NoFile(ExcUndeserializable):
+    def __repr__(self):
+        return f'NoFile: {self.type}'
+
+
+@serializable(name='__un_writable')
+class UnWritable(Unserializable):
+    def __repr__(self):
+        return f'UnWritable: {self.type}'
+
+
+@serializable(name='__exc_un_writable')
+class ExcUnWritable(ExcUnserializable):
+    def __repr__(self):
+        return f'UnWritable: {self.type}'
+
+
+@serializable(name='__un_readable')
+class UnReadable(Undeserializable):
+    def __repr__(self):
+        return f'UnReadable: {self.type}'
+
+
+@serializable(name='__exc_un_readable')
+class ExcUnReadable(ExcUndeserializable):
+    def __repr__(self):
+        return f'UnReadable: {self.type}'
 
 
 @dataclass
@@ -28,36 +54,53 @@ class Context(BaseContext):
 
     def write(self, storable):
         if self.parent is None:
-            return Unserializable(type=type(storable), info='Cannot write to root directory.')
+            return UnWritable(type=type(storable), info='Cannot write to root directory.')
         self.touch()
         try:
             write(storable, self.path, self.parent)
             return None
         except Exception:
-            return ExcUnserializable(
+            return ExcUnWritable(
                 type=type(storable), info='Exception encountered while writing.'
             )
     
     def read(self, sto_type):
         if self.parent is None:
-            return Undeserializable(type=sto_type, info='Cannot read root directory.')
+            return UnReadable(type=sto_type, info='Cannot read root directory.')
         try:
             return read(sto_type, self.path, self.parent)
         except FileNotFoundError:
-            return NoFile(type=sto_type, info='Missing File')
+            return NoFile(type=sto_type, info='Missing File.')
         except Exception:
-            return ExcUndeserializable(
+            return ExcUnReadable(
                 type=sto_type, info='Exception encountered while reading.'
             )
 
-
-    def remove(self):
+    def delete(self, obj, remove: bool = True):
+        if remove:
+            self.parent.remove(obj)
         if self.parent is None:
-            raise RuntimeError('cannot remove root repository')
+            raise RuntimeError('Cannot delete root repository')
         if os.path.exists(self.path):
             os.remove(self.path)
         self.parent.clean()
-        return self
+
+    def remove(self, obj):
+        if is_removable(obj):
+            inner_remove = getattr(obj, REMOVE, None)
+            if inner_remove is not None:
+                inner_remove(self)
+            return
+
+        if is_dataclass(obj):
+            obj = asdict(obj)
+
+        if isinstance(obj, (tuple, list)):
+            for x in obj[:]:
+                remove(x, self)
+        elif isinstance(obj, dict):
+            for k in obj.keys():
+                remove(obj[k], self)
     
     def open(self):
         if not os.path.isdir(self.path):
@@ -90,10 +133,6 @@ class Context(BaseContext):
         res = self.__class__(os.path.join(self.path, other), parent=self)
         self.children[other] = res
         return res
-
-
-def context(path: str):
-    return Context(path=path)
 
 
 @serializable(name='__ser_rec_config')
@@ -150,7 +189,6 @@ class Unloaded:
     context: Context
 
     def __load__(self):
-        # print(f'loading {self.type} from {self.path}')
         return self.context.read(self.type)
     
     def __repr__(self) -> str:
@@ -196,7 +234,9 @@ class Record:
     def content(self):
         if is_unloaded(self._content):
             ul: Unloaded = self._content
+            ul.context.log('record', f'loading {str(self)}', level=2)
             self._content = ul.__load__()
+            ul.context.log('record', f'finished loading {str(self)}', level=2)
         return self._content
 
     @content.setter
@@ -226,18 +266,30 @@ class Record:
         if isinstance(context, Context):
             target = Record.__parse(self.config, context)
             # remove all subfiles of content
-            remove(self.content, target.parent)
-            target.remove()
+            content = self._content
+            if is_unloaded(content):
+                context.log('record', 'content unloaded: loading ...')
+                ul: Unloaded = content
+                content = ul.__load__()
+                context.log('record', 'finished load.')
+            if isinstance(content, BaseInvalid):
+                context.log('record', 'loaded content is invalid:', level=1)
+                context.log('record', content)
+            else:
+                target.delete(content)
 
     def __serialize__(self, context: BaseContext):
         sto_type = storable_type(self._content)
         target = Record.__parse(self.config, context)
+        context.log('record', f'serializing record with storable type: {sto_type} ...')
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
             sto_type = unloaded.type
         elif isinstance(context, Context):
+            context.log('record', 'content is loaded, executing write ...')
             exc = target.write(self._content)
             if exc is not None:
+                context.log('record', 'exception encountered while writing.', level=1)
                 self.exception = exc
         else:
             return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
@@ -250,23 +302,31 @@ class Record:
             res['preload'] = self.preload
         if self.exception is not None:
             res['exception'] = serialize(self.exception, context)
+        
         return res
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
+        context.log(f'record', 'deserializing record ...')
         config: RecordConfig = deserialize(
             serialized.get('target', ''), ser_type=RecordConfig
         )
         sto_type = serialized.get('sto_type')
         preload = serialized.get('preload', False)
-        exception = deserialize(serialized.get('exception', None), context)
+        exception = deserialize(serialized.get('exception', None))
+        if isinstance(exception, BaseInvalid):
+            context.log('record', 'error during earlier serialization:', level=1)
+            context.log('record', exception)
 
         content = Undeserializable(type=sto_type, info=f'Could not read {config.target}')
         if isinstance(context, Context):
             target = Record.__parse(config, context)
             if preload:
+                context.log('record', 'preload enabled, loading from file ...')
                 content = target.read(sto_type)
             else:
+                context.log('record' , 'preload disabled, load deferred')
+                context.log(f'record', f'path: "{target.path}"')
                 content = Unloaded(sto_type, target.path, context=target)
 
         out = cls(content=content, config=config, preload=preload)
@@ -306,23 +366,8 @@ def is_removable(obj):
     return hasattr(obj, REMOVE)
 
 
-def remove(obj, context: BaseContext = None):
-    if context is None:
-        context = BaseContext()
-
-    if is_removable(obj):
-        inner_remove = getattr(obj, REMOVE, None)
-        if inner_remove is not None:
-            inner_remove(context)
+def remove(obj, context: Context = None):
+    if not isinstance(context, Context):
         return
-
-    if is_dataclass(obj):
-        obj = asdict(obj)
-
-    if isinstance(obj, (tuple, list)):
-        for x in obj[:]:
-            remove(x, context)
-    elif isinstance(obj, dict):
-        for k in obj.keys():
-            remove(obj[k], context)
+    context.remove(obj)
 

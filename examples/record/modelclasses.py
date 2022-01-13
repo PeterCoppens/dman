@@ -1,7 +1,7 @@
 import copy
 from dman.persistent.serializables import serialize, deserialize
 from dman.persistent.modelclasses import modelclass, recordfield, serializefield
-from dman.persistent.record import Context
+from dman.persistent.record import VerboseContext
 from dman.utils.display import list_files
 from tempfile import TemporaryDirectory
 
@@ -28,17 +28,6 @@ class Foo:
     d: TestSto = serializefield()
     f: dict = field(default_factory=dict)
 
-    def __write__(self, path, context):
-        print(f'..writing foo to {path}')
-        with open(path, 'w') as f:
-            sjson.dump(serialize(self, context, content_only=True), f, indent=4)
-
-    @classmethod
-    def __read__(cls, path, context):
-        print(f'..writing foo to {path}')
-        with open(path, 'r') as f:
-            return deserialize(sjson.load(f), context, ser_type=cls)
-
 
 @modelclass(storable=True)
 @dataclass
@@ -51,7 +40,7 @@ if __name__ == '__main__':
 
     print('\n====== model class tests =======\n')
     with TemporaryDirectory() as base:
-        ctx = Context(base)
+        ctx = VerboseContext(base)
         foo = Foo(a=Other('c'), b=TestSto('b'), c=TestSto('c'), d=TestSto('d'), e=TestSto('e'))
         foo.f['test'] = 'hello'
         ser = serialize(foo, ctx)

@@ -1,6 +1,7 @@
 import inspect
 
 from dataclasses import MISSING, dataclass, field, fields, is_dataclass
+import re
 import sys
 import traceback
 from typing import List
@@ -165,6 +166,8 @@ class Unserializable(BaseInvalid):
     def __post_init__(self):
         if not isinstance(self.type, str):
             self.type = str(self.type)
+        self.type = self.type.replace('\n', '')
+        self.type = re.sub(' +', ' ', self.type)
 
     def __serialize__(self):
         res = {'type': self.type}
@@ -291,9 +294,7 @@ class BaseContext:
     """
     The basic interface for serialization contexts.
     """
-    def log(self, msg: str): ...
-
-    def error(self, msg: str): ...
+    def log(self, label: str, msg: str, level: int = 0, end: str = None): ...
 
     def serialize(self, ser, content_only: bool = False): 
         if isinstance(ser, (list, tuple)):
@@ -317,8 +318,8 @@ class BaseContext:
     def _serialize__object(self, ser):
         if not is_serializable(ser):
             return Unserializable(
-                type=ser, 
-                info=f'Unserializable type: {repr(ser)}.'
+                type=type(ser), 
+                info=f'Unserializable type: {type(ser).__name__}.'
             )
 
         ser_method = getattr(ser, SERIALIZE, lambda: {})
@@ -330,12 +331,12 @@ class BaseContext:
                 content = ser_method(self)
             else:
                 return Unserializable(
-                    type=ser, 
+                    type=type(ser), 
                     info='Invalid inner serialize method.'
                 )
         except Exception:
             return ExcUnserializable(
-                type=ser, 
+                type=type(ser), 
                 info='Error during serialization:'
             )
 

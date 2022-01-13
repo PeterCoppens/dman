@@ -211,8 +211,10 @@ def recordfields(obj):
 
 
 def _remove__modelclass(self, context: BaseContext = None):
+    if context is None: context = BaseContext()
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
+            context.log(f'modelclass', f'removing field: "{f.name}"')
             if f.name in recordfields(self):
                 value = getattr(self, _record_key(f.name))
                 remove(value, context)
@@ -222,13 +224,15 @@ def _remove__modelclass(self, context: BaseContext = None):
 
 
 def _serialize__modelclass_content_only(self, context: BaseContext = None):
+    if context is None: context = BaseContext()
     res = dict()
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             if f.name in recordfields(self):
                 value = getattr(self, _record_key(f.name))
             else:
-                value = getattr(self, f.name)        
+                value = getattr(self, f.name)
+            context.log(f'modelclass', f'serializing field: "{f.name}"')
             res[f.name] = serialize(value, context, content_only=True)
 
     return res
@@ -241,6 +245,7 @@ def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseCo
         value = serialized.get(f.name, None)
         if value is None:
             continue
+        context.log(f'modelclass', f'deserializing field: "{f.name}"')
         if f.name in recordfields(cls):
             processed[f.name] = deserialize(value, context, ser_type=Record)
         else:
@@ -257,6 +262,7 @@ def _serialize__modelclass(self, context: BaseContext = None):
                 value = getattr(self, _record_key(f.name))
             else:
                 value = getattr(self, f.name)
+            context.log(f'modelclass', f'serializing {f.name} of type: "{type(value).__name__}"')
             res[f.name] = serialize(value, context)
                     
     return res
@@ -268,6 +274,7 @@ def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
     for f in fields(cls):
         v = serialized.get(f.name, None)
         if v is not None:
+            context.log(f'modelclass', f'deserializing field: "{f.name}" of type: "{type(v).__name__}"')
             processed[f.name] = deserialize(v, context)
 
     return cls(**processed)
@@ -323,11 +330,15 @@ class _blist(MutableSequence):
         if self.auto_clean:
             res['auto_clean'] = self.auto_clean
 
+        context.log(f'{type(self).__name__}', f'removing unused items ...')
         for itm in self.unused:
             remove(itm, context)
         self.unused = []
 
-        for itm in self.store:
+        context.log(f'{type(self).__name__}', f'serializing store ...')
+        for i, itm in enumerate(self.store):
+            context.log(f'{type(self).__name__}', 
+                f'serializing index: "{i}" of type: "{type(itm).__name__}" ...')
             if isinstance(itm, Record):
                 if not self.auto_clean or itm.exists():
                     lst.append(serialize(itm, context))
@@ -335,7 +346,9 @@ class _blist(MutableSequence):
                     self.unused.append(itm)
             else:
                 lst.append(serialize(itm, context))
-
+        
+        if self.auto_clean: context.log(f'{type(self).__name__}', 
+            f'clean dangling pointers ...')
         for itm in self.unused:
             remove(itm, context)
         self.unused = []
@@ -351,7 +364,9 @@ class _blist(MutableSequence):
         lst = serialized.get('store', list())
         res = cls(subdir=subdir, preload=preload, auto_clean=auto_clean)
 
-        for itm in lst:
+        context.log(f'{cls.__name__}', f'deserializing list ...')
+        for i, itm in enumerate(lst):
+            context.log(f'{cls.__name__}', f'deserializing index: "{i}" of type: "{type(itm).__name__}" ...')
             res.append(deserialize(itm, context))
 
         return res
@@ -384,6 +399,7 @@ class _blist(MutableSequence):
                 rec.preload = preload
 
     def __remove__(self, context: BaseContext):
+        context.log(f'{type(self).__name__}', f'removing items ...')
         for itm in self.store:
             remove(itm, context)
         
@@ -501,11 +517,15 @@ class _bdict(MutableMapping):
         if self.auto_clean:
             res['auto_clean'] = self.auto_clean
 
+        context.log(f'{type(self).__name__}', f'removing unused items ...')
         for itm in self.unused:
             remove(itm, context)
         self.unused = []
 
+        context.log(f'{type(self).__name__}', f'serializing store ...')
         for k, itm in self.store.items():
+            context.log(f'{type(self).__name__}', 
+                f'serializing at key: "{k}" of type: "{type(itm).__name__}" ...')
             if isinstance(itm, Record):
                 if not self.auto_clean or itm.exists():
                     dct[k] = serialize(itm, context)
@@ -513,7 +533,9 @@ class _bdict(MutableMapping):
                     self.unused.append(itm)
             else:
                 dct[k] = serialize(itm, context)
-
+        
+        if self.auto_clean: context.log(f'{type(self).__name__}', 
+            f'clean dangling pointers ...')
         for itm in self.unused:
             remove(itm, context)
         self.unused = []
@@ -532,7 +554,9 @@ class _bdict(MutableMapping):
             auto_clean=serialized.get('auto_clean', False)
         )
 
+        context.log(f'{cls.__name__}', f'deserializing dict ...')
         for k, v in dct.items():
+            context.log(f'{cls.__name__}', f'deserializing at key: "{k}" of type: "{type(v).__name__}" ...')
             res[k] = deserialize(v, context)
 
         return res
@@ -551,6 +575,7 @@ class _bdict(MutableMapping):
         return Record(v, config, self.preload)
     
     def __remove__(self, context: BaseContext):
+        context.log(f'{type(self).__name__}', f'removing items ...')
         for itm in self.store.values():
             remove(itm, context)
         

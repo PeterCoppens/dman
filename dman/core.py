@@ -5,13 +5,17 @@ from datetime import datetime
 import os
 from dman.persistent.modelclasses import mdict, modelclass
 from dman.persistent.serializables import serializable
-from dman.repository import track
+from dman.repository import track, get_root_path
 from dman.persistent.configclasses import dictsection, section, configclass
 from dman.utils.git import get_git_hash, get_git_url
 
 
 LABEL_DT_STRING = "%y%m%d%H%M%S"
 DESCR_DT_STRING = "%d/%m/%y %H:%M:%S"
+
+
+def init_dman():
+    get_root_path(create=True)
 
 
 @serializable(name='__dman_time')
@@ -103,7 +107,7 @@ class Dependency:
         print(indent+f'  path: {self.path}')
         print(indent+f'  repo: {self.remote}')
         print(indent+f'  hash: {self.hash}')
-
+        
 
 class DMan:
     def __init__(self, base: os.PathLike = None):

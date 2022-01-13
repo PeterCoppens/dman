@@ -1,7 +1,9 @@
 from dman import modelclass, track, load, storable, save
-from dman import recordfield, smdict_factory, smdict
+from dman import recordfield, smdict_factory, smdict, setup
 
 import numpy as np
+
+setup(logfile='log.ansi')
 
 
 @storable(name='sarray')
@@ -49,20 +51,27 @@ class Experiment:
     )
 
 
+@storable(name='__broken')
+class Broken: ...
+
+
 def main():
     cfg: Configuration = load('config', default_factory=Configuration, cluster=False)
-    with track('experiment', default_factory=Experiment) as content:
+    with track('experiment', default_factory=Experiment, verbose=1) as content:
         experiments: Experiment = content
+        experiments.results.clear()
         if len(experiments.results) > 0:
             print('results already available')
             return
 
         rng = np.random.default_rng(cfg.seed)
-        for _ in range(cfg.nrepeats):
+        for i in range(cfg.nrepeats):
             input = rng.random(
                 size=(cfg.size, cfg.nsample)
             )
             run = Run.execute(input.view(sarray), rng)
+            if i == 0:
+                run.output = Broken()
             experiments.results[f'run-{len(experiments.results)}'] = run
 
 
