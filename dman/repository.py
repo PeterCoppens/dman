@@ -192,7 +192,7 @@ def save(key: str, obj, *, subdir: os.PathLike = '', cluster: bool = True, gitig
     :raises RuntimeError: if either generator or base is not provided and no .dman folder exists.
     """
     if is_storable(obj):
-        obj = record(obj)
+        obj = record(obj, stem=storable_stem)
     
     if not is_serializable(obj):
         raise ValueError('can only save storable or serializable objects')

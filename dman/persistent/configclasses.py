@@ -2,7 +2,7 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass, field, is_dataclass, fields
 import inspect
 
-from dman.persistent.storables import WRITE, READ, Unreadable, storable
+from dman.persistent.storables import WRITE, READ, storable
 from dman.persistent.modelclasses import modelclass
 from dman.persistent.serializables import BaseContext, is_serializable, ser_str2type, ser_type2str, serialize, deserialize
 from dman.persistent.record import Record
@@ -102,7 +102,7 @@ def _write__config(self, path: str, serializer: BaseContext = None):
 def _read__config(cls, path: str, context: BaseContext = None):
     cfg = configparser.ConfigParser()
     if not os.path.exists(path):
-        return Unreadable(path, 'configclass')
+        raise FileNotFoundError('File not found at {path}.')
     cfg.read(path)
 
     res = cls()

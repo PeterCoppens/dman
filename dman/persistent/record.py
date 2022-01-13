@@ -3,12 +3,17 @@ import os
 from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any
 import uuid
-from dman.persistent.serializables import Unserializable, deserialize, is_serializable, serializable, BaseContext, serialize
+from dman.persistent.serializables import deserialize, is_serializable, serializable, BaseContext, serialize
+from dman.persistent.serializables import ExcUndeserializable, ExcUnserializable, Unserializable, Undeserializable
 from dman.utils.smartdataclasses import AUTO, overrideable
-from dman.persistent.storables import NoFile, is_storable, storable_type, read, unreadable, write
+from dman.persistent.storables import is_storable, storable_type, read, write
 
 
 REMOVE = '__remove__'
+
+
+@serializable(name='__no_file')
+class NoFile(ExcUndeserializable): ...
 
 
 @dataclass
@@ -18,19 +23,33 @@ class Context(BaseContext):
     children: dict = field(default_factory=dict, repr=False, init=False)
 
     def touch(self):
-        if self.parent is None:
-            raise RuntimeError('cannot write to root repository')
         self.parent.open()
         return self
 
     def write(self, storable):
+        if self.parent is None:
+            return Unserializable(type=type(storable), info='Cannot write to root directory.')
         self.touch()
-        write(storable, self.path, self.parent)
+        try:
+            write(storable, self.path, self.parent)
+            return None
+        except Exception:
+            return ExcUnserializable(
+                type=type(storable), info='Exception encountered while writing.'
+            )
     
     def read(self, sto_type):
         if self.parent is None:
-            raise RuntimeError('cannot read root repository')
-        return read(sto_type, self.path, self)
+            return Undeserializable(type=sto_type, info='Cannot read root directory.')
+        try:
+            return read(sto_type, self.path, self.parent)
+        except FileNotFoundError:
+            return NoFile(type=sto_type, info='Missing File')
+        except Exception:
+            return ExcUndeserializable(
+                type=sto_type, info='Exception encountered while reading.'
+            )
+
 
     def remove(self):
         if self.parent is None:
@@ -132,7 +151,7 @@ class Unloaded:
 
     def __load__(self):
         # print(f'loading {self.type} from {self.path}')
-        return read(self.type, self.path, context=self.context)
+        return self.context.read(self.type)
     
     def __repr__(self) -> str:
         return f'UL[{self.type}]'
@@ -151,6 +170,7 @@ class Record:
         self._evaluated = False
 
         self.preload = preload
+        self.exception = None
     
     def exists(self):
         return not isinstance(self._content, NoFile)
@@ -216,7 +236,9 @@ class Record:
             unloaded: Unloaded = self._content
             sto_type = unloaded.type
         elif isinstance(context, Context):
-            target.write(self._content)
+            exc = target.write(self._content)
+            if exc is not None:
+                self.exception = exc
         else:
             return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
 
@@ -226,6 +248,8 @@ class Record:
         }
         if self.preload:
             res['preload'] = self.preload
+        if self.exception is not None:
+            res['exception'] = serialize(self.exception, context)
         return res
 
     @classmethod
@@ -235,16 +259,19 @@ class Record:
         )
         sto_type = serialized.get('sto_type')
         preload = serialized.get('preload', False)
+        exception = deserialize(serialized.get('exception', None), context)
 
-        content = unreadable(config.target, type=sto_type)
+        content = Undeserializable(type=sto_type, info=f'Could not read {config.target}')
         if isinstance(context, Context):
             target = Record.__parse(config, context)
             if preload:
                 content = target.read(sto_type)
             else:
-                content = Unloaded(sto_type, target.path, context=target.parent)
+                content = Unloaded(sto_type, target.path, context=target)
 
-        return cls(content=content, config=config, preload=preload)
+        out = cls(content=content, config=config, preload=preload)
+        out.exception = exception
+        return out
 
 
 def recordconfig(*, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = ''):
