@@ -1,9 +1,7 @@
 from dman import modelclass, track, load, storable, save
-from dman import recordfield, smdict_factory, smdict, setup
+from dman import recordfield, smdict_factory, smdict, verbose
 
 import numpy as np
-
-setup(logfile='log.ansi')
 
 
 @storable(name='sarray')
@@ -21,17 +19,23 @@ class sarray(np.ndarray):
             return res.view(cls)
 
 
+def sarrayfield(**kwargs):
+    def to_sarray(arg):
+        if isinstance(arg, np.ndarray):
+            return arg.view(sarray)
+        return arg                
+    return recordfield(**kwargs, pre=to_sarray)
+
+
 @modelclass(name='run', storable=True)
 class Run:
-    input: sarray = recordfield(default=None)
-    output: sarray = recordfield(default=None)
+    input: sarray = sarrayfield(default=None)
+    output: sarray = sarrayfield(default=None)
     
     @classmethod
     def execute(cls, input: np.ndarray, rng: np.random.Generator):
-        input = input.view(sarray)
         transform = rng.standard_normal(size=(100, input.shape[0]))
         output = transform @ input
-        output = output.view(sarray)
         return cls(input, output)
 
 
@@ -56,8 +60,10 @@ class Broken: ...
 
 
 def main():
+    verbose.setup(logfile='log.ansi')
+
     cfg: Configuration = load('config', default_factory=Configuration, cluster=False)
-    with track('experiment', default_factory=Experiment, verbose=1) as content:
+    with track('experiment', default_factory=Experiment, verbose=True) as content:
         experiments: Experiment = content
         experiments.results.clear()
         if len(experiments.results) > 0:
@@ -69,7 +75,7 @@ def main():
             input = rng.random(
                 size=(cfg.size, cfg.nsample)
             )
-            run = Run.execute(input.view(sarray), rng)
+            run = Run.execute(input, rng)
             if i == 0:
                 run.output = Broken()
             experiments.results[f'run-{len(experiments.results)}'] = run

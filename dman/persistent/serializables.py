@@ -233,9 +233,13 @@ class ExcUnserializable(Unserializable):
 @dataclass
 class Undeserializable(Unserializable):
     serialized: dict = None
+    ser_type: str = None
 
     def __repr__(self):
         return f'Undeserializable: {self.type}'
+    
+    def __post_init__(self):
+        self.ser_type = ser_type2str(self.ser_type)
 
     def __str__(self):
         res = super().__str__()
@@ -245,14 +249,36 @@ class Undeserializable(Unserializable):
             res += textwrap.indent(sjson.dumps(self.serialized), ' '*8)
         return res
 
+    def __serialize__(self):
+        res = super().__serialize__()
+        if self.serialized is not None:
+            res['serialized'] = self.serialized
+        if self.ser_type is not None:
+            res['ser_type'] = self.ser_type
+        return res
+    
+    @classmethod
+    def __deserialize__(cls, serialized: dict, context):
+        res = cls(**deserialize(serialized, context))
+        if res.serialized is not None:
+            return deserialize(res.serialized, context, res.ser_type)
+        return res
+
+
 
 @serializable(name='__exc_undeserializable')
 @dataclass
 class ExcUndeserializable(ExcUnserializable):
     serialized: dict = None
+    ser_type: str = None
 
     def __repr__(self):
         return f'Undeserializable: {self.type}'
+    
+    def __post_init__(self):
+        super().__post_init__()
+        if not isinstance(self.ser_type, str):
+            self.ser_type = ser_type2str(self.ser_type)
 
     def __str__(self):
         res = super().__str__()
@@ -260,6 +286,21 @@ class ExcUndeserializable(ExcUnserializable):
             res += '\n'
             res += ' '*4 + 'Serialized: \n'
             res += textwrap.indent(sjson.dumps(self.serialized), ' '*8)
+        return res
+
+    def __serialize__(self):
+        res = super().__serialize__()
+        if self.serialized is not None:
+            res['serialized'] = self.serialized
+        if self.ser_type is not None:
+            res['ser_type'] = self.ser_type
+        return res
+    
+    @classmethod
+    def __deserialize__(cls, serialized: dict, context):
+        res = cls(**serialized)
+        if res.serialized is not None:
+            return deserialize(res.serialized, context, res.ser_type)
         return res
 
 
@@ -267,6 +308,8 @@ def isvalid(obj):
     """
     Check if an object is valid
     """
+    if isinstance(obj, dict):
+        return not issubclass(ser_str2type(obj.get(SER_TYPE, None)), BaseInvalid)
     return not isinstance(obj, BaseInvalid)
 
 
@@ -294,7 +337,11 @@ class BaseContext:
     """
     The basic interface for serialization contexts.
     """
-    def log(self, label: str, msg: str, level: int = 0, end: str = None): ...
+    def info(self, label: str, msg: str): ...
+
+    def emphasize(self, label: str, msg: str): ...
+
+    def error(self, label: str, msg: str): ...
 
     def serialize(self, ser, content_only: bool = False): 
         if isinstance(ser, (list, tuple)):
@@ -374,7 +421,8 @@ class BaseContext:
 
             if not isinstance(serialized, dict):
                 return Undeserializable(type=ser_type,
-                    info=f'Unexpected type for serialized: {type(serialized)}. Expected either list, tuple, atomic type or dict.'
+                    info=f'Unexpected type for serialized: {type(serialized)}. Expected either list, tuple, atomic type or dict.',
+                    serialized=serialized
                 )
 
             ser_type = serialized.get(SER_TYPE, MISSING)
@@ -382,12 +430,14 @@ class BaseContext:
                 return self._deserialize__dict(dict, serialized)
             else:
                 serialized = serialized.get(SER_CONTENT, {})
-                ser_type = ser_str2type(ser_type)
-                if ser_type is None:
-                    return Undeserializable(type=ser_type, 
-                        info=f'Unregistered type stored in serialized.', serialized=serialized
+                ser_type_get = ser_str2type(ser_type)
+                if ser_type_get is None:
+                    return Undeserializable(type=ser_type_get, 
+                        info=f'Unregistered type stored in serialized.', 
+                        serialized=serialized,
+                        ser_type=ser_type
                     )
-                return self._deserialize__object(serialized, ser_type)
+                return self._deserialize__object(serialized, ser_type_get)
 
         if ser_type is dict:
             return self._deserialize__dict(dict, serialized)
@@ -396,13 +446,15 @@ class BaseContext:
             return self._deserialize__list(list, serialized)
 
         if isinstance(ser_type, str) and type(serialized) is not str:
-            ser_type = __serializable_types.get(ser_type, None)
-            if ser_type is None:
+            ser_type_get = ser_str2type(ser_type)
+            if ser_type_get is None:
                 return Undeserializable(
-                    type=ser_type, 
-                    info=f'Unregistered type provided as argument.', serialized=serialized
+                    type=ser_type_get, 
+                    info=f'Unregistered type provided as argument.', 
+                    serialized=serialized,
+                    ser_type=ser_type
                 )
-            return self._deserialize__object(serialized, ser_type)
+            return self._deserialize__object(serialized, ser_type_get)
 
         if ser_type in sjson.atomic_types:
             return self._deserialize__atomic(ser_type, serialized)
@@ -416,7 +468,8 @@ class BaseContext:
                 return Undeserializable(
                     type=expected, 
                     info=f'Type {expected} has no deserialize method.', 
-                    serialized=serialized
+                    serialized=serialized,
+                    ser_type=expected
                 )
 
             sig = inspect.signature(ser_method)
@@ -428,13 +481,15 @@ class BaseContext:
                 return ExcUndeserializable(
                     type=expected, 
                     info=f'Type {expected} has invalid deserialize method.', 
-                    serialized=serialized
+                    serialized=serialized,
+                    ser_type=expected
                 )
         except Exception:
             return ExcUndeserializable(
                 type=expected, 
                 info=f'Exception encountered while deserializing {expected}:', 
-                serialized=serialized
+                serialized=serialized,
+                ser_type=expected
             )
 
     def _deserialize__atomic(self, cls, serialized):

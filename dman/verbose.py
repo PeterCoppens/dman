@@ -1,13 +1,39 @@
+from ast import Str
+from enum import Enum
 import logging
 import textwrap
+import os
+from dman.path import get_root_path
 from dman.persistent.record import Context, Record, is_removable
-from dman.persistent.serializables import ser_str2type, ser_type2str, SER_TYPE
+from dman.persistent.serializables import ser_str2type, ser_type2str, SER_TYPE, validate
 from dman.persistent.serializables import Unserializable, BaseInvalid
 from dman.utils import sjson
 from dataclasses import is_dataclass
 
 
+class Level(Enum):
+    DEBUG = 1
+    SOFT = 2
+
+
+current_level = Level.DEBUG
+
+
 class VerboseContext(Context):
+    class __SerializationLevel:
+        def __init__(self, label: str, title: str, context: 'VerboseContext'):
+            self.label = label
+            self.title = title
+            self.context = context
+
+        def __enter__(self):
+            self.context.head(f'{self.label}: ', self.title)
+            VerboseContext.stack.append(self.title)
+        
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            VerboseContext.stack.pop()
+            self.context.head(f'END {self.label}: ', self.title)
+
     class bcolors:
         """
         Ansi colors for printing
@@ -24,9 +50,10 @@ class VerboseContext(Context):
         INDENT = '  '
 
     HEADER_WIDTH = 20
-    level = 0
     LOGGER = logging.getLogger('verbose')
     HANDLER = logging.StreamHandler()
+
+    stack = []
 
     def format_remove(self, obj):
         if isinstance(obj, Record):
@@ -51,6 +78,7 @@ class VerboseContext(Context):
                 return '<UNKNOWN TYPE>'
         return f'{ser_type.__name__}(name={ser_type2str(ser_type)})'
 
+
     def apply_color(self, text: str, color: str):
         text = text.splitlines()
         text = [color + line + self.bcolors.ENDC + '\n' for line in text]
@@ -72,24 +100,47 @@ class VerboseContext(Context):
     def color_label(self, text):
         return self.apply_color(f'[{text}] ', self.bcolors.OKGREEN)
 
+
     def display(self, str, label: str = None):
-        if label is not None:
+        if current_level is Level.DEBUG and label is not None:
             label = self.color_label(label)
         else:
             label = ''
+        
+        indent = 0
+        if current_level is Level.DEBUG:
+            indent=len(VerboseContext.stack)
         VerboseContext.LOGGER.info(textwrap.indent(
-            str, VerboseContext.level*self.bcolors.INDENT + label))
+            str, indent * self.bcolors.INDENT + label))
 
-    def log(self, label: str, msg: str, level: int = 0):
+
+    def info(self, label: str, msg: str):
+        if current_level is Level.DEBUG:
+            self.display(msg, label=label)
+    
+    def emphasize(self, label: str, msg: str):
+        if current_level is Level.DEBUG:
+            self.display(self.color_accent(msg), label=label)
+    
+    def layer(self, label: str, title: str):
+        return VerboseContext.__SerializationLevel(label, title, self)
+    
+    def head(self, label: str, msg: str):
+        if current_level is Level.DEBUG:
+            self.display(self.color_header(label) + msg)
+    
+    def error(self, label: str, msg: str):
         if isinstance(msg, BaseInvalid):
-            self.log(label, str(msg), level=1)
-            return
-
-        if level == 1:
-            msg = self.color_error(msg)
-        if level == 2:
-            msg = self.color_accent(msg)
-        self.display(msg, label=label)
+            msg = str(msg)
+        if current_level is Level.DEBUG:
+            self.display(self.color_error(msg), label=label)
+        elif current_level is Level.SOFT:
+            head = ''
+            for s in VerboseContext.stack:
+                head += s + '>'
+            self.display(head[:-1], label=label)
+            self.display(self.color_error(msg), label=label)
+            
 
     def serialize(self, ser, content_only: bool = False):
         if ser is None:
@@ -103,11 +154,8 @@ class VerboseContext(Context):
             return super().serialize(ser, content_only)
 
         title = self.format_serializable(ser)
-        self.display(self.color_header('SERIALIZING:     ') + title)
-        VerboseContext.level += 1
-        res = super().serialize(ser, content_only)
-        VerboseContext.level -= 1
-        self.display(self.color_header('END SERIALIZING: ') + title)
+        with self.layer('SERIALIZING', title):
+            res = super().serialize(ser, content_only)
 
         return res
 
@@ -122,37 +170,34 @@ class VerboseContext(Context):
             return res
 
         title = self.format_serialized(serialized, ser_type)
-        self.display(self.color_header('DESERIALIZING:     ') + title)
-        VerboseContext.level += 1
-        res = super().deserialize(serialized, ser_type)
-        if isinstance(res, BaseInvalid):
-            self.display(self.color_error(str(res)))
-        VerboseContext.level -= 1
-        self.display(self.color_header('END DESERIALIZING: ') + title)
+        with self.layer('DESERIALIZING', title):
+            res = super().deserialize(serialized, ser_type)
+            if isinstance(res, BaseInvalid):
+                self.display(self.color_error(str(res)))
         return res
 
     def read(self, sto_type):
-        self.display(self.color_io(f'reading from file: "{self.path}"'))
+        if current_level is Level.DEBUG:
+            self.display(self.color_io(f'reading from file: "{self.path}"'))
         return super().read(sto_type)
 
     def write(self, storable):
-        self.display(self.color_io(f'writing to file: "{self.path}"'))
+        if current_level is Level.DEBUG:
+            self.display(self.color_io(f'writing to file: "{self.path}"'))
         return super().write(storable)
 
     def delete(self, obj):
         if is_removable(obj) or is_dataclass(obj) or isinstance(obj, (tuple, list, dict)):
             self.parent.remove(obj)
-        self.display(self.color_io(f'deleting file: "{self.path}"'))
+        if current_level is Level.DEBUG:
+            self.display(self.color_io(f'deleting file: "{self.path}"'))
         return super().delete(obj, remove=False)
 
     def remove(self, obj):
         if is_removable(obj) or is_dataclass(obj) or isinstance(obj, (tuple, list, dict)):
             title = self.format_remove(obj)
-            self.display(self.color_header('REMOVING:   ') + title)
-            VerboseContext.level += 1
-            res = super().remove(obj)
-            VerboseContext.level -= 1
-            self.display(self.color_header('END REMOVING: ') + title)
+            with self.layer('REMOVING', title):
+                res = super().remove(obj)
             return res
         return super().remove(obj)
 
@@ -163,7 +208,24 @@ VerboseContext.LOGGER.addHandler(__handler)
 VerboseContext.LOGGER.setLevel(logging.INFO)
 
 
-def context(path: str, verbose: int = -1):
+def context(path: Str, verbose: int = -1):
     if verbose > 0:
         return VerboseContext(path=path)
     return Context(path=path)
+
+
+def setup(logfile: str = None, loglevel: Level = None):
+    if loglevel is not None:
+        global current_level
+        current_level = loglevel
+
+    if logfile is not None:
+        logfile = os.path.join(get_root_path(), logfile)
+        base, _ = os.path.split(logfile)
+        if not os.path.isdir(base):
+            os.mkdir(base)
+            
+        log = VerboseContext.LOGGER
+        for hdlr in log.handlers[:]:
+            log.removeHandler(hdlr)
+        log.addHandler(logging.FileHandler(logfile, mode='w'))

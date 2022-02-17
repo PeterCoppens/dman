@@ -5,37 +5,13 @@ import sys
 from contextlib import suppress
 from typing import Union
 
-from dman.persistent.record import Context, record
+
+from dman.persistent.record import Context
 from dman.persistent.serializables import deserialize, is_serializable, serialize
-from dman.persistent.storables import is_storable
 from dman.utils import sjson
 from dman.verbose import context
+from dman.path import get_root_path
 
-ROOT_FOLDER = '.dman'
-
-
-class RootError(RuntimeError): ...
-
-
-def get_root_path(create: bool = False):
-    root_path = None
-    cwd = Path.cwd()
-
-    current_path = cwd
-    while root_path is None:
-        if current_path.joinpath(ROOT_FOLDER).is_dir():
-            root_path = current_path.joinpath(ROOT_FOLDER)
-        else:
-            current_path = current_path.parent
-            if current_path.parent == current_path:
-                if create:
-                    print(f'no .dman folder found, created one in {cwd}')
-                    root_path = os.path.join(cwd, ROOT_FOLDER)
-                    os.makedirs(root_path)
-                    return root_path
-                raise RootError('no .dman folder found. Consider running $dman init')
-
-    return str(root_path)
 
 
 def script_label(base: os.PathLike):
@@ -165,7 +141,7 @@ def repository(*, name: str = '', subdir: str = '', generator: str = MISSING, ba
 
 def save(key: str, obj, *, subdir: os.PathLike = '', cluster: bool = True, verbose: int = -1, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
     """
-    Save a serializable or storable object to a file.
+    Save a serializable object to a file.
         If the object is storable, it will automatically be wrapped in a 
         record before serialization. 
 
@@ -186,7 +162,7 @@ def save(key: str, obj, *, subdir: os.PathLike = '', cluster: bool = True, verbo
             the / is replaced by : in the output).
 
     :param str key: Key for the file.
-    :param str obj: The serializable or storable object.
+    :param str obj: The serializable object.
     :param bool subdir: Specifies optional subdirectory in generator folder
     :param bool cluster: A subfolder ``key`` is automatically created when set to True.
     :param int verbose: Level of verbosity (1 == print log).
@@ -195,12 +171,10 @@ def save(key: str, obj, *, subdir: os.PathLike = '', cluster: bool = True, verbo
     :param str base: Specifies the root folder (.dman by default).
 
     :raises RuntimeError: if either generator or base is not provided and no .dman folder exists.
-    """
-    if is_storable(obj):
-        obj = record(obj)
-    
+    :raises ValueError: if the provided object is not serializable
+    """    
     if not is_serializable(obj):
-        raise ValueError('can only save storable or serializable objects')
+        raise ValueError('can only save serializable objects')
 
     if generator is MISSING:
         generator = script_label(base)
@@ -212,12 +186,12 @@ def save(key: str, obj, *, subdir: os.PathLike = '', cluster: bool = True, verbo
         gitignore = {filename: gitignore}
 
     with repository(name=name, subdir=subdir, verbose=verbose, generator=generator, base=base, gitignore=gitignore) as repo:
-        repo.log('save', f'saving {type(obj).__name__} with key {key} to "{repo.path}"', level=2)
+        repo.emphasize('save', f'saving {type(obj).__name__} with key {key} to "{repo.path}"')
         ser = serialize(obj, repo)
         target = repo.join(filename).touch()
         with open(target.path, 'w') as f:
             sjson.dump(ser, f, indent=4)
-        repo.log('save', f'finished saving {type(obj).__name__} with key {key} to "{repo.path}"', level=2)
+        repo.emphasize('save', f'finished saving {type(obj).__name__} with key {key} to "{repo.path}"')
 
 
 def load(key: str, *, default=MISSING, default_factory=MISSING, subdir: os.PathLike = '', cluster: bool = True, verbose: int = -1, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
@@ -271,10 +245,10 @@ def load(key: str, *, default=MISSING, default_factory=MISSING, subdir: os.PathL
         gitignore = {filename: gitignore}
 
     with repository(name=name, subdir=subdir, verbose=verbose, generator=generator, base=base, gitignore=gitignore) as repo:
-        repo.log('load', f'loading with key {key} from "{repo.path}"', level=2)
+        repo.emphasize('load', f'loading with key {key} from "{repo.path}"')
         target = repo.join(f'{key}.json')
         if not os.path.exists(target.path):
-            repo.log('load', f'file not available at "{target.path}", using default')
+            repo.info('load', f'file not available at "{target.path}", using default')
             if default is MISSING and default_factory is MISSING:
                 raise FileNotFoundError(f'could not find tracked file "{target.path}"')
             elif default is MISSING:
@@ -284,8 +258,7 @@ def load(key: str, *, default=MISSING, default_factory=MISSING, subdir: os.PathL
         with open(target.path, 'r') as f:
             ser = sjson.load(f)
             res = deserialize(ser, repo)
-            repo.log(
-                'load', f'finished loading with key {key} from "{repo.path}"', level=2)
+            repo.emphasize('load', f'finished loading with key {key} from "{repo.path}"')
             return res
 
 
@@ -310,7 +283,7 @@ class Track:
     def save(self, unload: bool = False):
         save(self.key, self._content, subdir=self.subdir, gitignore=self.gitignore,
                 generator=self.generator, base=self.base, cluster=self.cluster, verbose=self.verbose)
-        if unload: self.load()
+        if unload: return self.load()
     
     def load(self):
         self._content = load(self.key, default=self.default, 

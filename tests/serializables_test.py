@@ -2,8 +2,8 @@ from typing import Any
 import pytest
 
 
-from dman import serializable, serialize, deserialize, sjson, dataclass
-from dman.persistent.serializables import SER_TYPE, SER_CONTENT, ExcUndeserializable, Undeserializable
+from dman import serializable, serialize, deserialize, sjson, dataclass, isvalid
+from dman.persistent.serializables import SER_TYPE, SER_CONTENT, ExcUndeserializable, Undeserializable, Unserializable
 
 
 atomics = [
@@ -163,17 +163,40 @@ def test_nested_class(base):
     assert(nested == res)
 
 
+def test_fail_serialize_object():
+    class NotRegistred: ...
+
+    res = serialize(NotRegistred())
+    assert(not isvalid(res))
+
+    @serializable
+    class InvalidSignature:
+        def __serialize__(self, a: str, b: str, c: str):
+            print(a, b, c)
+
+    res = serialize(InvalidSignature())
+    assert(not isvalid(res))
+
+    @serializable
+    class ErrorSerialize:
+        def __serialize__(self):
+            raise Exception('error')
+    res = serialize(ErrorSerialize())
+    assert(not isvalid(res))
+
+
 def test_fail_deserialize():
     @serializable(name='__base')
     @dataclass
     class Base:
         a: str = 'test'
 
-    serialized = {
+    serialized_incorrect = {
         SER_TYPE: '__base',
         SER_CONTENT: {'b': 25}
     }
-    res = deserialize(serialized)
+
+    res = deserialize(serialized_incorrect)
     assert(isinstance(res, ExcUndeserializable))
 
     serialized = {
@@ -186,12 +209,24 @@ def test_fail_deserialize():
 
     serialized = {
         SER_TYPE: '__base',
-        SER_CONTENT: {'a': {
-            SER_TYPE: '__base',
-            SER_CONTENT: {'b': 25}   
-        }}
+        SER_CONTENT: {'a': serialized_incorrect}
     }
 
     res: Base = deserialize(serialized)
     assert(isinstance(res.a, ExcUndeserializable))
+
+    res = deserialize(serialized_incorrect)
+    assert(isinstance(res, ExcUndeserializable))
+
+    serialized_re = serialize(res)
+
+    @serializable(name='__base')
+    @dataclass
+    class Base:
+        a: str = 'test'
+        b: str = None
+    
+    res = deserialize(serialized_re)
+    assert(isinstance(res, Base))
+
 

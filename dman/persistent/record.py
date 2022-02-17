@@ -234,9 +234,9 @@ class Record:
     def content(self):
         if is_unloaded(self._content):
             ul: Unloaded = self._content
-            ul.context.log('record', f'loading {str(self)}', level=2)
+            ul.context.emphasize('record', f'loading {str(self)}')
             self._content = ul.__load__()
-            ul.context.log('record', f'finished loading {str(self)}', level=2)
+            ul.context.emphasize('record', f'finished loading {str(self)}')
         return self._content
 
     @content.setter
@@ -268,28 +268,28 @@ class Record:
             # remove all subfiles of content
             content = self._content
             if is_unloaded(content):
-                context.log('record', 'content unloaded: loading ...')
+                context.info('record', 'content unloaded: loading ...')
                 ul: Unloaded = content
                 content = ul.__load__()
-                context.log('record', 'finished load.')
+                context.info('record', 'finished load.')
             if isinstance(content, BaseInvalid):
-                context.log('record', 'loaded content is invalid:', level=1)
-                context.log('record', content)
+                context.error('record', 'loaded content is invalid:')
+                context.error('record', content)
             else:
                 target.delete(content)
 
     def __serialize__(self, context: BaseContext):
         sto_type = storable_type(self._content)
         target = Record.__parse(self.config, context)
-        context.log('record', f'serializing record with storable type: {sto_type} ...')
+        context.info('record', f'serializing record with storable type: {sto_type} ...')
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
             sto_type = unloaded.type
         elif isinstance(context, Context):
-            context.log('record', 'content is loaded, executing write ...')
+            context.info('record', 'content is loaded, executing write ...')
             exc = target.write(self._content)
             if exc is not None:
-                context.log('record', 'exception encountered while writing.', level=1)
+                context.error('record', 'exception encountered while writing.')
                 self.exception = exc
         else:
             return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
@@ -307,7 +307,7 @@ class Record:
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        context.log(f'record', 'deserializing record ...')
+        context.info(f'record', 'deserializing record ...')
         config: RecordConfig = deserialize(
             serialized.get('target', ''), ser_type=RecordConfig
         )
@@ -315,18 +315,18 @@ class Record:
         preload = serialized.get('preload', False)
         exception = deserialize(serialized.get('exception', None))
         if isinstance(exception, BaseInvalid):
-            context.log('record', 'error during earlier serialization:', level=1)
-            context.log('record', exception)
+            context.error('record', 'error during earlier serialization:')
+            context.error('record', exception)
 
         content = Undeserializable(type=sto_type, info=f'Could not read {config.target}')
         if isinstance(context, Context):
             target = Record.__parse(config, context)
             if preload:
-                context.log('record', 'preload enabled, loading from file ...')
+                context.info('record', 'preload enabled, loading from file ...')
                 content = target.read(sto_type)
             else:
-                context.log('record' , 'preload disabled, load deferred')
-                context.log(f'record', f'path: "{target.path}"')
+                context.info('record' , 'preload disabled, load deferred')
+                context.info(f'record', f'path: "{target.path}"')
                 content = Unloaded(sto_type, target.path, context=target)
 
         out = cls(content=content, config=config, preload=preload)

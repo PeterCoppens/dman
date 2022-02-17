@@ -6,6 +6,5 @@
         "tests"
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "restructuredtext.confPath": ""
+    "python.testing.pytestEnabled": true
 }

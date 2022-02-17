@@ -3,7 +3,7 @@ from collections.abc import MutableSequence
 import copy
 import os
 
-from typing import Iterable, Union
+from typing import Any, Callable, Iterable, Union
 from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field
 
 from dman.utils.smartdataclasses import WrapField, wrappedclass, wrappedfields, wrapfield, AUTO, is_wrapfield
@@ -14,6 +14,7 @@ from dman.persistent.serializables import BaseContext, serialize, deserialize, s
 
 
 STO_FIELD = '_record__fields'
+SER_FIELD = '_serial__fields'
 RECORD_FIELD = '__record__'
 MODELCLASS = '__modelclass__'
 RECORD_PRE = '_record_field__'
@@ -35,12 +36,13 @@ def set_record(self, key: str, value):
 
 
 class RecordField(WrapField):
-    def __init__(self, stem: str, suffix: str, name: str, subdir: os.PathLike, preload: str):
+    def __init__(self, stem: str, suffix: str, name: str, subdir: os.PathLike, preload: str, pre: Callable[[Any], Any]):
         self.stem = stem
         self.suffix = suffix
         self.name = name
         self.subdir = subdir
         self.preload = preload
+        self.pre = pre
 
     def build(self, content):
         return record(content, stem=self.stem, suffix=self.suffix, name=self.name, subdir=self.subdir, preload=self.preload)
@@ -53,6 +55,9 @@ class RecordField(WrapField):
             return rec
 
         def _set_record(obj, value):
+            if self.pre is not None:
+                value = self.pre(value)
+
             if is_storable(value):
                 rec = get_record(obj, key, None)
                 if isinstance(rec, Record):
@@ -66,9 +71,27 @@ class RecordField(WrapField):
         return property(fget=_get_record, fset=_set_record)
 
 
+
+class SerializeField(WrapField):
+    def __init__(self, pre: Callable[[Any], Any]):
+        self.pre = pre
+    
+    def __call__(self, key: str):
+        def _get_field(obj):
+            return getattr(obj, f'__{key}')
+
+        def _set_field(obj, value):
+            if self.pre is not None:
+                value = self.pre(value)
+            setattr(obj, f'__{key}', value)
+        
+        return property(fget=_get_field, fset=_set_field)
+
+
 def serializefield(*, default=MISSING, default_factory=MISSING,
                    init: bool = True, repr: bool = True,
-                   hash: bool = False, compare: bool = False, metadata=None) -> Field:
+                   hash: bool = False, compare: bool = False, metadata=None, 
+                   pre: Callable[[Any], Any] = None) -> Field:
     """
     Return an object to identify serializable modelclass fields.
         All arguments of the ``field`` method from ``dataclasses`` are provided.
@@ -82,13 +105,22 @@ def serializefield(*, default=MISSING, default_factory=MISSING,
     :param bool compare:    Include in comparison functions.
     :param metadata:        Additional information.
 
+    :param Callable pre:    Call method on field before setting.
+
     :raises ValueError: if both default and default_factory are specified.
     """
     _metadata = {'__ser_field': True}
     if metadata is not None:
         _metadata['__base'] = metadata
-    return field(default=default, default_factory=default_factory, 
-        init=init, repr=repr, hash=hash, compare=compare, metadata=_metadata)
+    if pre is None:
+        return field(default=default, default_factory=default_factory, 
+            init=init, repr=repr, hash=hash, compare=compare, metadata=_metadata)
+    else:
+        wrap = SerializeField(pre)
+        return wrapfield(wrap, label=SER_FIELD, 
+            default=default, default_factory=default_factory, 
+            init=init, repr=repr, hash=hash, compare=compare, metadata=_metadata)
+
 
 
 def is_serializable_field(fld: Field):
@@ -98,7 +130,9 @@ def is_serializable_field(fld: Field):
 def recordfield(*, default=MISSING, default_factory=MISSING,
                 init: bool = True, repr: bool = False,
                 hash: bool = False, compare: bool = False, metadata=None,
-                stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False
+                stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', 
+                preload: str = False,
+                pre: Callable[[Any], Any] = None
                 ) -> Field:
     """
     Return an object to identify storable modelclass fields.
@@ -118,12 +152,13 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
     :param str name:        The full name of the file.
     :param str subdir:      The subdirectory in which to store te file. 
     :param bool preload:    When ``True`` the file will be loaded during deserialization.
+    :param Callable pre:    Call method on field before setting.
 
     :raises ValueError: if both default and default_factory are specified.
     :raises ValueError:     if a name and a stem and/or suffix are specified. 
     """
 
-    wrap = RecordField(stem=stem, suffix=suffix, name=name, subdir=subdir, preload=preload)
+    wrap = RecordField(stem=stem, suffix=suffix, name=name, subdir=subdir, preload=preload, pre=pre)
     return wrapfield(wrap, label=STO_FIELD, default=default, default_factory=default_factory, 
         init=init, repr=repr, hash=hash, compare=compare, metadata=metadata)
 
@@ -214,7 +249,7 @@ def _remove__modelclass(self, context: BaseContext = None):
     if context is None: context = BaseContext()
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
-            context.log(f'modelclass', f'removing field: "{f.name}"')
+            context.info(f'modelclass', f'removing field: "{f.name}"')
             if f.name in recordfields(self):
                 value = getattr(self, _record_key(f.name))
                 remove(value, context)
@@ -232,7 +267,7 @@ def _serialize__modelclass_content_only(self, context: BaseContext = None):
                 value = getattr(self, _record_key(f.name))
             else:
                 value = getattr(self, f.name)
-            context.log(f'modelclass', f'serializing field: "{f.name}"')
+            context.info(f'modelclass', f'serializing field: "{f.name}"')
             res[f.name] = serialize(value, context, content_only=True)
 
     return res
@@ -245,7 +280,7 @@ def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseCo
         value = serialized.get(f.name, None)
         if value is None:
             continue
-        context.log(f'modelclass', f'deserializing field: "{f.name}"')
+        context.info(f'modelclass', f'deserializing field: "{f.name}"')
         if f.name in recordfields(cls):
             processed[f.name] = deserialize(value, context, ser_type=Record)
         else:
@@ -262,7 +297,7 @@ def _serialize__modelclass(self, context: BaseContext = None):
                 value = getattr(self, _record_key(f.name))
             else:
                 value = getattr(self, f.name)
-            context.log(f'modelclass', f'serializing {f.name} of type: "{type(value).__name__}"')
+            context.info(f'modelclass', f'serializing {f.name} of type: "{type(value).__name__}"')
             res[f.name] = serialize(value, context)
                     
     return res
@@ -274,14 +309,14 @@ def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
     for f in fields(cls):
         v = serialized.get(f.name, None)
         if v is not None:
-            context.log(f'modelclass', f'deserializing field: "{f.name}" of type: "{type(v).__name__}"')
+            context.info(f'modelclass', f'deserializing field: "{f.name}" of type: "{f.type.__name__}"')
             processed[f.name] = deserialize(v, context)
 
     return cls(**processed)
 
 
 def is_model(cls):
-    return isinstance(cls, (_blist, _bdict)) or is_modelclass(cls) or isinstance(cls, Record)
+    return isinstance(cls, (_blist, _bdict, _bruns)) or is_modelclass(cls) or isinstance(cls, Record)
 
 
 class _blist(MutableSequence):
@@ -330,14 +365,14 @@ class _blist(MutableSequence):
         if self.auto_clean:
             res['auto_clean'] = self.auto_clean
 
-        context.log(f'{type(self).__name__}', f'removing unused items ...')
+        context.info(f'{type(self).__name__}', f'removing unused items ...')
         for itm in self.unused:
             remove(itm, context)
         self.unused = []
 
-        context.log(f'{type(self).__name__}', f'serializing store ...')
+        context.info(f'{type(self).__name__}', f'serializing store ...')
         for i, itm in enumerate(self.store):
-            context.log(f'{type(self).__name__}', 
+            context.info(f'{type(self).__name__}', 
                 f'serializing index: "{i}" of type: "{type(itm).__name__}" ...')
             if isinstance(itm, Record):
                 if not self.auto_clean or itm.exists():
@@ -347,7 +382,7 @@ class _blist(MutableSequence):
             else:
                 lst.append(serialize(itm, context))
         
-        if self.auto_clean: context.log(f'{type(self).__name__}', 
+        if self.auto_clean: context.info(f'{type(self).__name__}', 
             f'clean dangling pointers ...')
         for itm in self.unused:
             remove(itm, context)
@@ -364,9 +399,9 @@ class _blist(MutableSequence):
         lst = serialized.get('store', list())
         res = cls(subdir=subdir, preload=preload, auto_clean=auto_clean)
 
-        context.log(f'{cls.__name__}', f'deserializing list ...')
+        context.info(f'{cls.__name__}', f'deserializing list ...')
         for i, itm in enumerate(lst):
-            context.log(f'{cls.__name__}', f'deserializing index: "{i}" of type: "{type(itm).__name__}" ...')
+            context.info(f'{cls.__name__}', f'deserializing index: "{i}" of type: "{type(itm).__name__}" ...')
             res.append(deserialize(itm, context))
 
         return res
@@ -399,13 +434,14 @@ class _blist(MutableSequence):
                 rec.preload = preload
 
     def __remove__(self, context: BaseContext):
-        context.log(f'{type(self).__name__}', f'removing items ...')
+        context.info(f'{type(self).__name__}', f'removing items ...')
         for itm in self.store:
             remove(itm, context)
         
     def clear(self):
-        for _ in range(len(self)):
-            self.pop()
+        for i in reversed(range(len(self))):
+            del self[i]
+        return self
 
     def __getitem__(self, key):
         itm = self.store.__getitem__(key)
@@ -517,14 +553,14 @@ class _bdict(MutableMapping):
         if self.auto_clean:
             res['auto_clean'] = self.auto_clean
 
-        context.log(f'{type(self).__name__}', f'removing unused items ...')
+        context.info(f'{type(self).__name__}', f'removing unused items ...')
         for itm in self.unused:
             remove(itm, context)
         self.unused = []
 
-        context.log(f'{type(self).__name__}', f'serializing store ...')
+        context.info(f'{type(self).__name__}', f'serializing store ...')
         for k, itm in self.store.items():
-            context.log(f'{type(self).__name__}', 
+            context.info(f'{type(self).__name__}', 
                 f'serializing at key: "{k}" of type: "{type(itm).__name__}" ...')
             if isinstance(itm, Record):
                 if not self.auto_clean or itm.exists():
@@ -534,7 +570,7 @@ class _bdict(MutableMapping):
             else:
                 dct[k] = serialize(itm, context)
         
-        if self.auto_clean: context.log(f'{type(self).__name__}', 
+        if self.auto_clean: context.info(f'{type(self).__name__}', 
             f'clean dangling pointers ...')
         for itm in self.unused:
             remove(itm, context)
@@ -554,9 +590,9 @@ class _bdict(MutableMapping):
             auto_clean=serialized.get('auto_clean', False)
         )
 
-        context.log(f'{cls.__name__}', f'deserializing dict ...')
+        context.info(f'{cls.__name__}', f'deserializing dict ...')
         for k, v in dct.items():
-            context.log(f'{cls.__name__}', f'deserializing at key: "{k}" of type: "{type(v).__name__}" ...')
+            context.info(f'{cls.__name__}', f'deserializing at key: "{k}" of type: "{type(v).__name__}" ...')
             res[k] = deserialize(v, context)
 
         return res
@@ -575,13 +611,14 @@ class _bdict(MutableMapping):
         return Record(v, config, self.preload)
     
     def __remove__(self, context: BaseContext):
-        context.log(f'{type(self).__name__}', f'removing items ...')
+        context.info(f'{type(self).__name__}', f'removing items ...')
         for itm in self.store.values():
             remove(itm, context)
         
     def clear(self):
         for k in list(self.store.keys()):
             del self[k]
+        return self
 
     def __getitem__(self, key):
         itm = self.store.__getitem__(key)
@@ -721,8 +758,9 @@ class _bruns(_blist):
                 rec.preload = preload
 
     def clear(self):
-        super().clear()
+        _blist.clear(self)
         self.run_count = 0
+        return self
 
 
 @serializable(name='_ser__mruns')
