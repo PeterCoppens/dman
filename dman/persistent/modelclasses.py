@@ -792,7 +792,7 @@ def smdict_factory(subdir: os.PathLike = '', preload: bool = False, store_by_key
     return factory
 
 
-def mruns_factory(stem: str = None, subdir: os.PathLike = '', preload: bool = False, store_subdir: bool = True):
+def mruns_factory(stem: str = 'run', subdir: os.PathLike = '', preload: bool = False, store_subdir: bool = True):
     def factory():
         return mruns(stem=stem, subdir=subdir, preload=preload, store_subdir=store_subdir)
     return factory

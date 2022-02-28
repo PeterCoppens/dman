@@ -1,42 +1,8 @@
-from dman import modelclass, track, load, storable, save
-from dman import recordfield, smdict_factory, smdict, verbose
+from dman import modelclass, track, load
+from dman import mruns_factory, mruns
+from dman.numeric import barray, barrayfield
 
 import numpy as np
-
-
-@storable(name='sarray')
-class sarray(np.ndarray):
-    __ext__ = '.npy'
-
-    def __write__(self, path):
-        with open(path, 'wb') as f:
-            np.save(f, self)
-
-    @classmethod
-    def __read__(cls, path):
-        with open(path, 'rb') as f:
-            res: np.ndarray = np.load(f)
-            return res.view(cls)
-
-
-def sarrayfield(**kwargs):
-    def to_sarray(arg):
-        if isinstance(arg, np.ndarray):
-            return arg.view(sarray)
-        return arg                
-    return recordfield(**kwargs, pre=to_sarray)
-
-
-@modelclass(name='run', storable=True)
-class Run:
-    input: sarray = sarrayfield(default=None)
-    output: sarray = sarrayfield(default=None)
-    
-    @classmethod
-    def execute(cls, input: np.ndarray, rng: np.random.Generator):
-        transform = rng.standard_normal(size=(100, input.shape[0]))
-        output = transform @ input
-        return cls(input, output)
 
 
 @modelclass(name='config')
@@ -47,45 +13,41 @@ class Configuration:
     nrepeats: int = 2
 
 
-@modelclass(name='experiment')
-class Experiment:
-    results: smdict = recordfield(
-        default_factory=smdict_factory(subdir='results', store_by_key=True),
-        stem='results'
-    )
+@modelclass(name='run', storable=True)
+class Run:
+    config: Configuration
+    data: barray = barrayfield(default=None)
+    output: barray = barrayfield(default=None)
 
 
-@storable(name='__broken')
-class Broken: ...
-
-
-def main():
-    verbose.setup(logfile='log.ansi')
-
-    cfg: Configuration = load('config', default_factory=Configuration, cluster=False)
-    with track('experiment', default_factory=Experiment, verbose=True) as content:
-        experiments: Experiment = content
-        experiments.results.clear()
-        if len(experiments.results) > 0:
-            print('results already available')
+def execute(cfg: Configuration):
+    with track('experiment' , default_factory=mruns_factory(subdir='results')) as content:
+        content: mruns = content
+        if len(content) > 0 and any((run.config == cfg for run in content)):
             return
 
         rng = np.random.default_rng(cfg.seed)
-        for i in range(cfg.nrepeats):
-            input = rng.random(
-                size=(cfg.size, cfg.nsample)
-            )
-            run = Run.execute(input, rng)
-            if i == 0:
-                run.output = Broken()
-            experiments.results[f'run-{len(experiments.results)}'] = run
+        data = rng.random(size=(cfg.size, cfg.nsample))
+        transform = rng.standard_normal(size=(100, data.shape[0]))
+        output = transform @ data
+        content.append(Run(cfg, data, output))            
+    
 
+def main():    
+    with track('experiment' , default_factory=mruns_factory(stem='experiment', subdir='results')) as content:
+        content: mruns = content
+        content.clear()
+    
+    execute(Configuration(seed=1000))
+    execute(Configuration(seed=1024))
+    execute(Configuration(seed=1000))
 
-def create_configuration():
-    save('config', Configuration(), cluster=False)
+    content: mruns = load('experiment')
+    for run in content:
+        print(run)
+
 
 if __name__ == '__main__':
-    create_configuration()
     main()
 
 
