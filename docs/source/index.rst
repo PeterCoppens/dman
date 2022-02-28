@@ -21,6 +21,7 @@ If you just want to get started you can read :ref:`common-use`
 
    usage/common.rst
    usage/serialization.rst
+   usage/errors.rst
    api/serializables.rst
 
 

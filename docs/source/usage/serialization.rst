@@ -170,7 +170,7 @@ will be as well.
 
 
 
-Storeables
+Storables
 ----------------------
 Sometimes it is impossible to serialize an object. For example large 
 arrays in ``numpy``. The ``dman`` framework supports such objects through 
@@ -274,14 +274,15 @@ the ``ManualFile`` class specified earlier :ref:`here <manual-file-def>`.
 
 .. code-block:: python
 
-    from dman import record, serialize, sjson, record_context
+    from dman import record, serialize, deserialize, sjson, context
     from tempfile import TemporaryDirectory
+    from dman.utils.display import list_files
 
     instance = ManualFile(value='hello world!')
     rec = record(instance)
 
     with TemporaryDirectory() as base:
-        ctx = record_context(base)
+        ctx = context(base)
         ser = serialize(rec, context=ctx)
         
         # show the serialization
@@ -292,16 +293,16 @@ the ``ManualFile`` class specified earlier :ref:`here <manual-file-def>`.
 
         # deserialize record
         res = deserialize(ser, ctx)
-        print('record: ', res)
+        print(f'{res=}')
 
         # load the content
         content: ManualFile = res.content
-        print('content: ', content.value)
-        print('record: ', res)
+        print(f'{content.value=}')
+        print(f'{res=}')
 
 We will go through the process step by step. 
 Note that we call serialize using ``serialize(rec, content=ctx)``,
-which passes the ``record_context`` to the serialization process.
+which passes the ``context`` to the serialization process.
 This context is used by the record to determine the folder where 
 its content should be stored. 
 
@@ -428,7 +429,7 @@ Let us begin with the ``mlist`` container. We again will be using the
 .. code-block:: python
 
     from dman import mlist, serialize, deserialize, sjson
-    from dman import record_context
+    from dman import context
     from dman.utils.display import list_files
     from tempfile import TemporaryDirectory
 
@@ -437,7 +438,7 @@ Let us begin with the ``mlist`` container. We again will be using the
     lst.append(ManualFile(value='hello world!'))
 
     with TemporaryDirectory() as base:
-        ctx = record_context(base)
+        ctx = context(base)
         ser = serialize(lst, ctx)
 
         print(sjson.dumps(ser, indent=4))
@@ -557,6 +558,13 @@ You can repeat the steps from before the examine how the list is serialized.
     Specifically ``clear`` schedules all records in the ``mlist`` for removal.
     When we serialize, the files are then actually removed.
 
+.. note::
+
+    It can be challenging to specify file names in ``mlist``. If you 
+    intend to run many different experiments this can be inconvenient. 
+    Hence the ``mruns`` wrapper around ``mlist`` is provided. See :ref:`common-use`
+    for an example of its usage.
+
 
 Model Dictionary 
 ^^^^^^^^^^^^^^^^^^^
@@ -568,7 +576,7 @@ We again will be using the ``ManualFile`` class specified :ref:`here <manual-fil
 .. code-block:: python
 
     from dman import mdict, serialize, sjson
-    from dman import record_context
+    from dman import context
     from dman.utils.display import list_files
     from tempfile import TemporaryDirectory
 
@@ -577,7 +585,7 @@ We again will be using the ``ManualFile`` class specified :ref:`here <manual-fil
     dct['manual'] = ManualFile(value='hello world!')
 
     with TemporaryDirectory() as base:
-        ctx = record_context(base)
+        ctx = context(base)
         ser = serialize(dct, ctx)
 
         print(sjson.dumps(ser, indent=4))
@@ -642,7 +650,7 @@ above.
 | ``store_subdir == False``| <base>/manual            | <base>/<uuid4>            |
 +--------------------------+--------------------------+---------------------------+
 
-Here, ``<base>`` denotes the directory specified in the ``record_context``
+Here, ``<base>`` denotes the directory specified in the ``context``
 and ``<uuid4>`` depicts a unique automatic file name (e.g. ``e55aa3df-c3fd-408d-861d-b77015280382`` as above).
 Note that, if we additionally set ``subdir='test'`` then the effect of 
 the options are stacked. For example the top-left cell would 
@@ -680,7 +688,7 @@ We can define a ``modelclass`` as follows:
 
 .. code-block:: python
 
-    from dman import modelclass, record_context, serialize, sjson
+    from dman import modelclass, context, serialize, sjson
     from tempfile import TemporaryDirectory
 
     @modelclass(name='model')
@@ -689,7 +697,7 @@ We can define a ``modelclass`` as follows:
         content: ManualFile
 
     with TemporaryDirectory() as base:
-        ctx = record_context(base)
+        ctx = context(base)
         model = Model(name='test', content=ManualFile(value='hello world!'))
         ser = serialize(model, ctx)
         print(sjson.dumps(ser, indent=4))
@@ -845,10 +853,11 @@ To see these components in practice, refer to :ref:`common-use`.
         with tracker as obj:
             for i in range(nrepeats):
                 ... # create some data and add it to obj
-                tracker.save(unload=True)
+                obj = tracker.save(unload=True)
 
     When the ``unload`` option in ``save`` is set to true, then 
     ``tracker.load`` is called automatically after saving. 
     This causes (non preloaded) storables to be unloaded, which can reduce
     overhead time during the next save (since they will not need to be 
-    stored again). 
+    stored again). The ``save`` method then returns the reloaded object,
+    which will still be stored after the track context exits.
