@@ -48,6 +48,8 @@ class Context(BaseContext):
     parent: 'Context' = field(default=None, repr=False)
     children: dict = field(default_factory=dict, repr=False, init=False)
 
+    def io(self, label: str, msg: str): ...
+
     def touch(self):
         self.parent.open()
         return self

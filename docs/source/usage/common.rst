@@ -35,7 +35,7 @@ The full script is as follows:
 
 
     def execute(cfg: Configuration):
-        with track('experiment' , default_factory=mruns_factory(stem='run', subdir='results')) as content:
+        with track('experiment', default_factory=mruns_factory(stem='run', subdir='results')) as content:
             content: mruns = content
             if len(content) > 0 and any((run.config == cfg for run in content)):
                 return

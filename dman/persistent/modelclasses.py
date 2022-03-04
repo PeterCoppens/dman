@@ -4,7 +4,7 @@ import copy
 import os
 
 from typing import Any, Callable, Iterable, Union
-from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field
+from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field, asdict
 
 from dman.utils.smartdataclasses import WrapField, wrappedclass, wrappedfields, wrapfield, AUTO, is_wrapfield
 from dman.persistent.storables import is_storable, storable
@@ -164,7 +164,7 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
 
 
 def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, order=False,
-               unsafe_hash=False, frozen=False, storable: bool = False, compact: bool = False, **kwargs):
+               unsafe_hash=False, frozen=False, storable: bool = False, compact: bool = False, template: Any = None, **kwargs):
     """
     Convert a class to a modelclass.
         Returns the same class as was passed in, with dunder methods added based on the fields
@@ -182,10 +182,11 @@ def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, 
     :param bool frozen: fields may not be assigned to after instance creation.
     :param bool storable: make the class storable with a ``__write__`` and ``__read__``.
     :param bool compact: do not include serializable types during serialization (results in more compact serializations).
+    :param Any template: template for serialization.
     """
 
     def wrap(cls):
-        return _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, storable, compact, **kwargs)
+        return _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, storable, compact, template, **kwargs)
 
     # See if we're being called as @modelclass or @modelclass().
     if cls is None:
@@ -200,7 +201,7 @@ def is_modelclass(cls):
     return getattr(cls, MODELCLASS, False)
 
 
-def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, as_storable, compact, **kwargs):
+def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, as_storable, compact, template, **kwargs):
     # convert to dataclass
     res = cls
     if not is_dataclass(cls):
@@ -222,20 +223,27 @@ def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, 
     # wrap the fields
     res = wrappedclass(res)
 
-    # assign serialize and deserialize methods
-    ser, dser = _serialize__modelclass, _deserialize__modelclass
-    if compact:
-        ser, dser = _serialize__modelclass_content_only, _deserialize__modelclass_content_only
-
+    # set modelclass flag
     setattr(res, MODELCLASS, True)
+
+    # assign remove method if not pre-defined
     if getattr(res, REMOVE, None) is None:
         setattr(res, REMOVE, _remove__modelclass)
-    if getattr(res, SERIALIZE, None) is None:
-        setattr(res, SERIALIZE, ser)
-    if getattr(res, DESERIALIZE, None) is None:
-        setattr(res, DESERIALIZE, dser)
 
-    result = serializable(res, name=name)
+    # assign serialize and deserialize methods
+    if template:
+        result = serializable(res, name=name, template=template)
+    else:
+        ser, dser = _serialize__modelclass, _deserialize__modelclass
+        if compact:
+            ser, dser = _serialize__modelclass_content_only, _deserialize__modelclass_content_only
+        if getattr(res, SERIALIZE, None) is None:
+            setattr(res, SERIALIZE, ser)
+        if getattr(res, DESERIALIZE, None) is None:
+            setattr(res, DESERIALIZE, dser)
+
+        result = serializable(res, name=name)
+
     if as_storable:
         result = storable(result, name=name)
     return result
@@ -256,6 +264,32 @@ def _remove__modelclass(self, context: BaseContext = None):
             else:
                 value = getattr(self, f.name)
                 remove(value, context)
+
+
+def _serialize__modelclass(self, context: BaseContext = None):
+    res = dict()
+    for f in fields(self):
+        if f.name not in getattr(self, NO_SERIALIZE, []):
+            if f.name in recordfields(self):
+                value = getattr(self, _record_key(f.name))
+            else:
+                value = getattr(self, f.name)
+            context.info(f'modelclass', f'serializing {f.name} of type: "{type(value).__name__}"')
+            res[f.name] = serialize(value, context)
+                    
+    return res   
+
+
+@classmethod
+def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
+    processed = dict()
+    for f in fields(cls):
+        v = serialized.get(f.name, None)
+        if v is not None:
+            context.info(f'modelclass', f'deserializing field: "{f.name}" of type: "{getattr(f.type, "__name__", str(f.type))}"')
+            processed[f.name] = deserialize(v, context)
+
+    return cls(**processed)
 
 
 def _serialize__modelclass_content_only(self, context: BaseContext = None):
@@ -285,32 +319,6 @@ def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseCo
             processed[f.name] = deserialize(value, context, ser_type=Record)
         else:
             processed[f.name] = deserialize(value, context, ser_type=f.type)
-
-    return cls(**processed)
-
-
-def _serialize__modelclass(self, context: BaseContext = None):
-    res = dict()
-    for f in fields(self):
-        if f.name not in getattr(self, NO_SERIALIZE, []):
-            if f.name in recordfields(self):
-                value = getattr(self, _record_key(f.name))
-            else:
-                value = getattr(self, f.name)
-            context.info(f'modelclass', f'serializing {f.name} of type: "{type(value).__name__}"')
-            res[f.name] = serialize(value, context)
-                    
-    return res
-
-
-@classmethod
-def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
-    processed = dict()
-    for f in fields(cls):
-        v = serialized.get(f.name, None)
-        if v is not None:
-            context.info(f'modelclass', f'deserializing field: "{f.name}" of type: "{f.type.__name__}"')
-            processed[f.name] = deserialize(v, context)
 
     return cls(**processed)
 

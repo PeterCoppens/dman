@@ -31,7 +31,7 @@ def execute(cfg: Configuration):
         transform = rng.standard_normal(size=(100, data.shape[0]))
         output = transform @ data
         content.append(Run(cfg, data, output))            
-    
+
 
 def main():    
     with track('experiment' , default_factory=mruns_factory(stem='experiment', subdir='results')) as content:

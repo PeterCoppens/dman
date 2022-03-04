@@ -1,13 +1,15 @@
 import inspect
 
-from dataclasses import MISSING, dataclass, field, fields, is_dataclass
+from dataclasses import MISSING, dataclass, field, fields, is_dataclass, asdict
 import re
 import sys
 import traceback
-from typing import List
+from typing import Any, List
 
 from dman.utils import sjson
 import textwrap
+
+from contextlib import nullcontext
 
 
 SER_TYPE = '_ser__type'
@@ -15,6 +17,8 @@ SER_CONTENT = '_ser__content'
 SERIALIZE = '__serialize__'
 DESERIALIZE = '__deserialize__'
 NO_SERIALIZE = '__no_serialize__'
+CONVERT = '__convert__'
+
 
 
 __serializable_types = dict()
@@ -115,8 +119,35 @@ def _deserialize__dataclass(cls, serialized: dict, context: 'BaseContext'):
 
     return cls(**res)
 
+    
+@classmethod
+def _default__convert(cls, base):
+    return cls(**asdict(base))
 
-def serializable(cls=None, /, *, name: str = None):
+
+def _serialize__template(template: Any):
+    convert = getattr(template, CONVERT, None)
+    if convert is None: 
+        if not is_dataclass(template): 
+            raise ValueError(f'Template should either be a dataclass or should have a "{CONVERT}" method specified.')
+        setattr(template, CONVERT, _default__convert) 
+        convert = getattr(template, CONVERT, None)
+
+    def __serialize__(self, context: BaseContext = None):
+        return serialize(convert(self), context, content_only=True)
+
+    return __serialize__
+
+
+def _deserialize__template(template: Any):
+    @classmethod
+    def __deserialize__(cls, ser, context: BaseContext = None):
+        convert = getattr(cls, CONVERT)
+        return convert(deserialize(ser, context, ser_type=template))
+    return __deserialize__
+
+
+def serializable(cls=None, /, *, name: str = None, template: Any = None):
     """
     Returns the same class as was passed in and the class is registered as a 
     serializable type. 
@@ -128,6 +159,7 @@ def serializable(cls=None, /, *, name: str = None):
 
     :param cls: The class to process.
     :param str name: The name of the serializable type.
+    :param template: Template class to use during serialization.
     """
     def wrap(cls):
         local_name = name
@@ -136,7 +168,17 @@ def serializable(cls=None, /, *, name: str = None):
         setattr(cls, SER_TYPE, local_name)
         register_serializable(local_name, cls)
 
-        if is_dataclass(cls):
+        if template is not None:
+            if not hasattr(cls, CONVERT):
+                if not is_dataclass(cls):
+                    raise ValueError(f'Class should be either a dataclass or should have a "{CONVERT}" method defined.')
+                setattr(cls, CONVERT, _default__convert)
+            if getattr(cls, SERIALIZE, None) is None:
+                setattr(cls, SERIALIZE, _serialize__template(template))
+            if getattr(cls, DESERIALIZE, None) is None:
+                setattr(cls, DESERIALIZE, _deserialize__template(template))
+
+        elif is_dataclass(cls):
             if getattr(cls, SERIALIZE, None) is None:
                 setattr(cls, SERIALIZE, _serialize__dataclass)
             if getattr(cls, DESERIALIZE, None) is None:
@@ -342,6 +384,11 @@ class BaseContext:
     def emphasize(self, label: str, msg: str): ...
 
     def error(self, label: str, msg: str): ...
+
+    def head(self, label: str, msg: str): ...
+
+    def layer(self, label: str, title: str):
+        return nullcontext()
 
     def serialize(self, ser, content_only: bool = False): 
         if isinstance(ser, (list, tuple)):
