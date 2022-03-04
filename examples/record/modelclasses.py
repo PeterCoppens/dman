@@ -1,8 +1,8 @@
 import copy
 from dman.persistent.serializables import serialize, deserialize
 from dman.persistent.modelclasses import modelclass, recordfield, serializefield
-from dman.persistent.record import VerboseContext
 from dman.utils.display import list_files
+from dman import context
 from tempfile import TemporaryDirectory
 
 from record import TestSto
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 
     print('\n====== model class tests =======\n')
     with TemporaryDirectory() as base:
-        ctx = VerboseContext(base)
+        ctx = context(base)
         foo = Foo(a=Other('c'), b=TestSto('b'), c=TestSto('c'), d=TestSto('d'), e=TestSto('e'))
         foo.f['test'] = 'hello'
         ser = serialize(foo, ctx)

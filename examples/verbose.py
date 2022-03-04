@@ -25,7 +25,7 @@ class SModelClass:
 
 
 def main():
-    verbose.setup(loglevel=verbose.Level.SOFT)
+    verbose.setup(loglevel=verbose.Level.DEBUG)
     with TemporaryDirectory() as base:
         runs = mruns(subdir='results')
         
