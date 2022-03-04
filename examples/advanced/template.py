@@ -42,7 +42,7 @@ class TemplateManual:
 
 
 @serializable(name='sub_manual', template=TemplateManual)
-class SubManual(BaseManual):
+class SubManual(BaseManual): 
     @classmethod
     def __convert__(cls, other: TemplateManual):
         return cls(other.a)

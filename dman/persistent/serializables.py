@@ -125,11 +125,11 @@ def _default__convert(cls, base):
     return cls(**asdict(base))
 
 
-def _serialize__template(template: Any):
+def _serialize__template(template: Any, cls: any):
     convert = getattr(template, CONVERT, None)
     if convert is None: 
-        if not is_dataclass(template): 
-            raise ValueError(f'Template should either be a dataclass or should have a "{CONVERT}" method specified.')
+        if not is_dataclass(cls): 
+            raise ValueError(f'Serializable should either be a dataclass or should have a "{CONVERT}" method specified.')
         setattr(template, CONVERT, _default__convert) 
         convert = getattr(template, CONVERT, None)
 
@@ -170,11 +170,11 @@ def serializable(cls=None, /, *, name: str = None, template: Any = None):
 
         if template is not None:
             if not hasattr(cls, CONVERT):
-                if not is_dataclass(cls):
-                    raise ValueError(f'Class should be either a dataclass or should have a "{CONVERT}" method defined.')
+                if not is_dataclass(template):
+                    raise ValueError(f'Template should be either a dataclass or should have a "{CONVERT}" method defined.')
                 setattr(cls, CONVERT, _default__convert)
             if getattr(cls, SERIALIZE, None) is None:
-                setattr(cls, SERIALIZE, _serialize__template(template))
+                setattr(cls, SERIALIZE, _serialize__template(template, cls))
             if getattr(cls, DESERIALIZE, None) is None:
                 setattr(cls, DESERIALIZE, _deserialize__template(template))
 
