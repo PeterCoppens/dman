@@ -188,6 +188,7 @@ def is_unloaded(obj):
 class Unloaded:
     type: str
     path: str
+    base: str
     context: Context
 
     def __load__(self):
@@ -284,10 +285,17 @@ class Record:
         sto_type = storable_type(self._content)
         target = Record.__parse(self.config, context)
         context.info('record', f'serializing record with storable type: {sto_type} ...')
+
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
-            sto_type = unloaded.type
-        elif isinstance(context, Context):
+
+            if isinstance(context, Context) and unloaded.base != context.path:
+                self.content
+            else:
+                sto_type = unloaded.type
+
+
+        if not is_unloaded(self._content) and isinstance(context, Context):
             context.info('record', 'content is loaded, executing write ...')
             exc = target.write(self._content)
             if exc is not None:
@@ -329,7 +337,7 @@ class Record:
             else:
                 context.info('record' , 'preload disabled, load deferred')
                 context.info(f'record', f'path: "{target.path}"')
-                content = Unloaded(sto_type, target.path, context=target)
+                content = Unloaded(sto_type, target.path, context=target, base=context.path)
 
         out = cls(content=content, config=config, preload=preload)
         out.exception = exception

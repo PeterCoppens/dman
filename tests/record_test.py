@@ -140,3 +140,14 @@ def test_exists():
         assert(not res.exists())
 
 
+def test_move():
+    test = Test(value='hello world!')
+    rec = record(test, name='temp.txt')
+    with TemporaryDirectory() as base:
+        ctx = context(os.path.join(base, 'first'))
+        ser = serialize(rec, ctx)
+        res: Record = deserialize(ser, ctx)
+        
+        ctx = context(os.path.join(base, 'second'))
+        ser = serialize(res, ctx)
+        assert(os.path.exists(os.path.join(ctx.path, 'temp.txt')))
