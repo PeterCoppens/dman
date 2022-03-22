@@ -221,7 +221,7 @@ class Record:
         if self._evaluated:
             return self._config
 
-        base = RecordConfig(stem=f'{uuid.uuid4()}', subdir='')
+        base = RecordConfig(stem=f'{uuid.uuid4()}', subdir=f'{uuid.uuid4()}')
         if is_serializable(self._content) or is_dataclass(self._content):
             base = base << RecordConfig(suffix='.json')
 
@@ -295,14 +295,14 @@ class Record:
                 sto_type = unloaded.type
 
 
-        if not is_unloaded(self._content) and isinstance(context, Context):
+        if not is_unloaded(self._content):
+            if not isinstance(context, Context):
+                return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
             context.info('record', 'content is loaded, executing write ...')
             exc = target.write(self._content)
             if exc is not None:
                 context.error('record', 'exception encountered while writing.')
                 self.exception = exc
-        else:
-            return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
 
         res = {
             'target': serialize(self.config, content_only=True),

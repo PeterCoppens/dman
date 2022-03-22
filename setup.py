@@ -1,15 +1,4 @@
-import os
 import setuptools
-
-class CleanCommand(setuptools.Command):
-    """Custom clean command to tidy up the project root."""
-    user_options = []
-    def initialize_options(self):
-        pass
-    def finalize_options(self):
-        pass
-    def run(self):
-        os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info')
 
 library_name = "dman"
 
@@ -23,10 +12,8 @@ setuptools.setup(
     description="Toolbox for experimental data management in Python",
     packages=setuptools.find_packages(),
     python_requires='>=3.8',
-    scripts=['bin/dman'],
-    cmdclass={
-        'clean': CleanCommand,
-    }
+    extras_require = {'numpy': 'numpy'},
+    scripts=['bin/dman']
 )
 
 # TODO add minimal requirements

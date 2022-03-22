@@ -90,7 +90,7 @@ class SerializeField(WrapField):
 
 def serializefield(*, default=MISSING, default_factory=MISSING,
                    init: bool = True, repr: bool = True,
-                   hash: bool = False, compare: bool = False, metadata=None, 
+                   hash: bool = False, compare: bool = True, metadata=None, 
                    pre: Callable[[Any], Any] = None) -> Field:
     """
     Return an object to identify serializable modelclass fields.

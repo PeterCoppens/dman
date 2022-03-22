@@ -9,11 +9,7 @@ from dman.persistent.storables import storable, write, read
 from dman.persistent.configclasses import configclass, section
 from dman.repository import track, save, load
 from dman.utils import sjson
-from dman.utils.smartdataclasses import idataclass
+from dman.utils.smartdataclasses import idataclass, AUTO
 
 from dataclasses import field, dataclass
 
-try:
-    from dman import numeric
-except ImportError as e:
-    pass
