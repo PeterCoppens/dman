@@ -38,7 +38,7 @@ def main():
             run = experiment(cfg)
             registry.append(run)
     
-    print(run.data)
+        print(run.data)
 
 
 if __name__ == '__main__':
