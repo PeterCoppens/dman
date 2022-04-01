@@ -8,6 +8,7 @@ from dman.verbose import context
 from dman.persistent.storables import storable, write, read
 from dman.persistent.configclasses import configclass, section
 from dman.repository import track, save, load
+from dman.repository import Track
 from dman.utils import sjson
 from dman.utils.smartdataclasses import idataclass, AUTO
 
