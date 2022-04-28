@@ -284,15 +284,15 @@ class Record:
     def __serialize__(self, context: BaseContext):
         sto_type = storable_type(self._content)
         target = Record.__parse(self.config, context)
-        context.info('record', f'serializing record with storable type: {sto_type} ...')
 
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
-
+            sto_type = unloaded.type
+            context.info('record', f'serializing record with storable type: {sto_type} ...')
             if isinstance(context, Context) and unloaded.base != context.path:
                 self.content
-            else:
-                sto_type = unloaded.type
+        else:
+            context.info('record', f'serializing record with storable type: {sto_type} ...')
 
 
         if not is_unloaded(self._content):

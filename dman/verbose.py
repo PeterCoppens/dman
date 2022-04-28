@@ -150,12 +150,18 @@ class VerboseContext(Context):
     def read(self, sto_type):
         if VerboseContext.LEVEL is Level.DEBUG:
             self.io('read', f'reading from file: "{self.path}"')
-        return super().read(sto_type)
+        res = super().read(sto_type)
+        if isinstance(res, BaseInvalid):
+            self.error(None, str(res))
+        return res
 
     def write(self, storable):
         if VerboseContext.LEVEL is Level.DEBUG:
             self.io('write', f'writing to file: "{self.path}"')
-        return super().write(storable)
+        res = super().write(storable)
+        if isinstance(res, BaseInvalid):
+            self.error(None, str(res))
+        return res
 
     def delete(self, obj):
         if is_removable(obj) or is_dataclass(obj) or isinstance(obj, (tuple, list, dict)):

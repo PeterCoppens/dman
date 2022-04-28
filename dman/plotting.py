@@ -4,6 +4,8 @@ import dman
 import shutil
 from typing import Union, List
 
+import os
+
 
 
 try:
@@ -13,22 +15,35 @@ except ImportError as e:
     raise ImportError('Plotting tools require matplotlib.') from e
 
 
+@dman.storable(name='__plt_eps')
+class PrintFigure:
+    __ext__ = '.eps'
+
+    def __init__(self, fig: plt.Figure, ext: str = '.eps', **kwargs):
+        self.__ext__ = ext
+        self.fig = fig
+        self.kwargs = kwargs
+
+    def __write__(self, path: str):
+        self.fig.savefig(path, **self.kwargs)
+
 
 @dman.storable(name='__plt_pdf')
 class PdfFigure:
     __ext__ = '.pdf'
 
-    def __init__(self, fig: Union[List[plt.Figure], plt.Figure] = None, path: str = None):
+    def __init__(self, fig: Union[List[plt.Figure], plt.Figure] = None, path: str = None, **kwargs):
         if not isinstance(fig, (type(None), list)):
             fig = [fig]
         self.fig = fig
         self.path = path
+        self.kwargs = kwargs
 
     def __write__(self, path: str):
         if self.fig is not None:
             pdf = PdfPages(path)
             for fig in self.fig:
-                pdf.savefig(fig)
+                pdf.savefig(fig, **self.kwargs)
             pdf.close()
         elif self.path != path:
             shutil.copyfile(self.path, path)
@@ -58,6 +73,39 @@ class PklFigure:
         with open(path, 'rb') as f:
             fig = pickle.load(f)
         return cls(fig=fig)
+
+
+
+try:
+    import tikzplotlib
+    @dman.storable(name='__plt_tikz')
+    class TexFigure:
+        __ext__ = '.tex'
+
+        def __init__(self, fig: plt.Figure = None, path: str = None):
+            self.path = path
+            self.fig = fig
+        
+        def __write__(self, path: str):
+            if self.fig is not None:
+                # tikzplotlib.clean_figure()
+                tikzplotlib.save(
+                    figure=self.fig,
+                    filepath=path,
+                    axis_width='\linewidth',
+                    externalize_tables=False,
+                    strict=False,
+                    include_disclaimer=False,
+                    standalone=False
+                )
+            elif self.path != path:
+                shutil.copyfile()
+            self.path = path
+            
+    @classmethod
+    def __read__(cls, path: str):
+        return cls(path=path)
+except ImportError as e: ...
 
 
 @dman.modelclass(name='__plt_t_figure')

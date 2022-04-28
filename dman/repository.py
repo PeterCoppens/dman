@@ -6,8 +6,9 @@ from contextlib import suppress
 from typing import Union
 
 
-from dman.persistent.record import Context
+from dman.persistent.record import Context, record
 from dman.persistent.serializables import deserialize, is_serializable, serialize
+from dman.persistent.storables import is_storable
 from dman.utils import sjson
 from dman.verbose import context
 from dman.path import get_root_path
@@ -137,14 +138,60 @@ def repository(*, name: str = '', subdir: str = '', generator: str = MISSING, ba
         for path, add in gitignore.items():
             repo.process(path, add)
         return repo
+
+
+def store(key: str, obj, *, subdir: os.PathLike = '', cluster: bool = False, verbose: int = -1, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
+    """
+    Save a storable object.
+        The path of the file is determined as described below.
+
+            If the files are clustered then the path is ``<base>/<generator>/<subdir>/<key>/<key>.<ext>``
+            If cluster is set to False then the path is ``<base>/<generator>/<subdir>/<key>.<ext>``
+
+            When base is not provided then it is set to .dman if 
+            it does not exist an exception is raised.
+
+            When generator is not provided it will automatically be set based on 
+            the location of the script relative to the .dman folder
+            (again raising an exception if it is not found). For example
+            if the script is located in ``<project-root>/examples/folder/script.py``
+            and .dman is located in ``<project-root>/.dman``.
+            Then generator is set to cache/examples:folder:script (i.e.
+            the / is replaced by : in the output).
+
+    :param str key: Key for the file.
+    :param str obj: The serializable object.
+    :param bool subdir: Specifies optional subdirectory in generator folder
+    :param bool cluster: A subfolder ``key`` is automatically created when set to True.
+    :param int verbose: Level of verbosity (1 == print log).
+    :param bool gitignore: Automatically adds a .gitignore file to ignore the created object when set to True.
+    :param str generator: Specifies the generator that created the file. 
+    :param str base: Specifies the root folder (.dman by default).
+
+    :raises RuntimeError: if either generator or base is not provided and no .dman folder exists.
+    :raises ValueError: if the provided object is not storable
+    """    
+    if not is_storable(obj):
+        raise ValueError('can only store storable objects')
+
+    if generator is MISSING:
+        generator = script_label(base)
+
+    rec = record(obj, stem=key)
+    if not cluster:
+        gitignore = {rec.config.name: gitignore}
+
+    name = key if cluster else ''
+    with repository(name=name, subdir=subdir, verbose=verbose, generator=generator, base=base, gitignore=gitignore) as repo:
+        repo.emphasize('store', f'storing {type(obj).__name__} with key {key} to "{repo.path}"')
+        ser = serialize(record(obj, stem=key), repo)
+        repo.emphasize('store', f'finished storing {type(obj).__name__} with key {key} to "{repo.path}"')
+    return ser
   
 
 def save(key: str, obj, *, subdir: os.PathLike = '', cluster: bool = True, verbose: int = -1, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):
     """
     Save a serializable object to a file.
-        If the object is storable, it will automatically be wrapped in a 
-        record before serialization. 
-
         The path of the file is determined as described below.
 
             If the files are clustered then the path is ``<base>/<generator>/<subdir>/<key>/<key>.json``
