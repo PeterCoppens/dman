@@ -60,11 +60,13 @@ def barrayfield(*, as_type: type = None, **kwargs):
     return recordfield(**kwargs, pre=to_barray)
 
 
-def sarrayfield(*, as_type: type = None, compare: bool = False, **kwargs):
+def sarrayfield(*, as_type: type = None, compare: bool = False, empty_as_none: bool = False, **kwargs):
     def to_sarray(arg):
         if isinstance(arg, np.ndarray):
             arg = arg.view(carray) if compare else arg.view(sarray)
         if as_type is not None:
             arg = arg.astype(as_type)
+        if empty_as_none and np.size(arg) == 0:
+            arg = None
         return arg                
     return serializefield(**kwargs, pre=to_sarray)
