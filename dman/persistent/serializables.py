@@ -9,6 +9,8 @@ from typing import Any, List
 from dman.utils import sjson
 import textwrap
 
+from enum import Enum
+
 from contextlib import nullcontext
 
 
@@ -119,6 +121,16 @@ def _deserialize__dataclass(cls, serialized: dict, context: 'BaseContext'):
 
     return cls(**res)
 
+
+def _serialize__enum(self):
+    return str(self)
+
+
+@classmethod
+def _deserialize__enum(cls, serialized: str):
+    _, name = serialized.split('.')
+    return cls[name]
+
     
 @classmethod
 def _default__convert(cls, base):
@@ -183,6 +195,12 @@ def serializable(cls=None, /, *, name: str = None, template: Any = None):
                 setattr(cls, SERIALIZE, _serialize__dataclass)
             if getattr(cls, DESERIALIZE, None) is None:
                 setattr(cls, DESERIALIZE, _deserialize__dataclass)
+
+        elif issubclass(cls, Enum):
+            if getattr(cls, SERIALIZE, None) is None:
+                setattr(cls, SERIALIZE, _serialize__enum)
+            if getattr(cls, DESERIALIZE, None) is None:
+                setattr(cls, DESERIALIZE, _deserialize__enum)
 
         return cls
 

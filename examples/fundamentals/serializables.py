@@ -2,8 +2,14 @@ from dman.persistent.serializables import BaseContext, serializable, serialize, 
 from dataclasses import dataclass
 from typing import List, Dict
 from dman.utils import sjson
+from enum import Enum
 
 if __name__ == '__main__':
+    @serializable
+    class Mode(Enum):
+        RED = 1
+        BLUE = 2
+
     @serializable
     @dataclass
     class Test:
@@ -43,6 +49,7 @@ if __name__ == '__main__':
     print('basic int:', deserialize(serialize(25)))
     print('list: ', deserialize(serialize([1, 'hello'])))
     print('dict: ', deserialize(serialize({'a': 1, 'b': 'hello'})))
+    print('enum: ', deserialize(serialize(Mode.RED)))
     
     test = Test('a', 5)
     print('dataclass serialized:', serialize(test))

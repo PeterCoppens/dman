@@ -33,6 +33,19 @@ ser = serialize(test, content_only=True)
 reconstructed: Manual = deserialize(ser, ser_type=Manual)
 
 # ------------------------------------------------------------------------------
+# enum definition of serializables
+# ------------------------------------------------------------------------------
+from enum import Enum
+
+@serializable(name='mode')
+class Mode(Enum):
+    RED = 1
+    BLUE = 2
+
+ser = serialize(Mode.RED)
+print(sjson.dumps(ser, indent=4))
+
+# ------------------------------------------------------------------------------
 # dataclass definition of serializables
 # ------------------------------------------------------------------------------
 

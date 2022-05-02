@@ -110,8 +110,32 @@ correctly. We can ``deserialize`` a dictionary created like this as follows:
 Of course it would not be convenient to manually specify the ``__serialize__``
 and ``__deserialize__`` methods. Hence, the ``serializable`` decorator
 has been implemented to automatically generate them whenever 
-the class is a ``dataclass`` (and when no prior ``__serialize__``
+the class is an instance of ``Enum`` or a ``dataclass`` (and when no prior ``__serialize__``
 and ``__deserialize__`` methods are specified). 
+
+.. code-block:: python
+
+    from enum import Enum
+
+    @serializable(name='mode')
+    class Mode(Enum):
+        RED = 1
+        BLUE = 2
+
+    ser = serialize(Mode.RED)
+    print(sjson.dumps(ser, indent=4))
+
+Produces the following output. 
+
+.. code-block:: json
+
+    {
+        "_ser__type": "mode",
+        "_ser__content": "Mode.RED"
+    }
+
+
+Similarly for dataclasses
 
 .. code-block:: python
 
@@ -126,7 +150,7 @@ and ``__deserialize__`` methods are specified).
     ser = serialize(test)
     print(sjson.dumps(ser, indent=4))
 
-Produces similar output to before
+Returns the following output
 
 .. code-block:: json
 
