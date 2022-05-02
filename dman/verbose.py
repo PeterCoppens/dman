@@ -107,7 +107,7 @@ class VerboseContext(Context):
         return SerializationLevel(label, title, type, self)
 
     def serialize(self, ser, content_only: bool = False):
-        if isinstance(ser, Unserializable):
+        if isinstance(ser, BaseInvalid):
             self.error(label=None, msg=str(ser))
         return super().serialize(ser, content_only)
     
@@ -128,7 +128,7 @@ class VerboseContext(Context):
 
     def deserialize(self, serialized, ser_type=None):
         ser = super().deserialize(serialized, ser_type)
-        if isinstance(ser_str2type, Undeserializable):
+        if isinstance(ser, BaseInvalid):
             self.error(None, str(ser))
         return ser
     
