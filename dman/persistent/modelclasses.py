@@ -274,8 +274,10 @@ def _serialize__modelclass(self, context: BaseContext = None):
                 value = getattr(self, _record_key(f.name))
             else:
                 value = getattr(self, f.name)
-            context.info(f'modelclass', f'serializing {f.name} of type: "{type(value).__name__}"')
-            res[f.name] = serialize(value, context)
+                
+            if value is not None:
+                context.info(f'modelclass', f'serializing {f.name} of type: "{type(value).__name__}"')
+                res[f.name] = serialize(value, context)
                     
     return res   
 
@@ -288,6 +290,8 @@ def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
         if v is not None:
             context.info(f'modelclass', f'deserializing field: "{f.name}" of type: "{getattr(f.type, "__name__", str(f.type))}"')
             processed[f.name] = deserialize(v, context)
+        else:
+            processed[f.name] = v
 
     return cls(**processed)
 
@@ -301,8 +305,10 @@ def _serialize__modelclass_content_only(self, context: BaseContext = None):
                 value = getattr(self, _record_key(f.name))
             else:
                 value = getattr(self, f.name)
-            context.info(f'modelclass', f'serializing field: "{f.name}"')
-            res[f.name] = serialize(value, context, content_only=True)
+
+            if value is not None:
+                context.info(f'modelclass', f'serializing field: "{f.name}"')
+                res[f.name] = serialize(value, context, content_only=True)
 
     return res
 
@@ -313,7 +319,9 @@ def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseCo
     for f in fields(cls):
         value = serialized.get(f.name, None)
         if value is None:
+            processed[f.name] = None
             continue
+        
         context.info(f'modelclass', f'deserializing field: "{f.name}"')
         if f.name in recordfields(cls):
             processed[f.name] = deserialize(value, context, ser_type=Record)

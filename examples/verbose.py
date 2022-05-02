@@ -6,6 +6,8 @@ from tempfile import TemporaryDirectory
 
 from dman import verbose
 
+# verbose.setup(loglevel=verbose.Level.HARD)
+
 @storable
 class Broken: ...
 
@@ -25,7 +27,7 @@ class SModelClass:
 
 
 def main():
-    verbose.setup(loglevel=verbose.Level.DEBUG)
+    verbose.setup(loglevel=verbose.Level.HARD)
     with TemporaryDirectory() as base:
         runs = mruns(subdir='results')
         

@@ -1,4 +1,5 @@
 from ast import Str
+from copy import copy
 from enum import Enum
 import logging
 import textwrap
@@ -29,6 +30,33 @@ class bcolors:
 class Level(Enum):
     DEBUG = 1
     SOFT = 2
+    HARD = 3
+
+
+class ValidationExceptionAtomic:
+    def __init__(self, invalid: BaseInvalid):
+        self.invalid = invalid
+        self.stack = copy(VerboseContext.stack)
+    
+    def __str__(self):
+        msg = VerboseContext.format_stack(self.stack) + '\n'
+        msg += textwrap.indent(str(self.invalid), bcolors.INDENT)
+        return msg
+
+
+class ValidationException(Exception):
+    def __init__(self, invalid: list[ValidationExceptionAtomic]) -> None:
+        self.invalid = invalid
+        super().__init__()
+    
+    def __str__(self):
+        msg = '\n\nInvalid objects encountered:\n'
+        msg += '----------------------------\n'
+        for inv in self.invalid:
+            msg += ('\n- ' + textwrap.indent(str(inv), '') + '\n')
+        msg += '\n\n'
+        return msg
+
 
 
 class SerializationLevel:
@@ -47,6 +75,7 @@ class SerializationLevel:
         self.context.head(f'END {self.label}: ', self.title)
 
 
+
 class VerboseContext(Context):
     HEADER_WIDTH = 20
     LOGGER = logging.getLogger('verbose')
@@ -54,6 +83,21 @@ class VerboseContext(Context):
     LEVEL = Level.DEBUG
 
     stack = []
+    invalid = []
+
+    @staticmethod
+    def format_stack(stack: list):
+        head = ''
+        for s in stack:
+            head += s.__name__ + ' / '
+        return head[:-3]
+
+
+    def validate(self):
+        if len(self.stack) == 0:
+            if self.LEVEL is Level.HARD and len(self.invalid) > 0:
+                raise ValidationException(self.invalid)
+            self.invalid = []
 
     def apply_color(self, text: str, color: str):
         text = text.splitlines()
@@ -88,10 +132,7 @@ class VerboseContext(Context):
         if VerboseContext.LEVEL is Level.DEBUG:
             self.display(self.apply_color(msg, bcolors.FAIL), label=label)
         elif VerboseContext.LEVEL is Level.SOFT:
-            head = ''
-            for s in VerboseContext.stack:
-                head += s.__name__ + ' / '
-            self.display(head[:-1])
+            self.display(self.format_stack(self.stack))
             self.display(self.apply_color(msg, bcolors.FAIL), label=label)
 
     def io(self, label: str, msg: str):
@@ -109,6 +150,8 @@ class VerboseContext(Context):
     def serialize(self, ser, content_only: bool = False):
         if isinstance(ser, BaseInvalid):
             self.error(label=None, msg=str(ser))
+            self.invalid.append(ValidationExceptionAtomic(ser))
+        self.validate()
         return super().serialize(ser, content_only)
     
     def _serialize__object(self, ser):
@@ -130,6 +173,9 @@ class VerboseContext(Context):
         ser = super().deserialize(serialized, ser_type)
         if isinstance(ser, BaseInvalid):
             self.error(None, str(ser))
+            self.invalid.append(ValidationExceptionAtomic(ser))
+            
+        self.validate()
         return ser
     
     def _deserialize__object(self, serialized, expected):
@@ -153,6 +199,8 @@ class VerboseContext(Context):
         res = super().read(sto_type)
         if isinstance(res, BaseInvalid):
             self.error(None, str(res))
+            self.invalid.append(ValidationExceptionAtomic(res))
+        self.validate()
         return res
 
     def write(self, storable):
@@ -161,6 +209,7 @@ class VerboseContext(Context):
         res = super().write(storable)
         if isinstance(res, BaseInvalid):
             self.error(None, str(res))
+            self.invalid.append(ValidationExceptionAtomic(res))
         return res
 
     def delete(self, obj):
@@ -178,6 +227,7 @@ class VerboseContext(Context):
             with self.layer('REMOVING', title, type(obj)):
                 res = super().remove(obj)
             return res
+        self.validate()
         return super().remove(obj)
 
 
@@ -187,7 +237,8 @@ VerboseContext.LOGGER.addHandler(__handler)
 VerboseContext.LOGGER.setLevel(logging.INFO)
 
 
-def context(path: Str, verbose: int = -1):
+def context(path: str = None, verbose: int = -1):
+    if path is None: path = get_root_path()
     if verbose > 0:
         return VerboseContext(path=path)
     return Context(path=path)
