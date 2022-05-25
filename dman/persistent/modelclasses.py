@@ -290,7 +290,7 @@ def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
         if v is not None:
             context.info(f'modelclass', f'deserializing field: "{f.name}" of type: "{getattr(f.type, "__name__", str(f.type))}"')
             processed[f.name] = deserialize(v, context)
-        else:
+        elif f.default is MISSING and f.default_factory is MISSING:
             processed[f.name] = v
 
     return cls(**processed)

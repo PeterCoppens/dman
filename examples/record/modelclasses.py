@@ -36,6 +36,20 @@ class Boo:
     b: Foo = serializefield()
 
 
+@modelclass
+@dataclass
+class Coo:
+    a: str
+    b: str = 'hello'
+
+    def __serialize__(self):
+        res= {'a': self.a}
+        if self.b != 'hello':
+            res['b'] = self.b
+        return res
+            
+
+
 if __name__ == '__main__':
 
     print('\n====== model class tests =======\n')
@@ -63,3 +77,9 @@ if __name__ == '__main__':
 
         print()
         list_files(ctx.path)
+
+        coo = Coo(a='test')
+        ser = serialize(coo, ctx)
+        print(sjson.dumps(ser, indent=4))
+        coo: Coo = deserialize(ser, ctx)
+        print(coo.b)

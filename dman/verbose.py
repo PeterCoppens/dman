@@ -1,4 +1,3 @@
-from ast import Str
 from copy import copy
 from enum import Enum
 import logging
@@ -6,8 +5,8 @@ import textwrap
 import os
 from dman.path import get_root_path
 from dman.persistent.record import Context, Record, is_removable
-from dman.persistent.serializables import Undeserializable, ser_str2type, ser_type2str
-from dman.persistent.serializables import Unserializable, BaseInvalid
+from dman.persistent.serializables import ser_type2str
+from dman.persistent.serializables import BaseInvalid
 from dataclasses import is_dataclass
 
 
@@ -91,7 +90,6 @@ class VerboseContext(Context):
         for s in stack:
             head += s.__name__ + ' / '
         return head[:-3]
-
 
     def validate(self):
         if len(self.stack) == 0:

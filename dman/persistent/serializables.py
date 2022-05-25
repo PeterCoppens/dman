@@ -128,7 +128,7 @@ def _serialize__enum(self):
 
 @classmethod
 def _deserialize__enum(cls, serialized: str):
-    _, name = serialized.split('.')
+    *_, name = serialized.split('.')
     return cls[name]
 
     
@@ -154,7 +154,9 @@ def _serialize__template(template: Any, cls: any):
 def _deserialize__template(template: Any):
     @classmethod
     def __deserialize__(cls, ser, context: BaseContext = None):
-        convert = getattr(cls, CONVERT)
+        convert = getattr(cls, CONVERT, None)
+        if convert is None:
+            convert = lambda x: x
         return convert(deserialize(ser, context, ser_type=template))
     return __deserialize__
 
