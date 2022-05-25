@@ -36,7 +36,7 @@ class Boo:
     b: Foo = serializefield()
 
 
-@modelclass
+@modelclass(compact=True)
 @dataclass
 class Coo:
     a: str

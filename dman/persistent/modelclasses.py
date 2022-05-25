@@ -319,7 +319,8 @@ def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseCo
     for f in fields(cls):
         value = serialized.get(f.name, None)
         if value is None:
-            processed[f.name] = None
+            if f.default is MISSING and f.default_factory is MISSING:
+                processed[f.name] = None
             continue
         
         context.info(f'modelclass', f'deserializing field: "{f.name}"')
