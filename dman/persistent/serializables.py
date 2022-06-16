@@ -20,6 +20,7 @@ SERIALIZE = '__serialize__'
 DESERIALIZE = '__deserialize__'
 NO_SERIALIZE = '__no_serialize__'
 CONVERT = '__convert__'
+DECONVERT = '__de_convert__'
 
 
 
@@ -156,6 +157,8 @@ def _deserialize__template(template: Any):
     def __deserialize__(cls, ser, context: BaseContext = None):
         convert = getattr(cls, CONVERT, None)
         if convert is None:
+            convert = getattr(template, DECONVERT, None)
+        if convert is None:
             convert = lambda x: x
         return convert(deserialize(ser, context, ser_type=template))
     return __deserialize__
@@ -186,7 +189,8 @@ def serializable(cls=None, /, *, name: str = None, template: Any = None):
             if not hasattr(cls, CONVERT):
                 if not is_dataclass(template):
                     raise ValueError(f'Template should be either a dataclass or should have a "{CONVERT}" method defined.')
-                setattr(cls, CONVERT, _default__convert)
+                if not hasattr(template, DECONVERT):
+                    setattr(cls, CONVERT, _default__convert)
             if getattr(cls, SERIALIZE, None) is None:
                 setattr(cls, SERIALIZE, _serialize__template(template, cls))
             if getattr(cls, DESERIALIZE, None) is None:
