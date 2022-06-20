@@ -3,13 +3,19 @@ try:
 except ImportError as e:
     raise ImportError('TUI tools require rich.') from e
 
+from typing import Any, Optional, Union
 
 from dataclasses import dataclass, is_dataclass, fields, asdict
-from rich.console import Console
+from rich.style import Style
+from rich.console import Console as _Console
+from rich.console import JustifyMethod
 from rich.table import Table
 from rich.panel import Panel
 from rich.columns import Columns
 from rich import box
+from rich.progress import track, Progress
+from rich.live import Live
+from rich.tree import Tree
 
 
 from dman.persistent.serializables import deserialize, serialize, SER_CONTENT, SER_TYPE, BaseInvalid
@@ -18,6 +24,45 @@ from dman.utils import sjson
 _print = print
 
 from rich import print as _rich_print
+
+
+class Console(_Console):
+    def whitespace(self, lines: int):
+        self.log('\n'*lines)
+    
+    def log(
+            self, 
+            *objects: Any, 
+            sep: str = " ", 
+            end: str = "\n", 
+            style: Optional[Union[str, Style]] = None, 
+            justify: Optional[JustifyMethod] = None, 
+            emoji: Optional[bool] = None, 
+            markup: Optional[bool] = None, 
+            highlight: Optional[bool] = None, 
+            log_locals: bool = False, 
+            _stack_offset: int = 1
+        ) -> None:
+
+        if len(objects) > 1:
+            objects = [Columns([
+                Panel(process(o), box=box.MINIMAL) for o in objects
+            ])]
+
+
+        return super().log(
+            *objects, 
+            sep=sep, 
+            end=end, 
+            style=style, 
+            justify=justify, 
+            emoji=emoji, 
+            markup=markup, 
+            highlight=highlight, 
+            log_locals=log_locals, 
+            _stack_offset=_stack_offset
+        )
+
 
 class Style:
     dcl_box: box = box.HEAVY_HEAD
@@ -65,9 +110,15 @@ def process_dict(ser: dict, key: str = 'key', value: str = 'value', box=None, ti
 
 def process_list(ser: list):
     res = []
+    itm_strings = True
     for itm in ser:
-        res.append(process_object(itm) + '\n')
-    return ''.join(res)
+        obj = process_object(itm)
+        if not isinstance(obj, str): itm_strings = False
+        res.append(obj)
+    
+    if itm_strings:
+        return ''.join([s + '\n' for s in res])
+    return res
 
 
 def process_object(obj):
@@ -93,8 +144,12 @@ def process(obj):
     obj = deserialize(ser)
     return process_object(obj)
 
-def print(obj):
-    _rich_print(process(obj))
+def print(*obj):
+    if len(obj) == 1:
+        _rich_print(process(obj[0]))
+    else:
+        res = [Panel(process(o), box=box.MINIMAL) for o in obj]
+        _rich_print(Columns(res))
 
     
 
