@@ -12,7 +12,8 @@ numerical experiments. Data is stored in a human-readable fashion (whenever
 possible).
 
 A good place to start reading for a high-level overview of the module is :ref:`fundamentals`.
-If you just want to get started you can read :ref:`common-use`
+If you just want to get started you can read :ref:`common-use` or check out the 
+examples in ``examples/README.md``.
 
 
 .. toctree::
@@ -21,8 +22,8 @@ If you just want to get started you can read :ref:`common-use`
 
    usage/common.rst
    usage/serialization.rst
-   usage/errors.rst
-   api/serializables.rst
+   .. usage/errors.rst
+   .. api/serializables.rst
 
 
 
