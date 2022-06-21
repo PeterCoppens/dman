@@ -13,7 +13,7 @@ possible).
 
 A good place to start reading for a high-level overview of the module is :ref:`fundamentals`.
 If you just want to get started you can read :ref:`common-use` or check out the 
-examples in ``examples/README.md``.
+[examples](https://github.com/PeterCoppens/dman/tree/main/examples).
 
 
 .. toctree::
