@@ -2,7 +2,6 @@ name: doc_pages
 
 on:
   push:
-    branches: [ main ]
 
 jobs:
   build_docs_job:
@@ -17,8 +16,7 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          sudo apt-get install python3-sphinx
-          python -m pip install sphinx-rtd-theme
+          python -m pip install sphinx sphinx-rtd-theme
 
       - name: Create staging area
         run: |
@@ -34,7 +32,15 @@ jobs:
           chmod +x ./ci/generate_docs.sh
           ./ci/generate_docs.sh /tmp/staging
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: |
+            /tmp/staging/*
+            !/tmp/staging/.git
+
       - name: Commit and push documention
+        if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
