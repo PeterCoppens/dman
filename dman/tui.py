@@ -16,9 +16,11 @@ from rich import box
 from rich.progress import track, Progress
 from rich.live import Live
 from rich.tree import Tree
+from rich import inspect
 
 
 from dman.persistent.serializables import deserialize, serialize, SER_CONTENT, SER_TYPE, BaseInvalid
+from dman.persistent.modelclasses import mdict, smdict, mruns, mlist, smlist
 from dman.utils import sjson
 
 _print = print
@@ -126,13 +128,13 @@ def process_object(obj):
         return '[...]'
     if isinstance(obj, str):
         return obj
-    if isinstance(obj, list):
+    if isinstance(obj, (list, mlist, smlist, mruns)):
         return process_list(obj)
     if is_dataclass(obj):
         return process_dataclass(obj)
-    if isinstance(obj, dict):  
+    if isinstance(obj, (dict, mdict, smdict)):  
         return process_dict(obj)
-    else:
+    else: 
         return str(obj)
             
 
@@ -141,8 +143,11 @@ def process(obj):
     Print a serializable
     """
     ser = serialize(obj)
-    obj = deserialize(ser)
-    return process_object(obj)
+    des = deserialize(ser)
+    res = process_object(des)
+    if res is None:
+        return obj
+    return res
 
 def print(*obj):
     if len(obj) == 1:
