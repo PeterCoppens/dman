@@ -3,6 +3,7 @@ from enum import Enum
 import logging
 import textwrap
 import os
+from typing import List
 from dman.path import get_root_path
 from dman.persistent.record import Context, Record, is_removable
 from dman.persistent.serializables import ser_type2str
@@ -44,7 +45,7 @@ class ValidationExceptionAtomic:
 
 
 class ValidationException(Exception):
-    def __init__(self, invalid: list[ValidationExceptionAtomic]) -> None:
+    def __init__(self, invalid: List[ValidationExceptionAtomic]) -> None:
         self.invalid = invalid
         super().__init__()
     
