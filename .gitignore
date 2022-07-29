@@ -1,6 +1,5 @@
 .venv/
 build/
-pyproject.toml
 dist/
 **/__pycache__/*
 dman.egg-info/
