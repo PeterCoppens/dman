@@ -3,8 +3,10 @@ from dataclasses import dataclass
 from typing import List, Dict
 from dman.utils import sjson
 from enum import Enum
+from dman import log
 
 if __name__ == '__main__':
+    log.setLevel(log.INFO)
     @serializable
     class Mode(Enum):
         RED = 1

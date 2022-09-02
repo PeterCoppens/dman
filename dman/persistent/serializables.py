@@ -4,9 +4,10 @@ from dataclasses import MISSING, dataclass, field, fields, is_dataclass, asdict
 import re
 import sys
 import traceback
-from typing import Any, List
+from typing import Any, List, Type
 
 from dman.utils import sjson
+from dman import log
 import textwrap
 
 from enum import Enum
@@ -403,34 +404,51 @@ class BaseContext:
     """
     The basic interface for serialization contexts.
     """
-    def info(self, label: str, msg: str): ...
-
-    def emphasize(self, label: str, msg: str): ...
-
-    def error(self, label: str, msg: str): ...
-
-    def head(self, label: str, msg: str): ...
-
-    def layer(self, label: str, title: str):
-        return nullcontext()
+    VALIDATE = False
+    def __init__(self, validate: bool = None):
+        self.validate = self.VALIDATE if validate is None else validate
+        self._invalid = False
+        self._root = True
+    
+    def _process_invalid(self, msg: str, obj: BaseInvalid):
+        log.warning(msg + '\n' + str(obj))
+        self._invalid = True
+    
+    def _check_valid(self, ser):
+        if self.validate and self._invalid:
+            raise RuntimeError(f'Failed to serialize {ser}.')
 
     def serialize(self, ser, content_only: bool = False): 
+        acting_root = self._root
+        if acting_root:
+            log.emphasize(f'starting serialization of "{type(ser).__name__}"', 'context')
+            self._root = False
+
+        if isinstance(ser, BaseInvalid):
+            self._process_invalid('Invalid object encountered during serialization.', ser)
+
         if isinstance(ser, (list, tuple)):
-            return self._serialize__list(ser)
+            with log.layer(f'list({len(ser)})', 'serializing', owner='list'):
+                return self._serialize__list(ser)
 
         if isinstance(ser, dict):
-            return self._serialize__dict(ser)
+            with log.layer(f'dict({len(ser)})', 'serializing', owner='dict'):
+                return self._serialize__dict(ser)
 
         if sjson.atomic_type(ser):
             return self._serialize__atomic(ser)
 
-        content = self._serialize__object(ser)
-        if isinstance(content, Unserializable):
-            return serialize(content, self, content_only=False)
+        with log.layer(f'{type(ser).__name__}', 'serializing', f'{type(ser).__name__}'):
+            content = self._serialize__object(ser)
+            if isinstance(content, Unserializable):
+                return serialize(content, self, content_only=False)
 
         if content_only:
             return content
 
+        self._check_valid(ser)
+        if acting_root:
+            self._root = True
         return {SER_TYPE: getattr(ser, SER_TYPE), SER_CONTENT: content}
     
     def _serialize__object(self, ser):
@@ -479,58 +497,87 @@ class BaseContext:
 
         return res
 
+    def _get_type_name(_, ser_type):
+        name = getattr(ser_type, 'name', None)
+        if name is None:
+            name = getattr(ser_type, '__name__', str(ser_type))
+        return name
+
     def deserialize(self, serialized, ser_type=None):
+        acting_root = self._root
+        if acting_root:
+            log.emphasize(f'starting deserialization of "{type(serialized).__name__}".', 'context')
+            self._root = False
+            
         if serialized is None:
             return None
 
         if ser_type is None:
             if isinstance(serialized, (list, tuple)):
-                return self._deserialize__list(list, serialized)
+                with log.layer(f'list({len(serialized)})', 'deserializing', owner='list'):
+                    return self._deserialize__list(list, serialized)
 
             if sjson.atomic_type(serialized):
                 return self._deserialize__atomic(type(serialized), serialized)
 
             if not isinstance(serialized, dict):
-                return Undeserializable(type=ser_type,
+                res =  Undeserializable(type=ser_type,
                     info=f'Unexpected type for serialized: {type(serialized)}. Expected either list, tuple, atomic type or dict.',
                     serialized=serialized
                 )
+                self._process_invalid('An error occurred during deserialization:', res)
+                return res
 
             ser_type = serialized.get(SER_TYPE, MISSING)
             if ser_type is MISSING:
-                return self._deserialize__dict(dict, serialized)
+                with log.layer(f'dict({len(serialized)})', 'deserializing', owner='dict'):
+                    return self._deserialize__dict(dict, serialized)
             else:
                 serialized = serialized.get(SER_CONTENT, {})
                 ser_type_get = ser_str2type(ser_type)
                 if ser_type_get is None:
-                    return Undeserializable(type=ser_type_get, 
+                    res = Undeserializable(type=ser_type_get, 
                         info=f'Unregistered type stored in serialized.', 
                         serialized=serialized,
                         ser_type=ser_type
                     )
-                return self._deserialize__object(serialized, ser_type_get)
+                    self._process_invalid('An error occurred during deserialization:', res)
+                    return res
+
+                _ser_name = self._get_type_name(ser_type_get)
+                with log.layer(f'{_ser_name}', 'deserializing', f'{_ser_name}'):
+                    return self._deserialize__object(serialized, ser_type_get)
 
         if ser_type is dict:
-            return self._deserialize__dict(dict, serialized)
+            with log.layer(f'dict({len(serialized)})', 'deserializing', owner='dict'):
+                return self._deserialize__dict(dict, serialized)
 
         if ser_type in (list, tuple):
-            return self._deserialize__list(list, serialized)
+            with log.layer(f'list({len(serialized)})', 'deserializing', owner='list'):
+                return self._deserialize__list(list, serialized)
 
         if isinstance(ser_type, str) and type(serialized) is not str:
             ser_type_get = ser_str2type(ser_type)
             if ser_type_get is None:
-                return Undeserializable(
+                res = Undeserializable(
                     type=ser_type_get, 
                     info=f'Unregistered type provided as argument.', 
                     serialized=serialized,
                     ser_type=ser_type
                 )
-            return self._deserialize__object(serialized, ser_type_get)
+                self._process_invalid('An error occurred during deserialization:', res)
+                return res
+
+            _ser_name = self._get_type_name(ser_type_get)
+            with log.layer(f'{_ser_name}', 'deserializing', f'{_ser_name}'):
+                return self._deserialize__object(serialized, ser_type_get)
 
         if ser_type in sjson.atomic_types:
             return self._deserialize__atomic(ser_type, serialized)
 
-        return self._deserialize__object(serialized, ser_type)
+        _ser_name = self._get_type_name(ser_type)
+        with log.layer(f'{_ser_name}', 'deserializing', f'{_ser_name}'):
+            return self._deserialize__object(serialized, ser_type)
     
     def _deserialize__object(self, serialized, expected):
         try:

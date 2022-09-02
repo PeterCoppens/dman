@@ -3,6 +3,7 @@ import os
 from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any
 import uuid
+from dman import log
 from dman.persistent.serializables import BaseInvalid, deserialize, is_serializable, serializable, BaseContext, serialize
 from dman.persistent.serializables import ExcUndeserializable, ExcUnserializable, Unserializable, Undeserializable
 from dman.utils.smartdataclasses import AUTO, overrideable
@@ -42,13 +43,12 @@ class ExcUnReadable(ExcUndeserializable):
         return f'UnReadable: {self.type}'
 
 
-@dataclass
 class Context(BaseContext):
-    path: os.PathLike
-    parent: 'Context' = field(default=None, repr=False)
-    children: dict = field(default_factory=dict, repr=False, init=False)
-
-    def io(self, label: str, msg: str): ...
+    def __init__(self, path: os.PathLike, parent: 'Context' = None, children: dict = None, validate: bool = False):
+        super().__init__(validate=validate)
+        self.path = path
+        self.parent = parent
+        self.children = dict() if children is None else children
 
     def touch(self):
         self.parent.open()
@@ -56,27 +56,39 @@ class Context(BaseContext):
 
     def write(self, storable):
         if self.parent is None:
-            return UnWritable(type=type(storable), info='Cannot write to root directory.')
+            res =  UnWritable(type=type(storable), info='Cannot write to root directory.')
+            self._process_invalid('An error occurred while writing.', res)
+            return res
         self.touch()
         try:
+            log.io(f'writing to file: "{self.path}".', 'context')
             write(storable, self.path, self.parent)
             return None
         except Exception:
-            return ExcUnWritable(
+            res = ExcUnWritable(
                 type=type(storable), info='Exception encountered while writing.'
             )
-    
+            self._process_invalid('An error occurred while writing.', res)
+            return res
+
     def read(self, sto_type):
         if self.parent is None:
-            return UnReadable(type=sto_type, info='Cannot read root directory.')
+            res = UnReadable(type=sto_type, info='Cannot read root directory.')
+            self._process_invalid('An error occurred while writing.', res)
+            return res
         try:
+            log.io(f'reading from file: "{self.path}".', 'context')
             return read(sto_type, self.path, self.parent)
         except FileNotFoundError:
-            return NoFile(type=sto_type, info='Missing File.')
+            res = NoFile(type=sto_type, info='Missing File.')
+            self._process_invalid('An error occurred while writing.', res)
+            return res
         except Exception:
-            return ExcUnReadable(
+            res = ExcUnReadable(
                 type=sto_type, info='Exception encountered while reading.'
             )
+            self._process_invalid('An error occurred while writing.', res)
+            return res
 
     def delete(self, obj, remove: bool = True):
         if remove:
@@ -84,34 +96,38 @@ class Context(BaseContext):
         if self.parent is None:
             raise RuntimeError('Cannot delete root repository')
         if os.path.exists(self.path):
+            log.io(f'deleting file: "{self.path}".', 'context')
             os.remove(self.path)
         self.parent.clean()
 
     def remove(self, obj):
-        if is_removable(obj):
-            inner_remove = getattr(obj, REMOVE, None)
-            if inner_remove is not None:
-                inner_remove(self)
-            return
+        with log.layer(type(obj).__name__, 'removing', type(obj).__name__):
+            if is_removable(obj):
+                inner_remove = getattr(obj, REMOVE, None)
+                if inner_remove is not None:
+                    inner_remove(self)
+                return
 
-        if is_dataclass(obj):
-            obj = asdict(obj)
+            if is_dataclass(obj):
+                obj = asdict(obj)
 
-        if isinstance(obj, (tuple, list)):
-            for x in obj[:]:
-                remove(x, self)
-        elif isinstance(obj, dict):
-            for k in obj.keys():
-                remove(obj[k], self)
+            if isinstance(obj, (tuple, list)):
+                for x in obj[:]:
+                    remove(x, self)
+            elif isinstance(obj, dict):
+                for k in obj.keys():
+                    remove(obj[k], self)
     
     def open(self):
         if not os.path.isdir(self.path):
+            log.io(f'creating directory "{self.path}".')
             os.makedirs(self.path)
     
     def clean(self):
         if self.parent is None:
             return  # do not clean root
         if os.path.isdir(self.path) and len(os.listdir(self.path)) == 0:
+            log.io(f'removing empty directory "{self.path}".')
             os.rmdir(self.path)
             self.parent.clean()
         
@@ -136,6 +152,27 @@ class Context(BaseContext):
         self.children[other] = res
         return res
 
+
+def context(path: str = None, /, *, verbose: int = -1, validate: bool = False):
+    """Create a context factory.
+
+    :param path (str): if specified a context instance at the path is provided. 
+        Otherwise a factory is returned.
+    :param verbose (int): verbosity level, defaults to -1
+    :param validate (bool): validate the output, defaults to False
+    """
+    
+    def context_factory(path):
+        _verbose = verbose
+        if verbose == True:
+            _verbose = log.INFO
+        if _verbose >= 0 and _verbose is not None:
+            log.setLevel(_verbose)
+        return Context(path=path, validate=validate)
+    if path is None:
+        return context_factory
+    return context_factory(path)
+        
 
 @serializable(name='__ser_rec_config')
 @overrideable(frozen=True)
@@ -237,9 +274,9 @@ class Record:
     def content(self):
         if is_unloaded(self._content):
             ul: Unloaded = self._content
-            ul.context.emphasize('record', f'loading {str(self)}')
+            log.emphasize('record', f'loading {str(self)}')
             self._content = ul.__load__()
-            ul.context.emphasize('record', f'finished loading {str(self)}')
+            log.emphasize('record', f'finished loading {str(self)}')
         return self._content
 
     @content.setter
@@ -271,13 +308,13 @@ class Record:
             # remove all subfiles of content
             content = self._content
             if is_unloaded(content):
-                context.info('record', 'content unloaded: loading ...')
+                log.info('content unloaded: loading ...', 'record')
                 ul: Unloaded = content
                 content = ul.__load__()
-                context.info('record', 'finished load.')
+                log.info('finished load.', 'record')
             if isinstance(content, BaseInvalid):
-                context.error('record', 'loaded content is invalid:')
-                context.error('record', content)
+                log.error('loaded content is invalid:', 'record')
+                log.error(content, 'record')
             else:
                 target.delete(content)
 
@@ -288,20 +325,20 @@ class Record:
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
             sto_type = unloaded.type
-            context.info('record', f'serializing record with storable type: {sto_type} ...')
+            log.info(f'serializing record with storable type: {sto_type} ...', 'record')
             if isinstance(context, Context) and unloaded.base != context.path:
                 self.content
         else:
-            context.info('record', f'serializing record with storable type: {sto_type} ...')
+            log.info(f'serializing record with storable type: {sto_type} ...', 'record')
 
 
         if not is_unloaded(self._content):
             if not isinstance(context, Context):
                 return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
-            context.info('record', 'content is loaded, executing write ...')
+            log.info('content is loaded, executing write ...', 'record')
             exc = target.write(self._content)
             if exc is not None:
-                context.error('record', 'exception encountered while writing.')
+                log.error(f'exception encountered while writing to {target.path}.', 'record')
                 self.exception = exc
 
         res = {
@@ -317,7 +354,7 @@ class Record:
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        context.info(f'record', 'deserializing record ...')
+        log.info('deserializing record ...', f'record')
         config: RecordConfig = deserialize(
             serialized.get('target', ''), ser_type=RecordConfig
         )
@@ -325,18 +362,18 @@ class Record:
         preload = serialized.get('preload', False)
         exception = deserialize(serialized.get('exception', None))
         if isinstance(exception, BaseInvalid):
-            context.error('record', 'error during earlier serialization:')
-            context.error('record', exception)
+            log.error('error during earlier serialization:', 'record')
+            log.error(exception, 'record')
 
         content = Undeserializable(type=sto_type, info=f'Could not read {config.target}')
         if isinstance(context, Context):
             target = Record.__parse(config, context)
             if preload:
-                context.info('record', 'preload enabled, loading from file ...')
+                log.info('preload enabled, loading from file ...', 'record')
                 content = target.read(sto_type)
             else:
-                context.info('record' , 'preload disabled, load deferred')
-                context.info(f'record', f'path: "{target.path}"')
+                log.info('preload disabled, load deferred', 'record')
+                log.info(f'path: "{target.path}"', f'record')
                 content = Unloaded(sto_type, target.path, context=target, base=context.path)
 
         out = cls(content=content, config=config, preload=preload)

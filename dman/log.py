@@ -3,10 +3,10 @@ import logging
 import textwrap
 
 LOGGER_NAME = 'dman'
-DEFAULT_LOGGING_FORMAT = '[%(name)s] %(message)s'
+DEFAULT_LOGGING_FORMAT = '%(message)s'
 DEFAULT_HEADER_WIDTH = 20
 DEFAULT_INDENT = 2
-DEFAULT_LEVEL = logging.NOTSET
+DEFAULT_LEVEL = logging.CRITICAL
 
 from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
 
@@ -94,7 +94,7 @@ class Logger(logging.Logger):
     def pack(self, msg: str, label: str = None):
         if label is not None:
             msg = apply_color(f'[{label}] ', colors.OKGREEN) + msg
-        if self.level <= INFO:
+        if 0 < self.level <= INFO:
             return textwrap.indent(msg, prefix=' '*self._indent)
         stack = self.stack()
         if len(stack) == 0: return msg
