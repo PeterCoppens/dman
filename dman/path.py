@@ -38,7 +38,10 @@ def script_label(base: os.PathLike):
     if base is None:
         base = get_root_path()
     try:
-        script = Path(sys.argv[0])\
+        script = sys.argv[0]
+        if len(script) == 0:
+            return os.path.join('cache', '__interpreter__')
+        script = Path(script)\
             .resolve()\
             .relative_to(Path(base).parent)
     except ValueError:
@@ -173,8 +176,8 @@ def get_directory(key: str, *, subdir: os.PathLike = '', cluster: bool = False, 
         generator = script_label(os.path.abspath(base))
     res = os.path.join(base, generator, subdir)
     if cluster:
-        return res 
-    return os.path.join(res, key)
+        return os.path.join(res, key)
+    return res 
 
 
 def prepare(key: str, *, suffix: str = '.json', subdir: os.PathLike = '', cluster: bool = False, verbose: int = None, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):    
@@ -215,7 +218,7 @@ def prepare(key: str, *, suffix: str = '.json', subdir: os.PathLike = '', cluste
         os.makedirs(dir)
 
     # configure logger
-    if verbose == False:
+    if verbose is None or verbose <= 0:
         verbose = log.NOTSET
     logger = log.get_logger(level=verbose)
     log_dir = None

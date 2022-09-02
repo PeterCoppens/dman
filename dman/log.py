@@ -1,7 +1,6 @@
 from enum import Enum
 import logging
 import textwrap
-from tkinter.tix import AUTO
 
 LOGGER_NAME = 'dman'
 DEFAULT_LOGGING_FORMAT = '[%(name)s] %(message)s'
