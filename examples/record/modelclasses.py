@@ -34,6 +34,7 @@ class Foo:
 class Boo:
     a: Foo = recordfield(name='file.a', subdir='foo')
     b: Foo = serializefield()
+    
 
 
 @modelclass(compact=True)
@@ -47,6 +48,13 @@ class Coo:
         if self.b != 'hello':
             res['b'] = self.b
         return res
+
+
+@modelclass
+@dataclass
+class Doo:
+    a: Boo
+    b: Boo
             
 
 
@@ -83,3 +91,12 @@ if __name__ == '__main__':
         print(sjson.dumps(ser, indent=4))
         coo: Coo = deserialize(ser, ctx)
         print(coo.b)
+
+        doo = Doo(
+            a=Boo(a=foo, b=copy.deepcopy(foo)), 
+            b=Boo(a=foo, b=copy.deepcopy(foo))
+        )
+        ser = serialize(doo, ctx)
+        print(sjson.dumps(ser, indent=4))
+        doo: Doo = deserialize(ser, ctx)
+        print(doo.a)

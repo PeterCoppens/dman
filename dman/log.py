@@ -52,21 +52,24 @@ class DmanFormatter(logging.Formatter):
 
 class Logger(logging.Logger):
     class _LogLayer:
-        def __init__(self, parent: 'Logger', msg, label, width, args, kwargs, indent=DEFAULT_INDENT):
+        def __init__(self, parent: 'Logger', msg, label, owner, width, args, kwargs, indent=DEFAULT_INDENT):
             self.parent = parent
             self.msg = msg
             self.label = label
             self.width = width
+            self.owner = owner
             self.args = args
             self.kwargs = kwargs
             self.indent = indent
         def __enter__(self):
             self.parent.header(self.msg, self.label, self.width, *self.args, **self.kwargs)
             self.parent.indent(self.indent)
+            self.parent.put(self.owner)
             return self.parent
         def __exit__(self, *_):
             self.parent.indent(-self.indent)
             self.parent.header(self.msg, f'end {self.label}', self.width, *self.args, **self.kwargs)
+            self.parent.pop()
 
     def __init__(self, name: str, level=logging.NOTSET) -> None:
         super().__init__(name, level)
@@ -74,14 +77,28 @@ class Logger(logging.Logger):
         self.header_width = DEFAULT_HEADER_WIDTH
         self._target = None
         self._stream = None
+        self._stack = []
+
+    def put(self, owner: str):
+        self._stack.append(owner)
+    
+    def pop(self):
+        self._stack.pop()
 
     def indent(self, indent: int = 0, *, increment: bool = True):
         self._indent = self._indent + indent if increment else indent
     
+    def stack(self):
+        return ''.join([a + '.' for a in self._stack if a is not None])[:-1]
+    
     def pack(self, msg: str, label: str = None):
         if label is not None:
             msg = apply_color(f'[{label}] ', colors.OKGREEN) + msg
-        return textwrap.indent(msg, prefix=' '*self._indent)
+        if self.level <= INFO:
+            return textwrap.indent(msg, prefix=' '*self._indent)
+        stack = self.stack()
+        if len(stack) == 0: return msg
+        return apply_color(f'[{stack}] ', colors.HEADER) + msg
     
     def path(self, path: str, label: str = None):
         return '"' + apply_color(link(path, label), colors.UNDERLINE) + '"'
@@ -123,8 +140,8 @@ class Logger(logging.Logger):
             msg = label + msg
         self.info(msg, *args, **kwargs)
     
-    def layer(self, msg: str, label: str = None, width: int = None, *args, **kwargs):
-        return self._LogLayer(self, msg, label, width, args=args, kwargs=kwargs)
+    def layer(self, msg: str, label: str = None, owner: str = None, width: int = None, *args, **kwargs):
+        return self._LogLayer(self, msg, label, owner, width, args=args, kwargs=kwargs)
 
 
 
@@ -140,9 +157,10 @@ def get_logger(level: int = None, *, name: str = LOGGER_NAME) -> Logger:
         logger: Logger = logging.getLogger(name)
         logger.__class__ = Logger
         logger._indent = 0
-        logger.header_width = DEFAULT_HEADER_WIDTH
-        logger.setLevel(DEFAULT_LEVEL)
         logger._target = None
+        logger.header_width = DEFAULT_HEADER_WIDTH
+        logger._stack = []
+        logger.setLevel(DEFAULT_LEVEL)
 
         formatter = DmanFormatter(DEFAULT_LOGGING_FORMAT)
         handler = logging.StreamHandler()
@@ -154,7 +172,6 @@ def get_logger(level: int = None, *, name: str = LOGGER_NAME) -> Logger:
     if level is not None:
         logger.setLevel(level)        
     return logger
-
 
 def setLevel(level: int, *, name: str = LOGGER_NAME):
     return get_logger().setLevel(level)
@@ -183,8 +200,8 @@ def io(msg: str, label: str = None, *args, **kwargs):
 def header(msg: str, label: str = None, width: int = None, *args, **kwargs):
     return get_logger().header(msg, label, width, *args, **kwargs)
 
-def layer(msg: str, label: str = None, width: int = None, *args, **kwargs):
-    return get_logger().layer(msg, label, width, *args, **kwargs)
+def layer(msg: str, label: str = None, owner: str = None, width: int = None, *args, **kwargs):
+    return get_logger().layer(msg, label, owner, width, *args, **kwargs)
 
 
 class Target(Enum):
@@ -237,7 +254,9 @@ if __name__ == '__main__':
     warning('warning')
     error('fail')
 
-    log = get_logger(INFO, name='test')
-    with log.layer('enter', 'test', width=10):
-        log.info('test', 'test')
-        log.io(f'read {path("./README.md")}', 'test')
+    log = get_logger(WARNING, name='test')
+    with log.layer('enter', 'test', 'mruns', width=10):
+        with log.layer('enter', 'test', 'list', width=10):
+            log.info('test', 'test')
+            log.warning('warning', 'test')
+            log.io(f'read {path("./README.md")}', 'test')
