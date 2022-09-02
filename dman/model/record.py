@@ -3,11 +3,11 @@ import os
 from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any
 import uuid
-from dman import log
-from dman.persistent.serializables import BaseInvalid, deserialize, is_serializable, serializable, BaseContext, serialize
-from dman.persistent.serializables import ExcUndeserializable, ExcUnserializable, Unserializable, Undeserializable
+from dman.core import log
+from dman.core.serializables import BaseInvalid, deserialize, is_serializable, serializable, BaseContext, serialize
+from dman.core.serializables import ExcUndeserializable, ExcUnserializable, Unserializable, Undeserializable
 from dman.utils.smartdataclasses import AUTO, overrideable
-from dman.persistent.storables import is_storable, storable_type, read, write
+from dman.core.storables import is_storable, storable_type, read, write
 
 
 REMOVE = '__remove__'

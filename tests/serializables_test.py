@@ -3,7 +3,7 @@ import pytest
 
 
 from dman import serializable, serialize, deserialize, sjson, dataclass, isvalid
-from dman.persistent.serializables import SER_TYPE, SER_CONTENT, ExcUndeserializable, Undeserializable, Unserializable
+from dman.core.serializables import SER_TYPE, SER_CONTENT, ExcUndeserializable, Undeserializable, Unserializable
 
 
 atomics = [

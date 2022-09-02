@@ -7,7 +7,7 @@ import traceback
 from typing import Any, List, Type
 
 from dman.utils import sjson
-from dman import log
+from dman.core import log
 import textwrap
 
 from enum import Enum

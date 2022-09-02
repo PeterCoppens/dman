@@ -5,13 +5,13 @@ import os
 
 from typing import Any, Callable, Iterable, Union
 from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field, asdict
-from dman import log
+from dman.core import log
 
 from dman.utils.smartdataclasses import WrapField, wrappedclass, wrappedfields, wrapfield, AUTO, is_wrapfield
-from dman.persistent.storables import is_storable, storable
-from dman.persistent.record import Record, RecordConfig, record, REMOVE, remove, recordconfig
-from dman.persistent.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE, is_serializable
-from dman.persistent.serializables import BaseContext, serialize, deserialize, serializable
+from dman.core.storables import is_storable, storable
+from dman.model.record import Record, RecordConfig, record, REMOVE, remove, recordconfig
+from dman.core.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE, is_serializable
+from dman.core.serializables import BaseContext, serialize, deserialize, serializable
 
 
 STO_FIELD = '_record__fields'
@@ -173,8 +173,8 @@ def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, 
         The class is automatically made ``serializable`` by adding ``__serialize__``
         and ``__deserialize__``.
 
-        The arguments of the ``dataclass`` decorator are provided. Two additional 
-        arguments are also available.
+        The arguments of the ``dataclass`` decorator are provided and some
+        additional arguments are also available.
 
     :param bool init: add an ``__init__`` method. 
     :param bool repr: add a ``__repr__`` method. 

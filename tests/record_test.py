@@ -6,7 +6,7 @@ from dman import dataclass
 from tempfile import TemporaryDirectory
 import os
 
-from dman.persistent.record import Record, Context, is_unloaded
+from dman.model.record import Record, Context, is_unloaded
 
 
 @storable(name='test')

@@ -1,9 +1,9 @@
 from dataclasses import field
 from tempfile import TemporaryDirectory
-from dman.persistent.modelclasses import modelclass, recordfield
-from dman.persistent.configclasses import configclass, section
-from dman.persistent.storables import read, write
-from dman.persistent.record import Context
+from dman.model.modelclasses import modelclass, recordfield
+from dman.model.configclasses import configclass, section
+from dman.core.storables import read, write
+from dman.model.record import Context
 from dman.utils.display import list_files
 
 import os

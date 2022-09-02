@@ -1,8 +1,8 @@
 import os
 from tempfile import TemporaryDirectory
-from dman.persistent.modelclasses import mdict, serialize, deserialize
+from dman.model.modelclasses import mdict, serialize, deserialize
 from dman.utils import sjson
-from dman.persistent.record import Context, remove
+from dman.model.record import Context, remove
 from dman.utils.display import list_files
 from record import TestSto
 

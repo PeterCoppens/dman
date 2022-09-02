@@ -1,6 +1,6 @@
-from dman.persistent.record import Record, record, Context, remove
-from dman.persistent.serializables import serializable, serialize, deserialize
-from dman.persistent.storables import storable
+from dman.model.record import Record, record, Context, remove
+from dman.core.serializables import serializable, serialize, deserialize
+from dman.core.storables import storable
 from tempfile import TemporaryDirectory
 
 from dman.utils import sjson

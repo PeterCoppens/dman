@@ -1,6 +1,6 @@
-from dman.persistent.serializables import serializable
-from dman.persistent.storables import storable
-from dman.persistent.modelclasses import recordfield, serializefield
+from dman.core.serializables import serializable
+from dman.core.storables import storable
+from dman.model.modelclasses import recordfield, serializefield
 from dman.utils import sjson
 
 from typing import Union

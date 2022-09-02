@@ -4,7 +4,7 @@ import numpy as np
 import os
 from dataclasses import MISSING, Field
 
-from dman.persistent.record import Record
+from dman.model.record import Record
 from dman.utils.smartdataclasses import AUTO
 
 setup(logfile='log.ansi')

@@ -1,14 +1,14 @@
 from dataclasses import MISSING
 import os
 from typing import Type
-from dman import log
+from dman.core import log
 
 
-from dman.persistent.record import Context, record
-from dman.persistent.serializables import deserialize, is_serializable, serialize
-from dman.persistent.storables import is_storable
+from dman.model.record import Context, record
+from dman.core.serializables import deserialize, is_serializable, serialize
+from dman.core.storables import is_storable
 from dman.utils import sjson
-from dman.path import prepare
+from dman.core.path import prepare
 
 
 def store(

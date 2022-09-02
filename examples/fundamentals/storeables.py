@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from dman.persistent.storables import storable, write, read
+from dman.core.storables import storable, write, read
 import os
 
 from tempfile import TemporaryDirectory

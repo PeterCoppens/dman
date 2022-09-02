@@ -19,8 +19,8 @@ from rich.tree import Tree
 from rich import inspect
 
 
-from dman.persistent.serializables import deserialize, serialize, SER_CONTENT, SER_TYPE, BaseInvalid
-from dman.persistent.modelclasses import mdict, smdict, mruns, mlist, smlist
+from dman.core.serializables import deserialize, serialize, SER_CONTENT, SER_TYPE, BaseInvalid
+from dman.model.modelclasses import mdict, smdict, mruns, mlist, smlist
 from dman.utils import sjson
 
 _print = print

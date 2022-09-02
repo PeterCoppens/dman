@@ -2,10 +2,10 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass, field, is_dataclass, fields
 import inspect
 
-from dman.persistent.storables import WRITE, READ, storable
-from dman.persistent.modelclasses import modelclass
-from dman.persistent.serializables import BaseContext, is_serializable, ser_str2type, ser_type2str, serialize, deserialize
-from dman.persistent.record import Record
+from dman.core.storables import WRITE, READ, storable
+from dman.model.modelclasses import modelclass
+from dman.core.serializables import BaseContext, is_serializable, ser_str2type, ser_type2str, serialize, deserialize
+from dman.model.record import Record
 
 import os
 import configparser

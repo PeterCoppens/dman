@@ -21,7 +21,7 @@ from dman.numeric import barray, barrayfield
 
 import numpy as np
 
-from dman.persistent.serializables import serializable
+from dman.core.serializables import serializable
 
 # ------------------------------------------------------------------------------
 # 1. automatic generation

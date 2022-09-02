@@ -1,6 +1,6 @@
 import copy
-from dman.persistent.serializables import serialize, deserialize
-from dman.persistent.modelclasses import modelclass, recordfield, serializefield
+from dman.core.serializables import serialize, deserialize
+from dman.model.modelclasses import modelclass, recordfield, serializefield
 from dman.utils.display import list_files
 from dman import context
 from tempfile import TemporaryDirectory

@@ -1,5 +1,5 @@
 import argparse
-from dman.repository import get_root_path
+from dman.model.repository import get_root_path
 
 
 

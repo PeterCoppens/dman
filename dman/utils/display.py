@@ -1,5 +1,5 @@
 import textwrap, os, logging
-from dman.path import get_root_path
+from dman.core.path import get_root_path
 
 
 def print_contents(path: os.PathLike):

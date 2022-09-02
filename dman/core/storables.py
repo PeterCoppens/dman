@@ -5,7 +5,7 @@ from os import PathLike
 import traceback
 from typing import Type, Union
 
-from dman.persistent.serializables import is_serializable, serializable, serialize, deserialize, BaseContext
+from dman.core.serializables import is_serializable, serializable, serialize, deserialize, BaseContext
 from dman.utils import sjson
 
 STO_TYPE = '_sto__type'

@@ -5,6 +5,20 @@ from typing import Union
 
 def idataclass(cls=None, /, *, init=True, repr=True, eq=True, order=False, 
                 unsafe_hash=False, frozen=False):
+    """
+    Convert a class to an iterable dataclass.
+        Returns the same class as was passed in, with dunder methods added based on the fields
+        defined in the class.
+        The class is automatically made ``iterable`` by adding ``__iter__``
+
+        The arguments of the ``dataclass`` decorator are provided.
+
+    :param bool init: add an ``__init__`` method. 
+    :param bool repr: add a ``__repr__`` method. 
+    :param bool order: rich comparison dunder methods are added. 
+    :param bool unsafe_hash: add a ``__hash__`` method function.
+    :param bool frozen: fields may not be assigned to after instance creation.
+    """
 
     def wrap(cls):
         res = dataclass(cls, init=init, repr=repr, eq=eq, order=order, unsafe_hash=unsafe_hash, frozen=frozen)

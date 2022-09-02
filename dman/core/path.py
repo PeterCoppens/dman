@@ -3,7 +3,7 @@ from dataclasses import MISSING
 from pathlib import Path
 import os, sys
 
-from dman import log
+from dman.core import log
 
 ROOT_FOLDER = '.dman'
 

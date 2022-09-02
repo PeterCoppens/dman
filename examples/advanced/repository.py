@@ -1,7 +1,7 @@
-from dman.persistent.modelclasses import modelclass
-from dman.repository import repository, track
+from dman.model.modelclasses import modelclass
+from dman.model.repository import repository, track
 from dman.utils.display import list_files
-from dman.persistent.storables import write
+from dman.core.storables import write
 from tempfile import TemporaryDirectory
 
 from record.record import TestSto
