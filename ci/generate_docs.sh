@@ -10,8 +10,9 @@ mkdir -p "$output_folder"
 function generate_docs {
     if [ "$1" = "main" ]; then dir="docs"; else dir="$1/docs"; fi
     pushd ../
-    python setup.py install
+    pip install .
     sphinx-build -M html docs/source /tmp/sphinx-build
+    mkdir -p "$2/$dir"
     rm -rf "$2/$dir"
     mv /tmp/sphinx-build/html "$2/$dir"
     popd

@@ -1,0 +1,45 @@
+[project]
+name = "dman"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["data management", "data"]
+dynamic = ["version", "description"]
+authors = [
+  {name = "Peter Coppens", "email" = "peter.coppens@kuleuven.be"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Version Control",
+    "Topic :: System :: Archiving",
+]
+requires-python = ">=3.8"
+dependencies = []
+[project.optional-dependencies]
+numpy = ["numpy~=1.20"]
+plotting = ["matplotlib~=3.5"]
+tui = ["rich~=12.5"]
+test = ["pytest~=7.0"]
+
+[project.urls]
+Source = "https://github.com/PeterCoppens/dman"
+Documentation = "https://PeterCoppens.github.io/dman"
+Tracker = "https://github.com/PeterCoppens/dman/issues"
+
+[project.scripts]
+dman = "dman.cli:main"
+
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
