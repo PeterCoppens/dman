@@ -5,7 +5,7 @@ Toolbox for experimental data management in Python.
 __version__ = '0.0.0'
 
 from dman.model.modelclasses import modelclass, recordfield, mdict, smdict, mlist, smlist, mruns, serializefield
-from dman.model.modelclasses import smlist_factory, smdict_factory, mruns_factory, mdict_factory
+from dman.model.modelclasses import smlist_factory, smdict_factory, mruns_factory, mdict_factory, mlist_factory
 from dman.core.serializables import serializable, serialize, deserialize, BaseContext
 from dman.core.serializables import ser_type2str, ser_str2type
 from dman.core.serializables import isvalid

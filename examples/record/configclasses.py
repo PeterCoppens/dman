@@ -39,9 +39,9 @@ if __name__ == '__main__':
 
     with TemporaryDirectory() as base:
         ctx = Context(base)
-        target = os.path.join(ctx.path, 'test.ini')
+        target = os.path.join(ctx.directory, 'test.ini')
         write(cfg, target, ctx)
-        list_files(ctx.path)
+        list_files(ctx.directory)
 
         res: TestConfig = read(TestConfig, target, ctx)
         print(res.info.a)

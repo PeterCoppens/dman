@@ -66,7 +66,7 @@ if __name__ == '__main__':
         print(sjson.dumps(ser, indent=4))
 
         print()
-        list_files(ctx.path)
+        list_files(ctx.directory)
 
     input('\n >>> continue?')
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         print(rec.content)
 
         print()
-        list_files(ctx.path)
+        list_files(ctx.directory)
 
     input('\n >>> continue?')
 
@@ -109,7 +109,7 @@ if __name__ == '__main__':
         rec = record(TestSto(name='test'), name='test.txt', preload=True)
         ser = serialize(rec, ctx)
         print(sjson.dumps(ser, indent=4))
-        list_files(ctx.path)
+        list_files(ctx.directory)
 
         import os
         os.remove(os.path.join(base, 'test.txt'))
@@ -124,10 +124,10 @@ if __name__ == '__main__':
         rec = record(TestSto(name='test'), name='test.txt', preload=True)
         ser = serialize(rec, ctx)
         print(sjson.dumps(ser, indent=4))
-        list_files(ctx.path)
+        list_files(ctx.directory)
 
         print('removed record')
         remove(rec, ctx)
-        list_files(ctx.path)
+        list_files(ctx.directory)
 
 

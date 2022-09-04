@@ -4,6 +4,8 @@ except ImportError as e:
     raise ImportError('TUI tools require rich.') from e
 
 from typing import Any, Optional, Union
+import os
+import pathlib
 
 from dataclasses import dataclass, is_dataclass, fields, asdict
 from rich.style import Style
@@ -16,7 +18,14 @@ from rich import box
 from rich.progress import track, Progress
 from rich.live import Live
 from rich.tree import Tree
+from rich.markup import escape
 from rich import inspect
+from rich.filesize import decimal
+from rich.markup import escape
+from rich.text import Text
+from rich import print_json
+from rich.json import JSON
+from rich.console import Group
 
 
 from dman.core.serializables import deserialize, serialize, SER_CONTENT, SER_TYPE, BaseInvalid
@@ -25,7 +34,7 @@ from dman.utils import sjson
 
 _print = print
 
-from rich import print as _rich_print
+from rich import print
 
 
 class Console(_Console):
@@ -149,14 +158,70 @@ def process(obj):
         return obj
     return res
 
-def print(*obj):
-    if len(obj) == 1:
-        _rich_print(process(obj[0]))
-    else:
-        res = [Panel(process(o), box=box.MINIMAL) for o in obj]
-        _rich_print(Columns(res))
 
+def walk_file(path: pathlib.Path):
+    text_chars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
+    with open(path, 'rb') as f:
+        is_binary_string = bool(f.read(1024).translate(None, text_chars))
     
+    if is_binary_string:
+        return  None
+    with open(path, 'r') as f:
+        content = f.read()
+        if path.suffix == '.json':
+            return Panel(JSON(content), box=box.SQUARE)
+        return Panel(content, box=box.SQUARE)
 
+
+
+def walk_directory(directory: pathlib.Path, *, show_content: bool = False, tree: Tree = None) -> None:
+    """Print the contents of a directory
+
+    :param directory: directory to print
+    :param show_content: show content of text files, defaults to False
+    :param tree: add content to tree instead of printing, defaults to None
+    """
+
+    # based on https://github.com/Textualize/rich/blob/master/examples/tree.py
+    is_root = tree is None
+    if is_root:
+        tree = Tree(
+            f":open_file_folder: [link file://{directory}]{directory}",
+            guide_style="bold bright_blue",
+        )
+
+    # sort dirs first then by filename
+    paths = sorted(
+        pathlib.Path(directory).iterdir(),
+        key=lambda path: (path.is_file(), path.name.lower()),
+    )
+
+    for path in paths:
+        # remove hidden files
+        if path.name.startswith("."):
+            continue
+        if path.is_dir():
+            style = "dim" if path.name.startswith("__") else ""
+            branch = tree.add(
+                f"[bold magenta]:open_file_folder: [link file://{path}]{escape(path.name)}",
+                style=style,
+                guide_style=style,
+            )
+            walk_directory(path, tree=branch, show_content=show_content)
+        else:
+            text_filename = Text(path.name, "green")
+            text_filename.highlight_regex(r"\..*$", "green")
+            text_filename.stylize(f"link file://{path}")
+            file_size = path.stat().st_size
+            text_filename.append(f" ({decimal(file_size)})", "blue")
+            icon = "🐍 " if path.suffix == ".py" else "📄 "
+
+            res = Text(icon) + text_filename
+            if show_content:
+                content = walk_file(path)
+                if content is not None:
+                    res = Group(res, content)
+            tree.add(res)
     
-    
+    if is_root:
+        print(tree)

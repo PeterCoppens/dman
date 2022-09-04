@@ -84,7 +84,7 @@ if __name__ == '__main__':
         print(boo.b.c)
 
         print()
-        list_files(ctx.path)
+        list_files(ctx.directory)
 
         coo = Coo(a='test')
         ser = serialize(coo, ctx)

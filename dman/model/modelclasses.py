@@ -270,8 +270,9 @@ def _remove__modelclass(self, context: BaseContext = None):
 def _serialize__modelclass(self, context: BaseContext = None):
     res = dict()
     for f in fields(self):
+        record_fields = recordfields(self)
         if f.name not in getattr(self, NO_SERIALIZE, []):
-            if f.name in recordfields(self):
+            if f.name in record_fields:
                 value = getattr(self, _record_key(f.name))
             else:
                 value = getattr(self, f.name)
@@ -802,6 +803,12 @@ class mruns(_bruns):
 @serializable(name='_ser__smruns')
 class smruns(_bruns):
     pass
+
+
+def mlist_factory(subdir: os.PathLike = '', preload: bool = False):
+    def factory():
+        return mlist(subdir=subdir, preload=preload)
+    return factory
 
 
 def smlist_factory(subdir: os.PathLike = '', preload: bool = False):

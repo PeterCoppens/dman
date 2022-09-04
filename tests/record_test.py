@@ -150,4 +150,4 @@ def test_move():
         
         ctx = context(os.path.join(base, 'second'))
         ser = serialize(res, ctx)
-        assert(os.path.exists(os.path.join(ctx.path, 'temp.txt')))
+        assert(os.path.exists(os.path.join(ctx.directory, 'temp.txt')))

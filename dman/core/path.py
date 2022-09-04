@@ -180,7 +180,7 @@ def get_directory(key: str, *, subdir: os.PathLike = '', cluster: bool = False, 
     return res 
 
 
-def prepare(key: str, *, suffix: str = '.json', subdir: os.PathLike = '', cluster: bool = False, verbose: int = None, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):    
+def prepare(key: str, *, suffix: str = '.json', subdir: os.PathLike = '', cluster: bool = True, verbose: int = None, gitignore: bool = True, generator: str = MISSING, base: os.PathLike = None):    
     """
     Prepare directory and log for dman file access.
         The path of the file is determined as described below.
@@ -210,6 +210,7 @@ def prepare(key: str, *, suffix: str = '.json', subdir: os.PathLike = '', cluste
 
     :returns str: The directory where files are stored by dman.
     """    
+    # get the directory
     dir = get_directory(key, subdir=subdir, cluster=cluster, generator=generator, base=base)
     
     # create directory
@@ -235,9 +236,12 @@ def prepare(key: str, *, suffix: str = '.json', subdir: os.PathLike = '', cluste
 
     # create gitignore
     if gitignore:
-        add_gitignore(dir, f'{key}{suffix}', check_exists=False)
-        if log_dir:
-            add_gitignore(log_dir, 'log.ansi', check_exists=False)
+        if cluster:
+            add_gitignore(os.path.dirname(dir), dir, check_exists=False)
+        else:
+            add_gitignore(dir, f'{key}{suffix}', check_exists=False)
+            if log_dir:
+                add_gitignore(log_dir, 'log.ansi', check_exists=False)
 
     return dir
 

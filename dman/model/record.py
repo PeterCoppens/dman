@@ -44,25 +44,18 @@ class ExcUnReadable(ExcUndeserializable):
 
 
 class Context(BaseContext):
-    def __init__(self, path: os.PathLike, parent: 'Context' = None, children: dict = None, validate: bool = False):
+    def __init__(self, directory: os.PathLike, parent: 'Context' = None, children: dict = None, validate: bool = False):
         super().__init__(validate=validate)
-        self.path = path
+        self.directory = directory
         self.parent = parent
         self.children = dict() if children is None else children
 
-    def touch(self):
-        self.parent.open()
-        return self
-
-    def write(self, storable):
-        if self.parent is None:
-            res =  UnWritable(type=type(storable), info='Cannot write to root directory.')
-            self._process_invalid('An error occurred while writing.', res)
-            return res
-        self.touch()
+    def write(self, target: str, storable):
+        self.open()
         try:
-            log.io(f'writing to file: "{self.path}".', 'context')
-            write(storable, self.path, self.parent)
+            path = os.path.join(self.directory, target)
+            log.io(f'writing to file: "{path}".', 'context')
+            write(storable, path, self)
             return None
         except Exception:
             res = ExcUnWritable(
@@ -71,14 +64,11 @@ class Context(BaseContext):
             self._process_invalid('An error occurred while writing.', res)
             return res
 
-    def read(self, sto_type):
-        if self.parent is None:
-            res = UnReadable(type=sto_type, info='Cannot read root directory.')
-            self._process_invalid('An error occurred while writing.', res)
-            return res
+    def read(self, target: str, sto_type):
         try:
-            log.io(f'reading from file: "{self.path}".', 'context')
-            return read(sto_type, self.path, self.parent)
+            path = os.path.join(self.directory, target)
+            log.io(f'reading from file: "{path}".', 'context')
+            return read(sto_type, path, self)
         except FileNotFoundError:
             res = NoFile(type=sto_type, info='Missing File.')
             self._process_invalid('An error occurred while writing.', res)
@@ -90,49 +80,47 @@ class Context(BaseContext):
             self._process_invalid('An error occurred while writing.', res)
             return res
 
-    def delete(self, obj, remove: bool = True):
-        if remove:
-            self.parent.remove(obj)
+    def delete(self, target: str, obj):
         if self.parent is None:
             raise RuntimeError('Cannot delete root repository')
-        if os.path.exists(self.path):
-            log.io(f'deleting file: "{self.path}".', 'context')
-            os.remove(self.path)
-        self.parent.clean()
+        path = os.path.join(self.directory, target)
+        if os.path.exists(path):
+            log.io(f'deleting file: "{path}".', 'context')
+            os.remove(path)
+        self.clean()
 
     def remove(self, obj):
-        with log.layer(type(obj).__name__, 'removing', type(obj).__name__):
-            if is_removable(obj):
-                inner_remove = getattr(obj, REMOVE, None)
-                if inner_remove is not None:
-                    inner_remove(self)
-                return
+        if is_removable(obj):
+            inner_remove = getattr(obj, REMOVE, None)
+            if inner_remove is not None:
+                inner_remove(self)
+            return
 
-            if is_dataclass(obj):
-                obj = asdict(obj)
-
-            if isinstance(obj, (tuple, list)):
-                for x in obj[:]:
-                    remove(x, self)
-            elif isinstance(obj, dict):
-                for k in obj.keys():
-                    remove(obj[k], self)
+        if is_dataclass(obj):
+            obj = asdict(obj)
+        
+        if isinstance(obj, (tuple, list)):
+            for x in obj[:]:
+                remove(x, self)
+        elif isinstance(obj, dict):
+            for k in obj.keys():
+                remove(obj[k], self)
     
     def open(self):
-        if not os.path.isdir(self.path):
-            log.io(f'creating directory "{self.path}".')
-            os.makedirs(self.path)
+        if not os.path.isdir(self.directory):
+            log.io(f'creating directory "{self.directory}".')
+            os.makedirs(self.directory)
     
     def clean(self):
         if self.parent is None:
             return  # do not clean root
-        if os.path.isdir(self.path) and len(os.listdir(self.path)) == 0:
-            log.io(f'removing empty directory "{self.path}".')
-            os.rmdir(self.path)
+        if os.path.isdir(self.directory) and len(os.listdir(self.directory)) == 0:
+            log.io(f'removing empty directory "{self.directory}".')
+            os.rmdir(self.directory)
             self.parent.clean()
         
     def normalize(self, other: os.PathLike):
-        return os.path.relpath(os.path.join(self.path, other), start=self.path)
+        return os.path.relpath(os.path.join(self.directory, other), start=self.directory)
     
     def join(self, other: os.PathLike) -> 'Context':
         # normalize
@@ -148,7 +136,7 @@ class Context(BaseContext):
         if res is not None:
             return res
 
-        res = self.__class__(os.path.join(self.path, other), parent=self)
+        res = self.__class__(os.path.join(self.directory, other), parent=self)
         self.children[other] = res
         return res
 
@@ -168,7 +156,7 @@ def context(path: str = None, /, *, verbose: int = -1, validate: bool = False):
             _verbose = log.INFO
         if _verbose >= 0 and _verbose is not None:
             log.setLevel(_verbose)
-        return Context(path=path, validate=validate)
+        return Context(directory=path, validate=validate)
     if path is None:
         return context_factory
     return context_factory(path)
@@ -224,12 +212,16 @@ def is_unloaded(obj):
 @dataclass
 class Unloaded:
     type: str
-    path: str
+    target: str
     base: str
     context: Context
 
+    @property
+    def path(self):
+        return os.path.join(self.base, self.target)
+
     def __load__(self):
-        return self.context.read(self.type)
+        return self.context.read(self.target, self.type)
     
     def __repr__(self) -> str:
         return f'UL[{self.type}]'
@@ -298,13 +290,11 @@ class Record:
     
     @staticmethod
     def __parse(config: RecordConfig, context: Context):
-        local = context.join(config.subdir)
-        target = local.join(config.name)
-        return target
+        return config.name, context.join(config.subdir)
     
     def __remove__(self, context: BaseContext):
         if isinstance(context, Context):
-            target = Record.__parse(self.config, context)
+            target, local = Record.__parse(self.config, context)
             # remove all subfiles of content
             content = self._content
             if is_unloaded(content):
@@ -316,29 +306,28 @@ class Record:
                 log.error('loaded content is invalid:', 'record')
                 log.error(str(content), 'record')
             else:
-                target.delete(content)
+                local.delete(target, content)
 
     def __serialize__(self, context: BaseContext):
         sto_type = storable_type(self._content)
-        target = Record.__parse(self.config, context)
+        target, local = Record.__parse(self.config, context)
 
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
             sto_type = unloaded.type
             log.info(f'serializing record with storable type: {sto_type} ...', 'record')
-            if isinstance(context, Context) and unloaded.base != context.path:
+            if isinstance(context, Context) and unloaded.base != context.directory:
                 self.content
         else:
             log.info(f'serializing record with storable type: {sto_type} ...', 'record')
-
 
         if not is_unloaded(self._content):
             if not isinstance(context, Context):
                 return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
             log.info('content is loaded, executing write ...', 'record')
-            exc = target.write(self._content)
+            exc = local.write(target, self._content)
             if exc is not None:
-                log.error(f'exception encountered while writing to {target.path}.', 'record')
+                log.error(f'exception encountered while writing to {os.path.join(local.directory, target)}.', 'record')
                 self.exception = exc
 
         res = {
@@ -367,14 +356,19 @@ class Record:
 
         content = Undeserializable(type=sto_type, info=f'Could not read {config.target}')
         if isinstance(context, Context):
-            target = Record.__parse(config, context)
+            target, local = Record.__parse(config, context)
             if preload:
                 log.info('preload enabled, loading from file ...', 'record')
-                content = target.read(sto_type)
+                content = local.read(target, sto_type)
             else:
                 log.info('preload disabled, load deferred', 'record')
-                log.info(f'path: "{target.path}"', f'record')
-                content = Unloaded(sto_type, target.path, context=target, base=context.path)
+                log.info(f'path: "{os.path.join(local.directory, target)}"', f'record')
+                content = Unloaded(
+                    sto_type, 
+                    target, 
+                    context.directory,
+                    local
+                )
 
         out = cls(content=content, config=config, preload=preload)
         out.exception = exception
@@ -413,8 +407,8 @@ def is_removable(obj):
     return hasattr(obj, REMOVE)
 
 
-def remove(obj, context: Context = None):
+def remove(target: str, obj, context: Context = None):
     if not isinstance(context, Context):
         return
-    context.remove(obj)
+    context.delete(target, obj)
 
