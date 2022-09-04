@@ -16,6 +16,7 @@ from dman.model.repository import track, save, load, store
 from dman.model.repository import Track
 from dman.utils import sjson
 from dman.utils.smartdataclasses import idataclass, AUTO
+from dman.core import log
 
 from dataclasses import field, dataclass
 

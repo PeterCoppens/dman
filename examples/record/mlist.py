@@ -1,5 +1,5 @@
 from tempfile import TemporaryDirectory
-from dman.model.record import Context, VerboseContext, remove
+from dman.model.record import Context, context, remove
 from dman.model.modelclasses import mlist, serialize, deserialize
 from dman.utils import sjson
 from dman.utils.display import list_files
@@ -8,7 +8,7 @@ from record import TestSto
 if __name__ == '__main__':
     print('\n====== list tests =======\n')
     with TemporaryDirectory() as base:
-        ctx = VerboseContext(base)
+        ctx = context(base, verbose=True)
         lst = mlist([1, TestSto('a')])
         ser = serialize(lst, ctx)
         print(sjson.dumps(ser, indent=4))
@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     # removing items
     with TemporaryDirectory() as base:
-        ctx = VerboseContext(base)
+        ctx = context(base, verbose=True)
         lst = mlist([1, TestSto('a'), 2, TestSto('b')])
         lst.record(TestSto(name='hello'))
         ser = serialize(lst, ctx)

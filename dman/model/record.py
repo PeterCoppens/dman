@@ -274,9 +274,9 @@ class Record:
     def content(self):
         if is_unloaded(self._content):
             ul: Unloaded = self._content
-            log.emphasize('record', f'loading {str(self)}')
+            log.emphasize(f'loading {str(self)}', 'record')
             self._content = ul.__load__()
-            log.emphasize('record', f'finished loading {str(self)}')
+            log.emphasize(f'finished loading {str(self)}','record')
         return self._content
 
     @content.setter
@@ -314,7 +314,7 @@ class Record:
                 log.info('finished load.', 'record')
             if isinstance(content, BaseInvalid):
                 log.error('loaded content is invalid:', 'record')
-                log.error(content, 'record')
+                log.error(str(content), 'record')
             else:
                 target.delete(content)
 

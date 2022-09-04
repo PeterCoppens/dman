@@ -4,7 +4,6 @@ import os
 
 from tempfile import TemporaryDirectory
 
-
 @storable(name='test')
 @dataclass
 class TestSto:
@@ -26,16 +25,5 @@ if __name__ == '__main__':
         path = os.path.join(tmpdir, 'test.dat')
         write(tst, path)
         res = read(TestSto, path)
-        print(res)
-
-    with TemporaryDirectory() as tmpdir:
-        path = os.path.join(tmpdir, 'test.dat')
-        write(tst, path)
-        os.remove(path)
-        res = read(TestSto, path)
-        print(res)
-
-    with TemporaryDirectory() as tmpdir:
-        res = read(Broken, path)
         print(res)
         

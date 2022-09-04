@@ -7,7 +7,7 @@ from typing import Any, Callable, Iterable, Union
 from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field, asdict
 from dman.core import log
 
-from dman.utils.smartdataclasses import WrapField, wrappedclass, wrappedfields, wrapfield, AUTO, is_wrapfield
+from dman.utils.smartdataclasses import wrappedclass, wrappedfields, wrapfield, AUTO, is_wrapfield
 from dman.core.storables import is_storable, storable
 from dman.model.record import Record, RecordConfig, record, REMOVE, remove, recordconfig
 from dman.core.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE, is_serializable
@@ -36,7 +36,7 @@ def set_record(self, key: str, value):
     setattr(self, _record_key(key), value)
 
 
-class RecordField(WrapField):
+class RecordField:
     def __init__(self, stem: str, suffix: str, name: str, subdir: os.PathLike, preload: str, pre: Callable[[Any], Any]):
         self.stem = stem
         self.suffix = suffix
@@ -73,7 +73,7 @@ class RecordField(WrapField):
 
 
 
-class SerializeField(WrapField):
+class SerializeField:
     def __init__(self, pre: Callable[[Any], Any]):
         self.pre = pre
     
@@ -383,10 +383,11 @@ class _blist(MutableSequence):
         if self.auto_clean:
             res['auto_clean'] = self.auto_clean
 
-        log.info(f'removing unused items ...', f'{type(self).__name__}')
-        for itm in self.unused:
-            remove(itm, context)
-        self.unused = []
+        if len(self.unused) > 0:
+            log.info(f'removing unused items ...', f'{type(self).__name__}')
+            for itm in self.unused:
+                remove(itm, context)
+            self.unused = []
 
         log.info(f'serializing store ...', f'{type(self).__name__}')
         for i, itm in enumerate(self.store):
@@ -402,13 +403,14 @@ class _blist(MutableSequence):
             else:
                 lst.append(serialize(itm, context))
         
-        if self.auto_clean: log.info(
-            f'clean dangling pointers ...',
-            f'{type(self).__name__}'
-        )
-        for itm in self.unused:
-            remove(itm, context)
-        self.unused = []
+        if self.auto_clean and len(self.unused) > 0: 
+            log.info(
+                f'clean dangling pointers ...',
+                f'{type(self).__name__}'
+            )
+            for itm in self.unused:
+                remove(itm, context)
+            self.unused = []
 
         return res
 
@@ -575,10 +577,11 @@ class _bdict(MutableMapping):
         if self.auto_clean:
             res['auto_clean'] = self.auto_clean
 
-        log.info(f'removing unused items ...', f'{type(self).__name__}')
-        for itm in self.unused:
-            remove(itm, context)
-        self.unused = []
+        if len(self.unused) > 0:
+            log.info(f'removing unused items ...', f'{type(self).__name__}')
+            for itm in self.unused:
+                remove(itm, context)
+            self.unused = []
 
         log.info(f'serializing store ...', f'{type(self).__name__}')
         for k, itm in self.store.items():
@@ -594,13 +597,14 @@ class _bdict(MutableMapping):
             else:
                 dct[k] = serialize(itm, context)
         
-        if self.auto_clean: log.info(
-            f'clean dangling pointers ...',
-            f'{type(self).__name__}'
-        )
-        for itm in self.unused:
-            remove(itm, context)
-        self.unused = []
+        if self.auto_clean and len(self.unused) > 0: 
+            log.info(
+                f'clean dangling pointers ...',
+                f'{type(self).__name__}'
+            )
+            for itm in self.unused:
+                remove(itm, context)
+            self.unused = []
 
         return res
 

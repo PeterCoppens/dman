@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, Field, MISSING, is_dataclass, fields
 import copy
-from typing import Union
+from typing import Callable, Union
 
 
 def idataclass(cls=None, /, *, init=True, repr=True, eq=True, order=False, 
@@ -40,9 +40,7 @@ LABEL_KEY = '__label'
 WRAPPED_DICT_KEY = '__wrapped_fields'
 
 
-class WrapField:
-    def __call__(self, key = None) -> property:
-        return property()
+WrapField = Callable[[str], property]
 
 
 def wrapfield(wrap: Union[WrapField, property], /, *, label: str = None, 
@@ -87,7 +85,7 @@ def _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen):
     for f in fields(res):
         if is_wrapfield(f):
             prop = f.metadata.get(PROP_KEY)
-            if isinstance(prop, WrapField):
+            if callable(prop):
                 prop = prop(key=f.name)
             label = f.metadata.get(LABEL_KEY, None)
             f.metadata = f.metadata.get(BASE_KEY, None)
