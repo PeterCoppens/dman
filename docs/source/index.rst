@@ -20,8 +20,9 @@ If you just want to get started you can read :ref:`common-use` or check out the
    :maxdepth: 2
    :hidden:
 
-   usage/common.rst
+   gallery/common.rst
    usage/serialization.rst
+   gallery/index.rst
    .. usage/errors.rst
    .. api/serializables.rst
 
