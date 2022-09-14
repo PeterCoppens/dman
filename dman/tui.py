@@ -1,9 +1,10 @@
 try:
     import rich
 except ImportError as e:
-    raise ImportError('TUI tools require rich.') from e
+    raise ImportError("TUI tools require rich.") from e
 
-from typing import Any, Optional, Union
+from itertools import product
+from typing import Any, Optional, Sequence, Tuple, Union
 import os
 import pathlib
 
@@ -26,9 +27,16 @@ from rich.text import Text
 from rich import print_json
 from rich.json import JSON
 from rich.console import Group
+from math import prod
 
-
-from dman.core.serializables import deserialize, serialize, SER_CONTENT, SER_TYPE, BaseInvalid
+from dman.core.path import get_root_path
+from dman.core.serializables import (
+    deserialize,
+    serialize,
+    SER_CONTENT,
+    SER_TYPE,
+    BaseInvalid,
+)
 from dman.model.modelclasses import mdict, smdict, mruns, mlist, smlist
 from dman.utils import sjson
 
@@ -37,144 +45,128 @@ _print = print
 from rich import print
 
 
-class Console(_Console):
-    def whitespace(self, lines: int):
-        self.log('\n'*lines)
+class TaskStack:
+    def __init__(self, state: Tuple[int] = None):
+        self.progress = Progress()
+        self.total = 1
+        self.state = state if state is None else list(state)
+        self.registered = []
+        self.running = False
+        self.tasks = []
+        self.lookup = []
     
-    def log(
-            self, 
-            *objects: Any, 
-            sep: str = " ", 
-            end: str = "\n", 
-            style: Optional[Union[str, Style]] = None, 
-            justify: Optional[JustifyMethod] = None, 
-            emoji: Optional[bool] = None, 
-            markup: Optional[bool] = None, 
-            highlight: Optional[bool] = None, 
-            log_locals: bool = False, 
-            _stack_offset: int = 1
-        ) -> None:
+    def register(self, description: str, steps: int, default_content: dict = None):
+        if default_content is None: default_content = dict()
+        self.registered.insert(0, (description, steps, self.total, default_content))
+        self.total *= steps
 
-        if len(objects) > 1:
-            objects = [Columns([
-                Panel(process(o), box=box.MINIMAL) for o in objects
-            ])]
-
-
-        return super().log(
-            *objects, 
-            sep=sep, 
-            end=end, 
-            style=style, 
-            justify=justify, 
-            emoji=emoji, 
-            markup=markup, 
-            highlight=highlight, 
-            log_locals=log_locals, 
-            _stack_offset=_stack_offset
-        )
-
-
-class Style:
-    dcl_box: box = box.HEAVY_HEAD
-    dct_box: box = box.MINIMAL
-    dcl_title: bool = True
-
-
-def style(
-        dcl_box: box = None, 
-        dcl_title: bool = None,
-        dct_box: box = None,
-    ):
-    if dcl_box is not None: Style.dcl_box = dcl_box
-    if dct_box is not None: Style.dct_box = dct_box
-    if dcl_title is not None: Style.dcl_title = dcl_title
-
-
-def process_dataclass(ser):
-    res = dict()
-    for f in fields(ser):
-        res[f.name] = getattr(ser, f.name)
+        idx = len(self.lookup)
+        self.lookup = [l + 1 for l in self.lookup]
+        self.lookup.append(0)
+        return idx
     
-    title = None
-    if Style.dcl_title:
-        title = f'dataclass: {ser.__class__.__name__}'
-    return process_dict(
-        res, 
-        key='field', 
-        value='value', 
-        box=Style.dcl_box, 
-        title=title
-    )
+    def __enter__(self):
+        self.progress.__enter__()
 
+        # create all tasks
+        for d, s, t, c in self.registered:
+            task = self.progress.add_task(str.format(d, **c), total=t*s)
+            self.tasks.append(task)
 
-def process_dict(ser: dict, key: str = 'key', value: str = 'value', box=None, title: str = None):
-    if box is None: box = Style.dct_box
-    table = Table(box=box, title=title, title_justify='left')
-    table.add_column(key, justify='left')
-    table.add_column(value, justify='left')
-    for k, v in ser.items():
-        res = process_object(v)
-        table.add_row(k, res)
-    return table
+        # assign the state
+        if self.state is None:
+            self.state = [0,]*len(self.tasks)
+        else:
+            cumulative_work = 0
+            for i in reversed(range(len(self.tasks))):
+                w = self.registered[i][2]
+                cumulative_work += w*self.state[i]
+                self.progress.update(self.tasks[i], completed=cumulative_work)
+        
+        self.running = True
+        return self
 
-
-def process_list(ser: list):
-    res = []
-    itm_strings = True
-    for itm in ser:
-        obj = process_object(itm)
-        if not isinstance(obj, str): itm_strings = False
-        res.append(obj)
+    def __exit__(self, *_):
+        self.progress.stop()
+        self.tasks = []
+        self.running = False
     
-    if itm_strings:
-        return ''.join([s + '\n' for s in res])
-    return res
+    def __iter__(self):
+        entered = False
+        if not self.running:
+            self.__enter__()
+            entered = True
 
+        stack = []
+        for (_, steps, _, _), s in zip(self.registered, self.state):
+            stack.append(iter(range(s, steps)))
+        
+        active = 0
+        while len(stack) > 0:
+            # iterate active stack
+            self.state[active] = next(stack[active], None)
 
-def process_object(obj):
-    if isinstance(obj, BaseInvalid):
-        return '[...]'
-    if isinstance(obj, str):
-        return obj
-    if isinstance(obj, (list, mlist, smlist, mruns)):
-        return process_list(obj)
-    if is_dataclass(obj):
-        return process_dataclass(obj)
-    if isinstance(obj, (dict, mdict, smdict)):  
-        return process_dict(obj)
-    else: 
-        return str(obj)
+            # reset stack layer if we reached the end and decrement active
+            if self.state[active] is None:
+                if active == 0:
+                    # finish
+                    for t in self.tasks[1:]:
+                        self.progress.remove_task(t)
+                    self.progress.update(self.tasks[0], advance=1)
+                    if entered:
+                        self.__exit__()
+                    break
+
+                self.state[active] = 0
+                t = self.tasks[active]
+                _, steps, _, _ = self.registered[active]
+                stack[active] = iter(range(0, steps))
+                self.progress.update(t, completed=0)
+                active -= 1 # iterate previous layer
+
+            # we iterated on the tail of the stack so yield
+            elif active == len(stack) - 1:
+                yield self.state
+                for t in self.tasks:
+                    self.progress.update(t, advance=1)
             
-
-def process(obj):
-    """
-    Print a serializable
-    """
-    ser = serialize(obj)
-    des = deserialize(ser)
-    res = process_object(des)
-    if res is None:
-        return obj
-    return res
+            # climb the stack
+            else:
+                active += 1
+    
+    def print(self, msg: str):
+        self.progress.print(msg)
+    
+    def update(self, task: int, **kwargs):
+        t = self.lookup[task]
+        self.progress.update(
+            self.tasks[t], 
+            description=self.registered[t][0].format(**kwargs)
+        )        
 
 
 def walk_file(path: pathlib.Path):
-    text_chars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
-    with open(path, 'rb') as f:
+    text_chars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7F})
+    with open(path, "rb") as f:
         is_binary_string = bool(f.read(1024).translate(None, text_chars))
-    
+
     if is_binary_string:
-        return  None
-    with open(path, 'r') as f:
+        return None
+    with open(path, "r") as f:
         content = f.read()
-        if path.suffix == '.json':
+        if path.suffix == ".json":
             return Panel(JSON(content), box=box.SQUARE)
         return Panel(content, box=box.SQUARE)
 
 
-
-def walk_directory(directory: pathlib.Path, *, show_content: bool = False, tree: Tree = None) -> None:
+def walk_directory(
+    directory: pathlib.Path,
+    *,
+    show_content: bool = False,
+    tree: Tree = None,
+    normalize: bool = False,
+    show_hidden: bool = False,
+) -> None:
     """Print the contents of a directory
 
     :param directory: directory to print
@@ -185,8 +177,11 @@ def walk_directory(directory: pathlib.Path, *, show_content: bool = False, tree:
     # based on https://github.com/Textualize/rich/blob/master/examples/tree.py
     is_root = tree is None
     if is_root:
+        name = directory
+        if normalize:
+            name = os.path.relpath(name, os.path.join(get_root_path(), ".."))
         tree = Tree(
-            f":open_file_folder: [link file://{directory}]{directory}",
+            f":open_file_folder: [link file://{directory}]{name}",
             guide_style="bold bright_blue",
         )
 
@@ -198,7 +193,7 @@ def walk_directory(directory: pathlib.Path, *, show_content: bool = False, tree:
 
     for path in paths:
         # remove hidden files
-        if path.name.startswith("."):
+        if not show_hidden and path.name.startswith("."):
             continue
         if path.is_dir():
             style = "dim" if path.name.startswith("__") else ""
@@ -207,7 +202,7 @@ def walk_directory(directory: pathlib.Path, *, show_content: bool = False, tree:
                 style=style,
                 guide_style=style,
             )
-            walk_directory(path, tree=branch, show_content=show_content)
+            walk_directory(path, tree=branch, show_content=show_content, show_hidden=show_hidden)
         else:
             text_filename = Text(path.name, "green")
             text_filename.highlight_regex(r"\..*$", "green")
@@ -222,6 +217,9 @@ def walk_directory(directory: pathlib.Path, *, show_content: bool = False, tree:
                 if content is not None:
                     res = Group(res, content)
             tree.add(res)
-    
+
     if is_root:
-        print(tree)
+        console = Console(width=80)
+        console.print(tree)
+
+    
