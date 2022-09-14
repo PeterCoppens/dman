@@ -39,10 +39,10 @@ extensions = [
 
 # The following configuration declares the location of the ‘examples’ directory.
 sphinx_gallery_conf = {
-    'examples_dirs': '../../examples',   # path to your example scripts
-    'gallery_dirs': 'gallery',  # path to where to save gallery generated output
+    'examples_dirs': ['../../examples/patterns', '../../examples/fundamentals'],   # path to your example scripts
+    'gallery_dirs': ['gallery/patterns', 'gallery/fundamentals'],  # path to where to save gallery generated output
     'capture_repr': ('_repr_html_', '__repr__'),
-    'filename_pattern': '/',
+    'filename_pattern': '/'
 }
 
 # Add any paths that contain templates here, relative to this directory.

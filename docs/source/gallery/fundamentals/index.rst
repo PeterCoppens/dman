@@ -1,9 +1,11 @@
 :orphan:
 
-Design patterns
+Fundamentals
 ==============================
 
-Below is a gallery of examples
+Below is a gallery of examples illustrating the fundamental components 
+within ``dman``. If you want to use the package to its fullest extend 
+this is a good read.
 
 
 .. raw:: html
@@ -17,10 +19,10 @@ Below is a gallery of examples
 
 .. only:: html
 
-  .. image:: /gallery/images/thumb/sphx_glr_records_thumb.png
+  .. image:: /gallery/fundamentals/images/thumb/sphx_glr_records_thumb.png
     :alt: Using Records
 
-  :ref:`sphx_glr_gallery_records.py`
+  :ref:`sphx_glr_gallery_fundamentals_records.py`
 
 .. raw:: html
 
@@ -34,10 +36,10 @@ Below is a gallery of examples
 
 .. only:: html
 
-  .. image:: /gallery/images/thumb/sphx_glr_storables_thumb.png
+  .. image:: /gallery/fundamentals/images/thumb/sphx_glr_storables_thumb.png
     :alt: Defining Storables
 
-  :ref:`sphx_glr_gallery_storables.py`
+  :ref:`sphx_glr_gallery_fundamentals_storables.py`
 
 .. raw:: html
 
@@ -47,31 +49,14 @@ Below is a gallery of examples
 
 .. raw:: html
 
-    <div class="sphx-glr-thumbcontainer" tooltip="This example describes a common use case of the dman library. You will need to have numpy and r...">
-
-.. only:: html
-
-  .. image:: /gallery/images/thumb/sphx_glr_common_thumb.png
-    :alt: Getting Started
-
-  :ref:`sphx_glr_gallery_common.py`
-
-.. raw:: html
-
-      <div class="sphx-glr-thumbnail-title">Getting Started</div>
-    </div>
-
-
-.. raw:: html
-
     <div class="sphx-glr-thumbcontainer" tooltip="This example describes the various ways in which one  can construct new serializable objects.">
 
 .. only:: html
 
-  .. image:: /gallery/images/thumb/sphx_glr_serializables_thumb.png
+  .. image:: /gallery/fundamentals/images/thumb/sphx_glr_serializables_thumb.png
     :alt: Defining Serializables
 
-  :ref:`sphx_glr_gallery_serializables.py`
+  :ref:`sphx_glr_gallery_fundamentals_serializables.py`
 
 .. raw:: html
 
@@ -87,10 +72,9 @@ Below is a gallery of examples
 .. toctree::
    :hidden:
 
-   /gallery/records
-   /gallery/storables
-   /gallery/common
-   /gallery/serializables
+   /gallery/fundamentals/records
+   /gallery/fundamentals/storables
+   /gallery/fundamentals/serializables
 
 
 .. only:: html
@@ -99,11 +83,11 @@ Below is a gallery of examples
 
     .. container:: sphx-glr-download sphx-glr-download-python
 
-      :download:`Download all examples in Python source code: gallery_python.zip </gallery/gallery_python.zip>`
+      :download:`Download all examples in Python source code: fundamentals_python.zip </gallery/fundamentals/fundamentals_python.zip>`
 
     .. container:: sphx-glr-download sphx-glr-download-jupyter
 
-      :download:`Download all examples in Jupyter notebooks: gallery_jupyter.zip </gallery/gallery_jupyter.zip>`
+      :download:`Download all examples in Jupyter notebooks: fundamentals_jupyter.zip </gallery/fundamentals/fundamentals_jupyter.zip>`
 
 
 .. only:: html

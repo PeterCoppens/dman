@@ -27,8 +27,8 @@ print(dman.sjson.dumps(ser, indent=4))
 # by using a context. We illustrate such functionality in TODO add reference
 
 # %%
-# Contexts will also be useful for storing purposes as well. Specifically
-# they contain the path to which files should be stored during serialization.
+# Contexts will also be useful for storing purposes.
+# They specify the directory in which files should be stored during serialization.
 # To make sure a ``storable`` can be serialized it should be wrapped in a 
 # ``record``. This interface has a the following features:
 #

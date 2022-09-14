@@ -300,7 +300,7 @@ the ``ManualFile`` class specified earlier :ref:`here <manual-file-def>`.
 
     from dman import record, serialize, deserialize, sjson, context
     from tempfile import TemporaryDirectory
-    from dman.utils.display import list_files
+    from dman import tui
 
     instance = ManualFile(value='hello world!')
     rec = record(instance)
@@ -313,7 +313,7 @@ the ``ManualFile`` class specified earlier :ref:`here <manual-file-def>`.
         print(sjson.dumps(ser, indent=4))
 
         # list existing files
-        list_files(base)
+        tui.walk_directory(base)
 
         # deserialize record
         res = deserialize(ser, ctx)
@@ -454,7 +454,7 @@ Let us begin with the ``mlist`` container. We again will be using the
 
     from dman import mlist, serialize, deserialize, sjson
     from dman import context
-    from dman.utils.display import list_files
+    from dman import tui
     from tempfile import TemporaryDirectory
 
     lst = mlist()
@@ -466,7 +466,7 @@ Let us begin with the ``mlist`` container. We again will be using the
         ser = serialize(lst, ctx)
 
         print(sjson.dumps(ser, indent=4))
-        list_files(base)
+        tui.walk_directory(base)
 
 The serialization looks like this
 
@@ -601,7 +601,7 @@ We again will be using the ``ManualFile`` class specified :ref:`here <manual-fil
 
     from dman import mdict, serialize, sjson
     from dman import context
-    from dman.utils.display import list_files
+    from dman import tui
     from tempfile import TemporaryDirectory
 
     dct = mdict()
@@ -613,7 +613,7 @@ We again will be using the ``ManualFile`` class specified :ref:`here <manual-fil
         ser = serialize(dct, ctx)
 
         print(sjson.dumps(ser, indent=4))
-        list_files(base)
+        tui.walk_directory(base)
 
 
 The serialization looks like this

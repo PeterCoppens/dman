@@ -19,6 +19,8 @@ This example describes ways in which one can define storable objects.
 #
 # No standard objects are storable. They should be defined by the user:
 
+from tempfile import TemporaryDirectory
+import os
 import dman
 import numpy as np
 
@@ -40,9 +42,11 @@ class barray(np.ndarray):
 # The ``barray`` class is also provided in ``dman.numeric`` which can 
 # be imported when ``numpy`` is installed. We can use it as follows:
 
-dman.write(np.eye(3).view(barray), 'array.npy')
-array = dman.read(barray, 'array.npy')
-print(array)
+with TemporaryDirectory() as base:
+    path = os.path.join(base, 'array.npy')
+    dman.write(np.eye(3).view(barray), path)
+    array = dman.read(barray, path)
+    print(array)
 
 # %%       
 # .. warning::
@@ -78,9 +82,11 @@ class SerBasic:
 
 # %% 
 # Both types result in the same ``json`` file:
-dman.write(DCLBasic(value='hello world!'), 'dcl.json')
-with open('dcl.json', 'r') as f:
-    print(f.read())
+with TemporaryDirectory() as base:
+    path = os.path.join(base, 'dcl.json')
+    dman.write(DCLBasic(value='hello world!'), path)
+    with open(path, 'r') as f:
+        print(f.read())
 
 
 # %%

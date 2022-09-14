@@ -2,8 +2,7 @@
 Getting Started
 ========================
 
-This example describes a common use case of the ``dman`` library.
-You will need to have ``numpy`` and ``rich`` installed to run this script.
+Basic use case of ``dman``.
 """
 
 
