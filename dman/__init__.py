@@ -16,7 +16,7 @@ from dman.model.modelclasses import modelclass, recordfield, mdict, smdict, mlis
 from dman.model.modelclasses import smlist_factory, smdict_factory, mruns_factory, mdict_factory, mlist_factory
 from dman.model.configclasses import configclass, section
 from dman.model.repository import track, save, load, store
-from dman.model.repository import Track
+from dman.model.repository import uninterrupted
 
 from dman.utils import sjson
 from dman.utils.smartdataclasses import idataclass, AUTO

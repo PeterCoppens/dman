@@ -10,6 +10,34 @@ from dman.core.storables import is_storable
 from dman.utils import sjson
 from dman.core.path import prepare
 
+import signal
+
+
+class _SafeContext:
+    def __init__(self):
+        self.values = None
+        self.original = None
+
+    def handler(self, signum, frame):
+        self.values = (signum, frame)
+    
+    def __enter__(self):
+        self.original = signal.getsignal(signal.SIGINT)
+        signal.signal(signal.SIGINT, self.handler)
+    
+    def __exit__(self, *_):
+        signal.signal(signal.SIGINT, self.original)
+        self.original = None
+
+        if self.values is not None:
+            raise KeyboardInterrupt()
+            
+        self.values = None
+
+
+def uninterrupted():
+    return _SafeContext()
+
 
 def store(
     key: str,

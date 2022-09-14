@@ -750,7 +750,8 @@ class _bruns(_blist):
     def __serialize__(self, context: BaseContext):
         res = {'stem': self.stem, 'run_count': self.run_count}
         if not self.store_subdir: res['store_subdir'] = False
-        return res | super().__serialize__(context)
+        res.update(super().__serialize__(context))
+        return res
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):

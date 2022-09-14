@@ -23,6 +23,7 @@ from rich.filesize import decimal
 from rich.markup import escape
 from rich.text import Text
 from rich.json import JSON
+from rich.pretty import pprint
 
 from dman.core.path import get_root_path
 from dman.core.serializables import BaseContext, serialize
@@ -36,6 +37,10 @@ from rich import print
 def print_serializable(obj, context: BaseContext = None):
     res = serialize(obj, context=context)
     print(JSON(sjson.dumps(res, indent=4)))
+
+
+def print_json(json: str):
+    print(JSON(json))
 
 
 class TaskStack:
@@ -132,9 +137,12 @@ class TaskStack:
     
     def update(self, task: int, **kwargs):
         t = self.lookup[task]
+        d, _, _, default = self.registered[t]
+        fields = dict.copy(default)
+        fields.update(kwargs)
         self.progress.update(
             self.tasks[t], 
-            description=self.registered[t][0].format(**kwargs)
+            description=str.format(d, **fields)
         )        
 
 
