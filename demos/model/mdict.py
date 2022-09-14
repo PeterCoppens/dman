@@ -3,7 +3,7 @@ from tempfile import TemporaryDirectory
 from dman.model.modelclasses import mdict, serialize, deserialize
 from dman.utils import sjson
 from dman.model.record import Context, remove
-from dman.utils.display import list_files
+from dman import tui
 from record import TestSto
 
 if __name__ == '__main__':
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         print(dct)
 
         print()
-        list_files(ctx.directory)
+        tui.walk_directory(ctx.directory)
 
     input('\n >>> continue?')
 
@@ -42,18 +42,18 @@ if __name__ == '__main__':
         dct = mdict(a=5, b=TestSto('b'), c=TestSto('c'), d=TestSto('d'), e='hello')
         ser = serialize(dct, ctx)
         print(sjson.dumps(ser, indent=4))
-        list_files(ctx.directory)
+        tui.walk_directory(ctx.directory)
 
         print('==== delete items === ')
         print(dct.pop('d'))
         print(dct.pop('e'))
         ser = serialize(dct, ctx)
         print(sjson.dumps(ser, indent=4))
-        list_files(ctx.directory)
+        tui.walk_directory(ctx.directory)
 
         print('==== delete dictionary === ')
         remove(dct, ctx)
-        list_files(ctx.directory)
+        tui.walk_directory(ctx.directory)
 
     input('\n >>> continue?')
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
         print('remove test.tst ...')
         os.remove(os.path.join(base, 'stamps', 'test.tst'))
-        list_files(ctx.directory)
+        tui.walk_directory(ctx.directory)
 
         dct = deserialize(ser, ctx)
         print('after de-serialization:\n', dct.get('test', None))

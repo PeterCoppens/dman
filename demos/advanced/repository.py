@@ -1,6 +1,7 @@
+from dman import tui
 from dman.model.modelclasses import modelclass
 from dman.model.repository import repository, track
-from dman.utils.display import list_files
+from dman import tui
 from dman.core.storables import write
 from tempfile import TemporaryDirectory
 
@@ -36,7 +37,7 @@ if __name__ == '__main__':
             ctx.touch()
             write(TestSto(name='test'), ctx.path)
 
-        list_files(base)
+        tui.walk_directory(base)
 
 
     with TemporaryDirectory() as base:
@@ -47,14 +48,14 @@ if __name__ == '__main__':
         with track('singular', default=SingModel(label='singluar test'), base=base, cluster=False) as test:
             print(test)
         
-        list_files(base)
+        tui.walk_directory(base)
 
         input('\n >>> continue?')
         with track('tracked', base=base, gitignore=False) as model:
             model: Model = model
             model.content.name = 'found'
 
-        list_files(base)
+        tui.walk_directory(base)
 
         input('\n >>> continue?')
         try:

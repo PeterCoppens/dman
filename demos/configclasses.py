@@ -1,11 +1,10 @@
 from dataclasses import field
 from tempfile import TemporaryDirectory
+from dman import tui
 from dman.model.modelclasses import modelclass, recordfield
 from dman.model.configclasses import configclass, section
 from dman.core.storables import read, write
 from dman.model.record import Context
-from dman.utils.display import list_files
-
 import os
 
 
@@ -41,7 +40,7 @@ if __name__ == '__main__':
         ctx = Context(base)
         target = os.path.join(ctx.directory, 'test.ini')
         write(cfg, target, ctx)
-        list_files(ctx.directory)
+        tui.walk_directory(ctx.directory)
 
         res: TestConfig = read(TestConfig, target, ctx)
         print(res.info.a)

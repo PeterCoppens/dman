@@ -25,10 +25,17 @@ from rich.text import Text
 from rich.json import JSON
 
 from dman.core.path import get_root_path
+from dman.core.serializables import BaseContext, serialize
+from dman import sjson
 
 _print = print
 
 from rich import print
+
+
+def print_serializable(obj, context: BaseContext = None):
+    res = serialize(obj, context=context)
+    print(JSON(sjson.dumps(res, indent=4)))
 
 
 class TaskStack:

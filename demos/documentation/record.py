@@ -23,7 +23,7 @@ class ManualFile:
 # record interaction
 from dman import record, serialize, deserialize, sjson, context
 from tempfile import TemporaryDirectory
-from dman.utils.display import list_files
+from dman import tui
 
 instance = ManualFile(value='hello world!')
 rec = record(instance)
@@ -36,7 +36,7 @@ with TemporaryDirectory() as base:
     print(sjson.dumps(ser, indent=4))
 
     # list existing files
-    list_files(base)
+    tui.walk_directory(base)
 
     # deserialize record
     res = deserialize(ser, ctx)

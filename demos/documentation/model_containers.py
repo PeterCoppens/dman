@@ -25,7 +25,7 @@ class ManualFile:
 
 from dman import mlist, serialize, deserialize, sjson
 from dman import context
-from dman.utils.display import list_files
+from dman import tui
 from tempfile import TemporaryDirectory
 
 lst = mlist()
@@ -37,7 +37,7 @@ with TemporaryDirectory() as base:
     ser = serialize(lst, ctx)
 
     print(sjson.dumps(ser, indent=4))
-    list_files(base)
+    tui.walk_directory(base)
 
     rec = lst.store[1]
     print(f'{rec=}')
@@ -63,10 +63,10 @@ with TemporaryDirectory() as base:
     print(f'{res[4].value=}')
     print(f'{res.store[4]=}')
 
-    list_files(base)
+    tui.walk_directory(base)
     lst.clear()
     serialize(lst, ctx)
-    list_files(base)
+    tui.walk_directory(base)
 
 # ------------------------------------------------------------------------------
 # mdict usage
@@ -74,7 +74,7 @@ with TemporaryDirectory() as base:
 
 from dman import mdict, serialize, sjson
 from dman import context
-from dman.utils.display import list_files
+from dman import tui
 from tempfile import TemporaryDirectory
 
 dct = mdict()
@@ -86,7 +86,7 @@ with TemporaryDirectory() as base:
     ser = serialize(dct, ctx)
 
     print(sjson.dumps(ser, indent=4))
-    list_files(base)
+    tui.walk_directory(base)
 
     rec = dct.store['manual']
     print(f'{rec=}')

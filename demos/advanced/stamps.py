@@ -1,5 +1,5 @@
 from dman.core import DMan, Stamp
-from dman.utils.display import list_files
+from dman import tui
 
 from tempfile import TemporaryDirectory
 
@@ -25,6 +25,6 @@ if __name__ == '__main__':
                 print('>>>', stamp.stamp.time, stamp.stamp.hash)
                 print('>>>', stamp.dependencies['multbx'].name)
 
-        list_files(base)
+        tui.walk_directory(base)
     
     

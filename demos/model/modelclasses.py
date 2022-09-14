@@ -1,8 +1,8 @@
 import copy
 from dman.core.serializables import serialize, deserialize
 from dman.model.modelclasses import modelclass, recordfield, serializefield
-from dman.utils.display import list_files
-from dman import context
+from dman import tui
+from dman import context, tui
 from tempfile import TemporaryDirectory
 
 from record import TestSto
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         print(boo.b.c)
 
         print()
-        list_files(ctx.directory)
+        tui.walk_directory(ctx.directory)
 
         coo = Coo(a='test')
         ser = serialize(coo, ctx)
