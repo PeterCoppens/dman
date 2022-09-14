@@ -4,10 +4,11 @@ from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any
 import uuid
 from dman.core import log
-from dman.core.serializables import BaseInvalid, deserialize, is_serializable, serializable, BaseContext, serialize
+from dman.core.serializables import SER_CONTENT, SER_TYPE, BaseInvalid, deserialize, is_serializable, serializable, BaseContext, serialize
 from dman.core.serializables import ExcUndeserializable, ExcUnserializable, Unserializable, Undeserializable
 from dman.utils.smartdataclasses import AUTO, overrideable
 from dman.core.storables import is_storable, storable_type, read, write
+from dman.utils import sjson
 
 
 REMOVE = '__remove__'
@@ -49,6 +50,34 @@ class Context(BaseContext):
         self.directory = directory
         self.parent = parent
         self.children = dict() if children is None else children
+    
+    def _serialize__list(self, ser: list):
+        res = []
+        is_model = False
+        for itm in ser:
+            if is_storable(itm):
+                itm = record(itm)
+                is_model = True
+            res.append(self.serialize(itm))
+        if is_model:
+            res = {SER_TYPE: '_ser__mlist', SER_CONTENT: {'store': res}}
+        return res
+    
+    def _serialize__dict(self, ser: dict):
+        res = {}
+        is_model = False
+        for k, v in ser.items():
+            if is_storable(v):
+                v = record(v)
+                is_model = True
+            k = self.serialize(k)
+            res[k] = self.serialize(v)
+        if is_model:
+            res = {SER_TYPE: '_ser__mdict', SER_CONTENT: {'store': res}}
+        return res
+    
+    def _serialize__object(self, ser):
+        return super()._serialize__object(ser)
 
     def write(self, target: str, storable):
         self.open()
@@ -80,9 +109,7 @@ class Context(BaseContext):
             self._process_invalid('An error occurred while writing.', res)
             return res
 
-    def delete(self, target: str, obj):
-        if self.parent is None:
-            raise RuntimeError('Cannot delete root repository')
+    def delete(self, target: str):
         path = os.path.join(self.directory, target)
         if os.path.exists(path):
             log.io(f'deleting file: "{path}".', 'context')
@@ -138,6 +165,8 @@ class Context(BaseContext):
 
         res = self.__class__(os.path.join(self.directory, other), parent=self)
         self.children[other] = res
+        res.validate = self.validate
+        res._invalid = self._invalid
         return res
 
 
@@ -306,7 +335,8 @@ class Record:
                 log.error('loaded content is invalid:', 'record')
                 log.error(str(content), 'record')
             else:
-                local.delete(target, content)
+                local.remove(content)  # remove contents
+                local.delete(target)   # remove this file
 
     def __serialize__(self, context: BaseContext):
         sto_type = storable_type(self._content)
@@ -386,7 +416,7 @@ def recordconfig(*, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subd
 def record(content: Any, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False):
     """
     Wrap a storable object in a serializable record.
-        The target path is specified as (the ``stem+suffix`` option takes precedence):
+        The target path is specified as:
         
         * ``./subdir/stem+suffix`` or
         * ``./subdir/name``.
@@ -407,8 +437,8 @@ def is_removable(obj):
     return hasattr(obj, REMOVE)
 
 
-def remove(target: str, obj, context: Context = None):
+def remove(obj, context: Context = None):
     if not isinstance(context, Context):
         return
-    context.delete(target, obj)
+    context.remove(obj)
 

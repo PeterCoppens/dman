@@ -105,8 +105,12 @@ class GitIgnore:
 
     def build(self, ignored: list):
         with open(self.path, 'w') as f:
-            for line in ignored:
-                f.write(line + '\n')
+            for i, line in enumerate(ignored):
+                if i < len(ignored) - 1:
+                    f.write(line + '\n')
+                else:
+                    f.write(line)
+                
         log.io(f'created gitignore at {log.path(self.path)}.', 'path')
 
     def __exit__(self, *_):
@@ -139,7 +143,7 @@ def add_gitignore(dir: str, file: str, *, clean: bool = False, check_exists: boo
         git.append(file)
 
 
-def get_directory(key: str, *, subdir: os.PathLike = '', cluster: bool = False, generator: str = MISSING, base: os.PathLike = None):
+def get_directory(key: str, *, subdir: os.PathLike = '', cluster: bool = True, generator: str = MISSING, base: os.PathLike = None):
     """
     Get the directory where a file with the given key is stored by dman.
         The path of the file is determined as described below.

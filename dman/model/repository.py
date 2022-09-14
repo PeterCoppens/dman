@@ -124,7 +124,7 @@ def save(
 
     :raises RuntimeError: if either generator or base is not provided and no .dman folder exists.
     :raises ValueError: if the provided object is not serializable
-    """
+    """        
     if not is_serializable(obj):
         raise ValueError("Can only save serializable objects.")
 
@@ -142,12 +142,12 @@ def save(
     if validate is not None:
         ctx.validate = validate
     target = os.path.join(dir, key + ".json")
-    log.emphasize(f'saving {type(obj).__name__} with key {key} to "{target}".', "save")
+    log.emphasize(f'saving {type(obj).__name__} with key "{key}" to "{target}".', "save")
     ser = serialize(obj, context=ctx)
     with open(target, "w") as f:
         sjson.dump(ser, f, indent=4)
     log.emphasize(
-        f'finished saving {type(obj).__name__} with key {key} to "{target}".', "save"
+        f'finished saving {type(obj).__name__} with key "{key}" to "{target}".', "save"
     )
     return ser
 
@@ -232,11 +232,11 @@ def load(
         else:
             return default
 
-    log.emphasize(f'loading with key {key} from "{target}".', "load")
+    log.emphasize(f'loading with key "{key}" from "{target}".', "load")
     with open(target, "r") as f:
         ser = sjson.load(f)
     res = deserialize(ser, context=ctx)
-    log.emphasize(f'finished loading with key {key} from "{target}".', "load")
+    log.emphasize(f'finished loading with key "{key}" from "{target}".', "load")
     return res
 
 

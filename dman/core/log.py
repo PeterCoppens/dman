@@ -1,6 +1,7 @@
 from enum import Enum
 import logging
 import textwrap
+from typing import Dict
 
 LOGGER_NAME = 'dman'
 DEFAULT_LOGGING_FORMAT = '%(message)s'
@@ -145,7 +146,7 @@ class Logger(logging.Logger):
 
 
 
-_loggers: dict[str, Logger] = {}
+_loggers: Dict[str, Logger] = {}
 
 
 def get_logger(level: int = None, *, name: str = LOGGER_NAME) -> Logger:

@@ -4,15 +4,13 @@ from dataclasses import MISSING, dataclass, field, fields, is_dataclass, asdict
 import re
 import sys
 import traceback
-from typing import Any, List, Type
+from typing import Any, Callable, List, Optional, Type
 
 from dman.utils import sjson
 from dman.core import log
 import textwrap
 
 from enum import Enum
-
-from contextlib import nullcontext
 
 
 SER_TYPE = '_ser__type'
@@ -26,6 +24,7 @@ DECONVERT = '__de_convert__'
 
 
 __serializable_types = dict()
+__custom_serializable = dict()
 
 
 def ser_type2str(obj):
@@ -50,7 +49,9 @@ def is_serializable(ser):
         return True
     if isinstance(ser, (list, dict, tuple)):
         return True
-    return sjson.atomic_type(ser)
+    if sjson.atomic_type(ser):
+        return True
+    return type(ser) in __custom_serializable
 
 
 def is_deserializable(serialized: dict):
@@ -67,11 +68,17 @@ def is_deserializable(serialized: dict):
     return False
 
 
-def register_serializable(name: str, cls):
+def register_serializable(name: str, cls: Type[Any], *, serialize: Callable[[Any, Optional['BaseContext']], Any] = None, deserialize: Callable[[Any, Optional['BaseContext']], Any] = None):
     """
     Register a class as a serializable type with a given name
     """
     __serializable_types[name] = cls
+    if serialize is not None and deserialize is not None:
+        __custom_serializable[cls] = (name, serialize, deserialize)
+
+
+def get_custom_serializable(cls: Type[Any], default=None):
+    return __custom_serializable.get(cls, default)
 
 
 def serialize(ser, context: 'BaseContext' = None, content_only: bool = False):
@@ -380,7 +387,7 @@ def isvalid(obj):
     return not isinstance(obj, BaseInvalid)
 
 
-class ValidationError(BaseException):
+class ValidationError(Exception):
     """
     Validation Error raised when an object could not be validated.
     """
@@ -408,22 +415,12 @@ class BaseContext:
     def __init__(self, validate: bool = None):
         self.validate = self.VALIDATE if validate is None else validate
         self._invalid = False
-        self._root = True
     
     def _process_invalid(self, msg: str, obj: BaseInvalid):
-        log.warning(msg + '\n' + str(obj))
+        log.warning(msg + '\n' + str(obj), 'context')
         self._invalid = True
-    
-    def _check_valid(self, ser):
-        if self.validate and self._invalid:
-            raise RuntimeError(f'Failed to serialize {ser}.')
 
-    def serialize(self, ser, content_only: bool = False): 
-        acting_root = self._root
-        if acting_root:
-            log.emphasize(f'starting serialization of "{type(ser).__name__}"', 'context')
-            self._root = False
-
+    def serialize(self, ser, content_only: bool = False):         
         if isinstance(ser, BaseInvalid):
             self._process_invalid('Invalid object encountered during serialization.', ser)
 
@@ -439,44 +436,68 @@ class BaseContext:
             return self._serialize__atomic(ser)
 
         with log.layer(f'{type(ser).__name__}', 'serializing', f'{type(ser).__name__}'):
-            content = self._serialize__object(ser)
+            ser_type, content = self._serialize__object(ser)
             if isinstance(content, Unserializable):
                 return serialize(content, self, content_only=False)
 
         if content_only:
             return content
 
-        self._check_valid(ser)
-        if acting_root:
-            self._root = True
-        return {SER_TYPE: getattr(ser, SER_TYPE), SER_CONTENT: content}
+        if self.validate and self._invalid:
+            self._invalid = False
+            raise ValidationError(f'Failed to serialize {ser}.')
+        return {SER_TYPE: ser_type, SER_CONTENT: content}
     
     def _serialize__object(self, ser):
+        # check if serializable
         if not is_serializable(ser):
-            return Unserializable(
+            return None, Unserializable(
                 type=type(ser), 
                 info=f'Unserializable type: {type(ser).__name__}.'
             )
 
-        ser_method = getattr(ser, SERIALIZE, lambda: {})
-        sig = inspect.signature(ser_method)
-        try:
+        # find the serialize method
+        ser_type, ser_method, _ = get_custom_serializable(type(ser), (None, None, None))
+        if ser_type is None:
+            ser_type = getattr(ser, SER_TYPE, None)
+            if ser_type is None:
+                return None, Unserializable(
+                    type=type(ser), 
+                    info=f'Unserializable type: {type(ser).__name__}.'
+                )
+            ser_method = getattr(ser, SERIALIZE, lambda: {})
+
+            sig = inspect.signature(ser_method)
             if len(sig.parameters) == 0:
-                content = ser_method()
+                standard_ser_method = lambda: ser_method()
             elif len(sig.parameters) == 1:
-                content = ser_method(self)
+                standard_ser_method = lambda: ser_method(self)
             else:
-                return Unserializable(
+                return None, Unserializable(
                     type=type(ser), 
                     info='Invalid inner serialize method.'
                 )
+        else:
+            sig = inspect.signature(ser_method)
+            if len(sig.parameters) == 1:
+                standard_ser_method = lambda: ser_method(ser)
+            elif len(sig.parameters) == 2:
+                standard_ser_method = lambda: ser_method(ser, self)
+            else:
+                return None, Unserializable(
+                    type=type(ser), 
+                    info='Invalid custom serialize method.'
+                )
+        
+        try:
+            content = standard_ser_method()
         except Exception:
-            return ExcUnserializable(
+            return None, ExcUnserializable(
                 type=type(ser), 
                 info='Error during serialization:'
             )
 
-        return content
+        return ser_type, content
 
     def _serialize__atomic(self, ser):
         return ser
@@ -498,17 +519,19 @@ class BaseContext:
         return res
 
     def _get_type_name(_, ser_type):
-        name = getattr(ser_type, 'name', None)
+        name = getattr(ser_type, '__name__', None)
         if name is None:
-            name = getattr(ser_type, '__name__', str(ser_type))
+            name = getattr(ser_type, 'name', str(ser_type))
         return name
-
+    
     def deserialize(self, serialized, ser_type=None):
-        acting_root = self._root
-        if acting_root:
-            log.emphasize(f'starting deserialization of "{type(serialized).__name__}".', 'context')
-            self._root = False
-            
+        res = self._deserialize_inner(serialized, ser_type)
+        if self.validate and self._invalid:
+            self._invalid = False
+            raise ValidationError(f'Failed to deserialize.')
+        return res
+
+    def _deserialize_inner(self, serialized, ser_type=None):            
         if serialized is None:
             return None
 
@@ -580,7 +603,8 @@ class BaseContext:
             return self._deserialize__object(serialized, ser_type)
     
     def _deserialize__object(self, serialized, expected):
-        try:
+        _, _, ser_method = get_custom_serializable(expected, (None, None, None))
+        if ser_method is None:
             ser_method = getattr(expected, DESERIALIZE, None)
             if ser_method is None:
                 return Undeserializable(
@@ -590,6 +614,7 @@ class BaseContext:
                     ser_type=expected
                 )
 
+        try:
             sig = inspect.signature(ser_method)
             if len(sig.parameters) == 1:
                 return ser_method(serialized)
