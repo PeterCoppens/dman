@@ -3,15 +3,13 @@ try:
 except ImportError as e:
     raise ImportError("TUI tools require rich.") from e
 
-from itertools import product
-from typing import Any, Optional, Sequence, Tuple, Union
+from typing import Tuple
 import os
 import pathlib
 
 from dataclasses import dataclass, is_dataclass, fields, asdict
 from rich.style import Style
-from rich.console import Console as _Console
-from rich.console import JustifyMethod
+from rich.console import JustifyMethod, Console, Group
 from rich.table import Table
 from rich.panel import Panel
 from rich.columns import Columns
@@ -24,21 +22,9 @@ from rich import inspect
 from rich.filesize import decimal
 from rich.markup import escape
 from rich.text import Text
-from rich import print_json
 from rich.json import JSON
-from rich.console import Group
-from math import prod
 
 from dman.core.path import get_root_path
-from dman.core.serializables import (
-    deserialize,
-    serialize,
-    SER_CONTENT,
-    SER_TYPE,
-    BaseInvalid,
-)
-from dman.model.modelclasses import mdict, smdict, mruns, mlist, smlist
-from dman.utils import sjson
 
 _print = print
 
