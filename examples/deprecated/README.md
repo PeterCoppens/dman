@@ -5,6 +5,8 @@ of the scripts in each folder below. Before doing so we highlight
 the most important folders first. Only the scripts listed in ``Getting Started``
 contain detailed documentation. The others simply show several syntax examples for now. 
 
+Note that some of the low-level examples might no longer work. 
+
 ## Getting Started
 - ``common.py`` is the script described in the [Getting Started](https://petercoppens.github.io/dman/docs/usage/common.html) documentation page.
 - ``verbose.py`` illustrates how to activate verbose serialization/deserialization for debugging.
