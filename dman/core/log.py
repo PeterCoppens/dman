@@ -7,7 +7,7 @@ LOGGER_NAME = "dman"
 _LOGGER_NAME_ERROR = "__dman"
 DEFAULT_LOGGING_FORMAT = "%(message)s"
 DEFAULT_HEADER_WIDTH = 20
-DEFAULT_INDENT = 2
+DEFAULT_INDENT = 4
 DEFAULT_LEVEL = backend.CRITICAL
 
 from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
@@ -16,6 +16,8 @@ try:
     from rich.logging import RichHandler
     from rich.theme import Theme
     from rich.console import Console
+    from rich.highlighter import RegexHighlighter, Highlighter, _combine_regex
+    from rich.text import Text
     _rich_available = True
 except ImportError:
     _rich_available = False
@@ -37,18 +39,31 @@ class colors(Enum):
     FRAME = "bold"
 
 
-def apply_color(text: str, color: colors):
-    return text
-    if _rich_available:
-        text = text.replace('[', '\[')
-        if not isinstance(color, (tuple, list)):
-            color = (color,)
-        color = ' '.join((c.value for c in color))
+class LoggingHighlighter(RegexHighlighter):
+    """Apply style to anything that looks like an email."""
+    base_style = "logging."
+    highlights = [
+        r"(?P<label>\[[\w]+\])",
+        _combine_regex(
+            r"(?P<path>\B(/[-\w._+]+)*\/)(?P<filename>[-\w._+]*)?",
+            r"(?<![\\\w])(?P<str>b?'''.*?(?<!\\)'''|b?'.*?(?<!\\)'|b?\"\"\".*?(?<!\\)\"\"\"|b?\".*?(?<!\\)\")",
+            r"(?P<url>(file|https|http|ws|wss)://[-0-9a-zA-Z$_+!`(),.?/;:&=%#]*)"
+        )
+    ]
 
-        text = text.splitlines()
-        text = [f'[{color}]' + line + f'[/{color}]' + "\n" for line in text]
-        return "".join(text)[:-1]
-    return text
+
+class ColorHighlighter(Highlighter):
+    def __init__(self, base_color = None) -> None:
+        self.base_color = base_color
+        super().__init__()
+        
+    def highlight(self, text):
+        text._text = [t.replace('\[', '[') for t in text._text]
+        if self.base_color is not None:
+            text.stylize(self.base_color)
+        highlighter = LoggingHighlighter()
+        highlighter.highlight(text)
+        return text
 
 
 class DmanFormatter(backend.Formatter):
@@ -115,17 +130,9 @@ class Logger(backend.Logger):
     def __init__(self, name: str, level=backend.NOTSET) -> None:
         super().__init__(name, level)
         self._indent = 0
-        self._use_color = True
         self.header_width = DEFAULT_HEADER_WIDTH
         self._stream = None
         self._stack = []
-
-    def setUseColor(self, use: bool):
-        self._use_color = use
-
-    def apply_color(self, text: str, color: colors):
-        if self._use_color:
-            return apply_color(text, color)
 
     def put(self, owner: str):
         self._stack.append(owner)
@@ -141,44 +148,48 @@ class Logger(backend.Logger):
 
     def pack(self, msg: str, label: str = None):
         if label is not None:
-            msg = self.apply_color(f"[{label}]", (colors.OKGREEN, colors.FRAME)) + ' ' + msg
+            msg = f"[{label}]" + ' ' + msg
         if 0 < self.level <= INFO:
             return textwrap.indent(msg, prefix=" " * self._indent)
         stack = self.stack()
         if len(stack) == 0:
             return msg
-        return self.apply_color(f"[{stack}]", (colors.HEADER, colors.FRAME)) + ' ' + msg
+        return f"[{stack}]" + ' ' + msg
 
     def info(self, msg: str, label: str = None, *args, **kwargs):
-        super().info(self.pack(msg, label), *args, **kwargs)
+        super().info(self.pack(msg, label), *args, **kwargs, extra={'highlighter': ColorHighlighter()})
 
     def debug(self, msg, label=None, *args, **kwargs):
         super().debug(
-            self.pack(self.apply_color(msg, colors.DEBUG), label), *args, **kwargs
+            self.apply_color(
+                self.pack(msg, label),
+                colors.DEBUG
+            ), *args, **kwargs
         )
 
     def warning(self, msg, label=None, *args, **kwargs):
         super().warning(
-            self.pack(self.apply_color(msg, colors.WARNING), label), *args, **kwargs
+            self.apply_color(
+                self.pack(msg, label),
+                colors.WARNING
+            ), *args, **kwargs
         )
 
     def error(self, msg, label=None, *args, **kwargs):
-        super().error(
-            self.pack(self.apply_color(msg, colors.FAIL), label), *args, **kwargs
-        )
+        super().error(self.pack(msg, label), *args, **kwargs)
 
     def emphasize(self, msg: str, label: str = None, *args, **kwargs):
-        self.info(self.apply_color(msg, colors.OKCYAN), label, *args, **kwargs)
+        super().info(self.pack(msg, label), *args, **kwargs, extra={'highlighter': ColorHighlighter('blue')})
 
     def io(self, msg: str, label: str = None, *args, **kwargs):
-        self.info(self.apply_color(msg, colors.OKBLUE), label, *args, **kwargs)
+        super().info(self.pack(msg, label), *args, **kwargs, extra={'highlighter': ColorHighlighter('cyan')})
 
     def header(self, msg: str, label: str = None, width: int = None, *args, **kwargs):
         if width is None:
             width = self.header_width
         if label is not None:
             label = label + " " * (width - len(label))
-            label = self.apply_color(label.upper(), colors.HEADER)
+            label = label.upper()
             msg = label + msg
         self.info(msg, *args, **kwargs)
 
@@ -197,7 +208,7 @@ class Logger(backend.Logger):
 _loggers: Dict[str, Logger] = {}
 
 
-def getLogger(name: str = None, *, level: int = None, use_color: bool = None) -> Logger:
+def getLogger(name: str = None, *, level: int = None) -> Logger:
     """Returns logger used by dman."""
     global _loggers
 
@@ -215,7 +226,6 @@ def getLogger(name: str = None, *, level: int = None, use_color: bool = None) ->
             logger: Logger = backend.getLogger(name)
             logger.__class__ = Logger
             logger.header_width = DEFAULT_HEADER_WIDTH
-            logger._use_color = True
             logger._indent = 0
             logger._stack = []
             logger.setLevel(DEFAULT_LEVEL)
@@ -227,15 +237,21 @@ def getLogger(name: str = None, *, level: int = None, use_color: bool = None) ->
                 show_time=False, 
                 keywords=['SERIALIZING', 'DESERIALIZING', 'END'], 
                 markup=False, 
-                console=Console(theme=Theme({'logging.keyword': 'purple'}))
+                highlighter=LoggingHighlighter(),
+                console=Console(
+                    theme=Theme({
+                        'logging.keyword': 'purple', 
+                        'logging.label': 'bold green',
+                        'logging.str': 'green',
+                        'logging.path': 'green'
+                    })
+                )
             )
             handler.setFormatter(formatter)
             logger.addHandler(handler)
             logger._stream = handler
             _loggers[name] = logger
 
-    if use_color is not None:
-        logger.setUseColor(use_color)
     if level is not None:
         logger.setLevel(level)
     return logger
