@@ -5,11 +5,7 @@ from dman.utils import sjson
 from dman.model.record import Context
 
 from typing import Union
-
-try:
-    import numpy as np
-except ImportError as e:
-    raise ImportError("Numeric tools require numpy.") from e
+import numpy as np
 
 
 @storable(name="_num__barray")

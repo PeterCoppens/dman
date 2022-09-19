@@ -1,59 +1,90 @@
 from enum import Enum
-import logging
+import logging as backend
 import textwrap
 from typing import Dict
 
-LOGGER_NAME = 'dman'
-DEFAULT_LOGGING_FORMAT = '%(message)s'
+LOGGER_NAME = "dman"
+_LOGGER_NAME_ERROR = "__dman"
+DEFAULT_LOGGING_FORMAT = "%(message)s"
 DEFAULT_HEADER_WIDTH = 20
 DEFAULT_INDENT = 2
-DEFAULT_LEVEL = logging.CRITICAL
+DEFAULT_LEVEL = backend.CRITICAL
 
 from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
+
 
 class colors:
     """
     Ansi colors for printing
         see https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
     """
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    DEBUG = '\033[30;1m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKCYAN = "\033[96m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    DEBUG = "\033[30;1m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
 
 
 def apply_color(text: str, color: str):
     text = text.splitlines()
-    text = [color + line + colors.ENDC + '\n' for line in text]
-    return ''.join(text)[:-1]
+    text = [color + line + colors.ENDC + "\n" for line in text]
+    return "".join(text)[:-1]
 
-    
+
 def link(uri, label=None):
-    if label is None: 
+    if label is None:
         label = uri
-    parameters = ''
+    parameters = ""
 
-    # OSC 8 ; params ; URI ST <name> OSC 8 ;; ST 
-    escape_mask = '\033]8;{};{}\033\\{}\033]8;;\033\\'
+    # OSC 8 ; params ; URI ST <name> OSC 8 ;; ST
+    escape_mask = "\033]8;{};{}\033\\{}\033]8;;\033\\"
 
     return escape_mask.format(parameters, uri, label)
 
 
-class DmanFormatter(logging.Formatter):
+class DmanFormatter(backend.Formatter):
+    def __init__(self, fmt=DEFAULT_LOGGING_FORMAT, datefmt=None, style='%', validate=True):
+        """
+        Initialize the formatter with specified format strings.
+
+        Initialize the formatter either with the specified format string, or a
+        default as described above. Allow for specialized date formatting with
+        the optional datefmt argument. If datefmt is omitted, you get an
+        ISO8601-like (or RFC 3339-like) format.
+
+        Use a style parameter of '%', '{' or '$' to specify that you want to
+        use one of %-formatting, :meth:`str.format` (``{}``) formatting or
+        :class:`string.Template` formatting in your format string.
+
+        .. versionchanged:: 3.2
+           Added the ``style`` parameter.
+        """
+        super().__init__(fmt, datefmt, style, validate)
+
     def format(self, record):
         record.levelname = record.levelname.lower()
-        return logging.Formatter.format(self, record)
+        return backend.Formatter.format(self, record)
 
 
-class Logger(logging.Logger):
+class Logger(backend.Logger):
     class _LogLayer:
-        def __init__(self, parent: 'Logger', msg, label, owner, width, args, kwargs, indent=DEFAULT_INDENT):
+        def __init__(
+            self,
+            parent: "Logger",
+            msg,
+            label,
+            owner,
+            width,
+            args,
+            kwargs,
+            indent=DEFAULT_INDENT,
+        ):
             self.parent = parent
             self.msg = msg
             self.label = label
@@ -62,202 +93,180 @@ class Logger(logging.Logger):
             self.args = args
             self.kwargs = kwargs
             self.indent = indent
+
         def __enter__(self):
-            self.parent.header(self.msg, self.label, self.width, *self.args, **self.kwargs)
+            self.parent.header(
+                self.msg, self.label, self.width, *self.args, **self.kwargs
+            )
             self.parent.indent(self.indent)
             self.parent.put(self.owner)
             return self.parent
+
         def __exit__(self, *_):
             self.parent.indent(-self.indent)
-            self.parent.header(self.msg, f'end {self.label}', self.width, *self.args, **self.kwargs)
+            self.parent.header(
+                self.msg, f"end {self.label}", self.width, *self.args, **self.kwargs
+            )
             self.parent.pop()
 
-    def __init__(self, name: str, level=logging.NOTSET) -> None:
+    def __init__(self, name: str, level=backend.NOTSET) -> None:
         super().__init__(name, level)
         self._indent = 0
+        self._use_color = True
         self.header_width = DEFAULT_HEADER_WIDTH
-        self._target = None
         self._stream = None
         self._stack = []
 
+    def setUseColor(self, use: bool):
+        self._use_color = use
+
+    def apply_color(self, text: str, color: str):
+        if self._use_color:
+            return apply_color(text, color)
+
     def put(self, owner: str):
         self._stack.append(owner)
-    
+
     def pop(self):
         self._stack.pop()
 
     def indent(self, indent: int = 0, *, increment: bool = True):
         self._indent = self._indent + indent if increment else indent
-    
+
     def stack(self):
-        return ''.join([a + '.' for a in self._stack if a is not None])[:-1]
-    
+        return "".join([a + "." for a in self._stack if a is not None])[:-1]
+
     def pack(self, msg: str, label: str = None):
         if label is not None:
-            msg = apply_color(f'[{label}] ', colors.OKGREEN) + msg
+            msg = self.apply_color(f"[{label}] ", colors.OKGREEN) + msg
         if 0 < self.level <= INFO:
-            return textwrap.indent(msg, prefix=' '*self._indent)
+            return textwrap.indent(msg, prefix=" " * self._indent)
         stack = self.stack()
-        if len(stack) == 0: return msg
-        return apply_color(f'[{stack}] ', colors.HEADER) + msg
-    
-    def path(self, path: str, label: str = None):
-        return '"' + apply_color(link(path, label), colors.UNDERLINE) + '"'
+        if len(stack) == 0:
+            return msg
+        return self.apply_color(f"[{stack}] ", colors.HEADER) + msg
 
-    def _check_target(self):
-        if isinstance(self._target, Target):
-            super().warning(self.pack(apply_color(
-                f'could not write to unprepared target "{self._target.name}".', 
-                colors.WARNING), 'log')
-            )
-    
     def info(self, msg: str, label: str = None, *args, **kwargs):
-        self._check_target()
         super().info(self.pack(msg, label), *args, **kwargs)
-    
+
     def debug(self, msg, label=None, *args, **kwargs):
-        self._check_target()
-        super().debug(self.pack(apply_color(msg, colors.DEBUG), label), *args, **kwargs)
-    
+        super().debug(
+            self.pack(self.apply_color(msg, colors.DEBUG), label), *args, **kwargs
+        )
+
     def warning(self, msg, label=None, *args, **kwargs):
-        self._check_target()
-        super().warning(self.pack(apply_color(msg, colors.WARNING), label), *args, **kwargs)
-    
+        super().warning(
+            self.pack(self.apply_color(msg, colors.WARNING), label), *args, **kwargs
+        )
+
     def error(self, msg, label=None, *args, **kwargs):
-        self._check_target()
-        super().error(self.pack(apply_color(msg, colors.FAIL), label), *args, **kwargs)
-    
+        super().error(
+            self.pack(self.apply_color(msg, colors.FAIL), label), *args, **kwargs
+        )
+
     def emphasize(self, msg: str, label: str = None, *args, **kwargs):
-        self.info(apply_color(msg, colors.OKCYAN), label, *args, **kwargs)
-    
+        self.info(self.apply_color(msg, colors.OKCYAN), label, *args, **kwargs)
+
     def io(self, msg: str, label: str = None, *args, **kwargs):
-        self.info(apply_color(msg, colors.OKBLUE), label, *args, **kwargs)
-    
+        self.info(self.apply_color(msg, colors.OKBLUE), label, *args, **kwargs)
+
     def header(self, msg: str, label: str = None, width: int = None, *args, **kwargs):
-        if width is None: width = self.header_width
+        if width is None:
+            width = self.header_width
         if label is not None:
-            label = label + ' '*(width - len(label))
-            label = apply_color(label.upper(), colors.HEADER)
+            label = label + " " * (width - len(label))
+            label = self.apply_color(label.upper(), colors.HEADER)
             msg = label + msg
         self.info(msg, *args, **kwargs)
-    
-    def layer(self, msg: str, label: str = None, owner: str = None, width: int = None, *args, **kwargs):
-        return self._LogLayer(self, msg, label, owner, width, args=args, kwargs=kwargs)
 
+    def layer(
+        self,
+        msg: str,
+        label: str = None,
+        owner: str = None,
+        width: int = None,
+        *args,
+        **kwargs,
+    ):
+        return self._LogLayer(self, msg, label, owner, width, args=args, kwargs=kwargs)
 
 
 _loggers: Dict[str, Logger] = {}
 
 
-def get_logger(level: int = None, *, name: str = LOGGER_NAME) -> Logger:
+def getLogger(name: str = None, *, level: int = None, use_color: bool = None) -> Logger:
     """Returns logger used by dman."""
     global _loggers
 
-    logger = _loggers.get(name, None)
-    if logger is None:
-        logger: Logger = logging.getLogger(name)
-        logger.__class__ = Logger
-        logger._indent = 0
-        logger._target = None
-        logger.header_width = DEFAULT_HEADER_WIDTH
-        logger._stack = []
-        logger.setLevel(DEFAULT_LEVEL)
+    if name is None:
+        name = LOGGER_NAME
 
-        formatter = DmanFormatter(DEFAULT_LOGGING_FORMAT)
-        handler = logging.StreamHandler()
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
-        logger._stream = handler
-        _loggers[name] = logger
+    if isinstance(name, backend.Logger):
+        name = name.name
 
+    if isinstance(name, Logger):
+        logger = name
+    else:
+        logger = _loggers.get(name, None)
+        if logger is None:
+            logger: Logger = backend.getLogger(name)
+            logger.__class__ = Logger
+            logger.header_width = DEFAULT_HEADER_WIDTH
+            logger._use_color = True
+            logger._indent = 0
+            logger._stack = []
+            logger.setLevel(DEFAULT_LEVEL)
+
+            formatter = DmanFormatter(DEFAULT_LOGGING_FORMAT)
+            handler = backend.StreamHandler()
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+            logger._stream = handler
+            _loggers[name] = logger
+
+    if use_color is not None:
+        logger.setUseColor(use_color)
     if level is not None:
-        logger.setLevel(level)        
+        logger.setLevel(level)
     return logger
 
-def setLevel(level: int, *, name: str = LOGGER_NAME):
-    return get_logger().setLevel(level)
 
-def path(path: str, label: str = None):
-    return get_logger().path(path, label)
+def setLevel(level: int, *, name: str = LOGGER_NAME):
+    return getLogger().setLevel(level)
 
 def info(msg: str, label: str = None, *args, **kwargs):
-    return get_logger().info(msg, label, *args, **kwargs)
+    return getLogger().info(msg, label, *args, **kwargs)
+
 
 def debug(msg, label=None, *args, **kwargs):
-    return get_logger().debug(msg, label, *args, **kwargs)
+    return getLogger().debug(msg, label, *args, **kwargs)
+
 
 def warning(msg, label=None, *args, **kwargs):
-    return get_logger().warning(msg, label, *args, **kwargs)
+    return getLogger().warning(msg, label, *args, **kwargs)
+
 
 def error(msg, label=None, *args, **kwargs):
-    return get_logger().error(msg, label, *args, **kwargs)
+    return getLogger().error(msg, label, *args, **kwargs)
+
 
 def emphasize(msg: str, label: str = None, *args, **kwargs):
-    return get_logger().emphasize(msg, label, *args, **kwargs)
+    return getLogger().emphasize(msg, label, *args, **kwargs)
+
 
 def io(msg: str, label: str = None, *args, **kwargs):
-    return get_logger().io(msg, label, *args, **kwargs)
+    return getLogger().io(msg, label, *args, **kwargs)
+
 
 def header(msg: str, label: str = None, width: int = None, *args, **kwargs):
-    return get_logger().header(msg, label, width, *args, **kwargs)
-
-def layer(msg: str, label: str = None, owner: str = None, width: int = None, *args, **kwargs):
-    return get_logger().layer(msg, label, owner, width, *args, **kwargs)
+    return getLogger().header(msg, label, width, *args, **kwargs)
 
 
-class Target(Enum):
-    ROOT = 0
-    AUTO = 1
-
-def setStream(*, name: str = LOGGER_NAME):
-    logger = get_logger(name=name)
-    if logger._stream is not None:
-        logger.info('logger already has stream.', label='log')
-        return
-    formatter = DmanFormatter(DEFAULT_LOGGING_FORMAT)
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger._stream = handler
-
-def unsetFile(*, name: str = LOGGER_NAME):
-    logger = get_logger(name=name)
-    if isinstance(logger._target, logging.FileHandler):
-        logger.removeHandler(logger._target)
-        logger._target = None
-
-def setFile(file: str, *, name: str = LOGGER_NAME, exclusive: bool = False):
-    logger = get_logger(name=name)
-    if exclusive:
-        logger.removeHandler(logger._stream)  
-        logger._stream = None
-    unsetFile(name=name)
-    if isinstance(file, Target):
-        logger._target = file
-        return
-    
-    formatter = DmanFormatter(DEFAULT_LOGGING_FORMAT)
-    handler = logging.FileHandler(file)
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger._target = handler  
+def layer(
+    msg: str, label: str = None, owner: str = None, width: int = None, *args, **kwargs
+):
+    return getLogger().layer(msg, label, owner, width, *args, **kwargs)
 
 
-
-if __name__ == '__main__':
-    setLevel(INFO)
-    header('enter')
-    with layer('enter', 'dman', width=10):
-        info('test', 'dman')
-        io(f'read {path("./README.md")}', 'dman')
-    emphasize('finished', 'dman')
-    debug('debug')
-    warning('warning')
-    error('fail')
-
-    log = get_logger(WARNING, name='test')
-    with log.layer('enter', 'test', 'mruns', width=10):
-        with log.layer('enter', 'test', 'list', width=10):
-            log.info('test', 'test')
-            log.warning('warning', 'test')
-            log.io(f'read {path("./README.md")}', 'test')
+class LogTarget(backend.FileHandler):
+    ...

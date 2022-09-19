@@ -1,14 +1,17 @@
 from dataclasses import MISSING
 import os
 from typing import Type
+from tempfile import TemporaryDirectory
+from uuid import uuid4
+import shutil
+
 from dman.core import log
-
-
 from dman.model.record import Context, record
 from dman.core.serializables import deserialize, is_serializable, serialize
 from dman.core.storables import is_storable
 from dman.utils import sjson
 from dman.core.path import prepare
+from dman.core.storables import storable
 
 import signal
 
@@ -45,7 +48,7 @@ def store(
     *,
     subdir: os.PathLike = "",
     cluster: bool = False,
-    verbose: int = -1,
+    verbose: int = None,
     gitignore: bool = True,
     generator: str = MISSING,
     base: os.PathLike = None,
@@ -99,11 +102,11 @@ def store(
     ctx = context(dir)
     target = os.path.join(dir, rec.config.name)
     log.emphasize(
-        "store", f'storing {type(obj).__name__} with key {key} to "{target}".'
+        f'storing {type(obj).__name__} with key {key} to "{target}".', "store"
     )
     ser = serialize(rec, context=ctx)
     log.emphasize(
-        "store", f'finished storing {type(obj).__name__} with key {key} to "{target}".'
+         f'finished storing {type(obj).__name__} with key {key} to "{target}".', "store"
     )
     return ser
 
@@ -408,3 +411,43 @@ def track(
         base,
         context,
     )
+
+
+@storable(name='_log__filehandler')
+class LogTarget(log.backend.FileHandler):
+    __ext__ = '.ansi'
+    
+    def __init__(self, filename = None):
+        if filename is None:
+            self.tempdir = TemporaryDirectory()
+            baseFilename = os.path.join(self.tempdir.name, f'log-{uuid4()}.log')
+        else:
+            self.tempdir = None
+            baseFilename = filename
+        super().__init__(baseFilename)
+
+    def __write__(self, path: os.PathLike):
+        if self.tempdir is None:
+            return 
+
+        # close current stream
+        super().close()
+
+        # copy temporary file
+        if os.path.exists(self.baseFilename):
+            shutil.move(self.baseFilename, path)
+        
+        # set stream to target file
+        self.baseFilename = path
+        self.setStream(
+            open(self.baseFilename, 'a', encoding=self.encoding)
+        )
+        self.tempdir.cleanup()
+    
+    @classmethod
+    def __read__(cls, path: os.PathLike):
+        return cls(path)
+
+
+log.LogTarget = LogTarget
+    

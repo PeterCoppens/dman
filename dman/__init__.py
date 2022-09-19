@@ -23,8 +23,15 @@ from dman.utils.smartdataclasses import idataclass, AUTO
 
 try:
     import dman.numeric as numeric
+    _numeric_available = True
 except ImportError as e:
-    ...
+    _numeric_available = False
+
+try:
+    import dman.tui as tui
+    _tui_available = True
+except ImportError as e:
+    _tui_available = False
 
 
 from dataclasses import field, dataclass

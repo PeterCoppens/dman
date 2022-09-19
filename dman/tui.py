@@ -1,13 +1,9 @@
-try:
-    import rich
-except ImportError as e:
-    raise ImportError("TUI tools require rich.") from e
+import rich
 
 from typing import Tuple
 import os
 import pathlib
 
-from dataclasses import dataclass, is_dataclass, fields, asdict
 from rich.style import Style
 from rich.console import JustifyMethod, Console, Group
 from rich.table import Table
@@ -156,8 +152,8 @@ def walk_file(path: pathlib.Path):
     with open(path, "r") as f:
         content = f.read()
         if path.suffix == ".json":
-            return Panel(JSON(content), box=box.SQUARE)
-        return Panel(content, box=box.SQUARE)
+            return Panel(JSON(content), box=box.HORIZONTALS)
+        return Panel(content, box=box.HORIZONTALS)
 
 
 def walk_directory(
@@ -167,12 +163,14 @@ def walk_directory(
     tree: Tree = None,
     normalize: bool = False,
     show_hidden: bool = False,
+    console: Console = None,
 ) -> None:
     """Print the contents of a directory
 
     :param directory: directory to print
     :param show_content: show content of text files, defaults to False
     :param tree: add content to tree instead of printing, defaults to None
+    :param console: console for printing
     """
 
     # based on https://github.com/Textualize/rich/blob/master/examples/tree.py
@@ -220,7 +218,8 @@ def walk_directory(
             tree.add(res)
 
     if is_root:
-        console = Console(width=80)
+        if console is None:
+            console = Console(width=80)
         console.print(tree)
 
     
