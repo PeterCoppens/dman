@@ -415,7 +415,7 @@ def track(
 
 @storable(name='_log__filehandler')
 class LogTarget(log.backend.FileHandler):
-    __ext__ = '.ansi'
+    __ext__ = '.log'
     
     def __init__(self, filename = None):
         if filename is None:

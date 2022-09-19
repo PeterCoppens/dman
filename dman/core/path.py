@@ -119,7 +119,7 @@ class GitIgnore:
                 else:
                     f.write(line)
 
-        self.logger.io(f"created gitignore at {self.path}.", "path")
+        self.logger.io(f'created gitignore at "{self.path}".', "path")
 
     def __exit__(self, *_):
         if not self.check_exists:

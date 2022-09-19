@@ -12,40 +12,43 @@ DEFAULT_LEVEL = backend.CRITICAL
 
 from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
 
+try:
+    from rich.logging import RichHandler
+    from rich.theme import Theme
+    from rich.console import Console
+    _rich_available = True
+except ImportError:
+    _rich_available = False
 
-class colors:
+
+class colors(Enum):
     """
-    Ansi colors for printing
+    colors for printing
         see https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
     """
 
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKCYAN = "\033[96m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    DEBUG = "\033[30;1m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
+    HEADER = 'purple'
+    OKBLUE = 'blue'
+    OKCYAN = 'cyan'
+    OKGREEN = 'green'
+    WARNING = "orange1"
+    DEBUG = "bright_black"
+    FAIL = "red"
+    FRAME = "bold"
 
 
-def apply_color(text: str, color: str):
-    text = text.splitlines()
-    text = [color + line + colors.ENDC + "\n" for line in text]
-    return "".join(text)[:-1]
+def apply_color(text: str, color: colors):
+    return text
+    if _rich_available:
+        text = text.replace('[', '\[')
+        if not isinstance(color, (tuple, list)):
+            color = (color,)
+        color = ' '.join((c.value for c in color))
 
-
-def link(uri, label=None):
-    if label is None:
-        label = uri
-    parameters = ""
-
-    # OSC 8 ; params ; URI ST <name> OSC 8 ;; ST
-    escape_mask = "\033]8;{};{}\033\\{}\033]8;;\033\\"
-
-    return escape_mask.format(parameters, uri, label)
+        text = text.splitlines()
+        text = [f'[{color}]' + line + f'[/{color}]' + "\n" for line in text]
+        return "".join(text)[:-1]
+    return text
 
 
 class DmanFormatter(backend.Formatter):
@@ -120,7 +123,7 @@ class Logger(backend.Logger):
     def setUseColor(self, use: bool):
         self._use_color = use
 
-    def apply_color(self, text: str, color: str):
+    def apply_color(self, text: str, color: colors):
         if self._use_color:
             return apply_color(text, color)
 
@@ -138,13 +141,13 @@ class Logger(backend.Logger):
 
     def pack(self, msg: str, label: str = None):
         if label is not None:
-            msg = self.apply_color(f"[{label}] ", colors.OKGREEN) + msg
+            msg = self.apply_color(f"[{label}]", (colors.OKGREEN, colors.FRAME)) + ' ' + msg
         if 0 < self.level <= INFO:
             return textwrap.indent(msg, prefix=" " * self._indent)
         stack = self.stack()
         if len(stack) == 0:
             return msg
-        return self.apply_color(f"[{stack}] ", colors.HEADER) + msg
+        return self.apply_color(f"[{stack}]", (colors.HEADER, colors.FRAME)) + ' ' + msg
 
     def info(self, msg: str, label: str = None, *args, **kwargs):
         super().info(self.pack(msg, label), *args, **kwargs)
@@ -218,7 +221,14 @@ def getLogger(name: str = None, *, level: int = None, use_color: bool = None) ->
             logger.setLevel(DEFAULT_LEVEL)
 
             formatter = DmanFormatter(DEFAULT_LOGGING_FORMAT)
-            handler = backend.StreamHandler()
+            handler = RichHandler(
+                show_level=False, 
+                show_path=True, 
+                show_time=False, 
+                keywords=['SERIALIZING', 'DESERIALIZING', 'END'], 
+                markup=False, 
+                console=Console(theme=Theme({'logging.keyword': 'purple'}))
+            )
             handler.setFormatter(formatter)
             logger.addHandler(handler)
             logger._stream = handler
