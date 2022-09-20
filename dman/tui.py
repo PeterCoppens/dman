@@ -19,6 +19,7 @@ from rich.filesize import decimal
 from rich.markup import escape
 from rich.text import Text
 from rich.json import JSON
+from rich.syntax import Syntax
 from rich.pretty import pprint
 
 from dman.core.path import get_root_path
@@ -153,7 +154,9 @@ def walk_file(path: pathlib.Path):
         content = f.read()
         if path.suffix == ".json":
             return Panel(JSON(content), box=box.HORIZONTALS)
-        return Panel(content, box=box.HORIZONTALS)
+        if path.suffix == ".py":
+            return Panel(Syntax(content), "python")
+        return Panel(Text(content), box=box.HORIZONTALS)
 
 
 def walk_directory(

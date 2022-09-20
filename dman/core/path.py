@@ -26,7 +26,7 @@ def get_root_path(create: bool = False, *, logger: log.Logger = None):
             current_path = current_path.parent
             if current_path.parent == current_path:
                 if create:
-                    logger.io(f"no .dman folder found, created one in {cwd}", "path")
+                    logger.io(f"no .dman folder found, created one in {normalize_path(cwd)}", "path")
                     root_path = os.path.join(cwd, ROOT_FOLDER)
                     os.makedirs(root_path)
                     return root_path
@@ -54,6 +54,20 @@ def script_label(base: os.PathLike):
     return os.path.join("cache", f'{directory.replace(os.sep, ":")}:{name}')
 
 
+def normalize_path(path: str):
+    try:
+        root = Path(os.getcwd())
+        # root = Path(get_root_path()).parent
+        return os.path.join(
+            '.',
+            str(Path(path).resolve().relative_to(root))
+        )
+    except RootError:
+        return path
+    except ValueError:
+        return path
+
+
 class Directory:
     def __init__(self, path: str, clean: bool = False, logger: log.Logger = None):
         self.logger = log.getLogger(logger)
@@ -63,14 +77,14 @@ class Directory:
     def __enter__(self):
         if os.path.exists(self.path):
             return
-        self.logger.io(f"created directory {self.path}.", "path")
+        self.logger.io(f"created directory {normalize_path(self.path)}.", "path")
         os.makedirs(self.path)
         self.clean = True
 
     def __exit__(self, *_):
         if self.clean and len(os.listdir(self.path)) == 0:
             os.rmdir(self.path)
-            self.logger.io(f"removed empty directory {self.path}.", "path")
+            self.logger.io(f"removed empty directory {normalize_path(self.path)}.", "path")
 
 
 class GitIgnore:
@@ -119,7 +133,7 @@ class GitIgnore:
                 else:
                     f.write(line)
 
-        self.logger.io(f'created gitignore at "{self.path}".', "path")
+        self.logger.io(f'created gitignore at "{normalize_path(self.path)}".', "path")
 
     def __exit__(self, *_):
         if not self.check_exists:
@@ -142,7 +156,7 @@ class GitIgnore:
                 if os.path.exists(self.path):
                     os.remove(self.path)
                     self.logger.io(
-                        f"removed empty gitignore {self.path}.", "path"
+                        f"removed empty gitignore {normalize_path(self.path)}.", "path"
                     )
                 return
             self.build(ignored)
@@ -264,7 +278,7 @@ def prepare(
     created_dir = not os.path.exists(dir)
     if created_dir:
         os.makedirs(dir)
-        logger.io(f"created directory {dir}.", "path")
+        logger.io(f"created directory {normalize_path(dir)}.", "path")
 
     # configure logger
     if verbose == False:
@@ -274,7 +288,7 @@ def prepare(
 
     # log the creation of the directory
     if created_dir:
-        log.io(f"created directory {dir}.", "path")
+        log.io(f"created directory {normalize_path(dir)}.", "path")
 
     # create gitignore
     if gitignore:

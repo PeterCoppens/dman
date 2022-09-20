@@ -9,6 +9,7 @@ from dman.core.serializables import ExcUndeserializable, ExcUnserializable, Unse
 from dman.utils.smartdataclasses import AUTO, overrideable
 from dman.core.storables import is_storable, storable_type, read, write
 from dman.utils import sjson
+from dman.core.path import normalize_path
 
 
 REMOVE = '__remove__'
@@ -83,7 +84,7 @@ class Context(BaseContext):
         self.open()
         try:
             path = os.path.join(self.directory, target)
-            log.io(f'writing to file: "{path}".', 'context')
+            self.logger.io(f'writing to file: "{normalize_path(path)}".', 'context')
             write(storable, path, self)
             return None
         except Exception:
@@ -96,7 +97,7 @@ class Context(BaseContext):
     def read(self, target: str, sto_type):
         try:
             path = os.path.join(self.directory, target)
-            log.io(f'reading from file: "{path}".', 'context')
+            self.logger.io(f'reading from file: "{normalize_path(path)}".', 'context')
             return read(sto_type, path, self)
         except FileNotFoundError:
             res = NoFile(type=sto_type, info='Missing File.')
@@ -112,37 +113,41 @@ class Context(BaseContext):
     def delete(self, target: str):
         path = os.path.join(self.directory, target)
         if os.path.exists(path):
-            log.io(f'deleting file: "{path}".', 'context')
+            self.logger.io(f'deleting file: "{normalize_path(path)}".', 'context')
             os.remove(path)
         self.clean()
 
     def remove(self, obj):
+        original = obj
         if is_removable(obj):
-            inner_remove = getattr(obj, REMOVE, None)
-            if inner_remove is not None:
-                inner_remove(self)
-            return
+            with self.logger.layer(type(obj).__name__, 'remove'):
+                inner_remove = getattr(obj, REMOVE, None)
+                if inner_remove is not None:
+                    inner_remove(self)
+                return
 
         if is_dataclass(obj):
             obj = asdict(obj)
         
         if isinstance(obj, (tuple, list)):
-            for x in obj[:]:
-                remove(x, self)
+            with self.logger.layer(type(obj).__name__, 'remove'):
+                for x in obj[:]:
+                    self.remove(x)
         elif isinstance(obj, dict):
-            for k in obj.keys():
-                remove(obj[k], self)
+            with self.logger.layer(type(original).__name__, 'remove'):
+                for k in obj.keys():
+                    self.remove(obj[k])
     
     def open(self):
         if not os.path.isdir(self.directory):
-            log.io(f'creating directory "{self.directory}".')
+            self.logger.io(f'creating directory "{normalize_path(self.directory)}".')
             os.makedirs(self.directory)
     
     def clean(self):
         if self.parent is None:
             return  # do not clean root
         if os.path.isdir(self.directory) and len(os.listdir(self.directory)) == 0:
-            log.io(f'removing empty directory "{self.directory}".')
+            self.logger.io(f'removing empty directory "{normalize_path(self.directory)}".')
             os.rmdir(self.directory)
             self.parent.clean()
         
@@ -180,12 +185,13 @@ def context(path: str = None, /, *, verbose: int = -1, validate: bool = False):
     """
     
     def context_factory(path):
+        context = Context(directory=path, validate=validate)
         _verbose = verbose
         if verbose == True:
             _verbose = log.INFO
         if _verbose >= 0 and _verbose is not None:
-            log.setLevel(_verbose)
-        return Context(directory=path, validate=validate)
+            context.logger.setLevel(_verbose)
+        return context
     if path is None:
         return context_factory
     return context_factory(path)
@@ -226,11 +232,13 @@ class RecordConfig:
     def target(self):
         return os.path.normpath(os.path.join(".", self.subdir, self.name))
     
-    def __serialize__(self):
+    def __serialize__(self, context: Context):
+        context.logger.info(f'target={self.target}', 'record')
         return self.target
     
     @classmethod
-    def __deserialize__(cls, serialized):
+    def __deserialize__(cls, serialized, context: Context):
+        context.logger.info(f'target={serialized}', 'record')
         return cls.from_target(target=serialized)
 
 
@@ -295,9 +303,8 @@ class Record:
     def content(self):
         if is_unloaded(self._content):
             ul: Unloaded = self._content
-            log.emphasize(f'loading {str(self)}', 'record')
-            self._content = ul.__load__()
-            log.emphasize(f'finished loading {str(self)}','record')
+            with ul.context.logger.layer(ul.type, 'deferred load'):
+                self._content = ul.__load__()
         return self._content
 
     @content.setter
@@ -325,17 +332,15 @@ class Record:
         if isinstance(context, Context):
             target, local = Record.__parse(self.config, context)
             # remove all subfiles of content
-            content = self._content
-            if is_unloaded(content):
-                log.info('content unloaded: loading ...', 'record')
-                ul: Unloaded = content
-                content = ul.__load__()
-                log.info('finished load.', 'record')
-            if isinstance(content, BaseInvalid):
-                log.error('loaded content is invalid:', 'record')
-                log.error(str(content), 'record')
+            if is_unloaded(self._content):
+                ul: Unloaded = self._content
+                with context.logger.layer(ul.type, 'deferred load'):
+                    self._content = ul.__load__()
+            if isinstance(self._content, BaseInvalid):
+                context.logger.error('loaded content is invalid:', 'record')
+                context.logger.error(str(self._content), 'record')
             else:
-                local.remove(content)  # remove contents
+                local.remove(self._content)  # remove contents
                 local.delete(target)   # remove this file
 
     def __serialize__(self, context: BaseContext):
@@ -345,19 +350,19 @@ class Record:
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
             sto_type = unloaded.type
-            log.info(f'serializing record with storable type: {sto_type} ...', 'record')
+            context.logger.info(f'serializing record with storable type: {sto_type} ...', 'record')
             if isinstance(context, Context) and unloaded.base != context.directory:
                 self.content
         else:
-            log.info(f'serializing record with storable type: {sto_type} ...', 'record')
+            context.logger.info(f'serializing record with storable type: {sto_type} ...', 'record')
 
         if not is_unloaded(self._content):
             if not isinstance(context, Context):
                 return serialize(Unserializable(type='_ser__record', info='Invalid context passed.'), context)
-            log.info('content is loaded, executing write ...', 'record')
+            context.logger.info('content is loaded, executing write ...', 'record')
             exc = local.write(target, self._content)
             if exc is not None:
-                log.error(f'exception encountered while writing to {os.path.join(local.directory, target)}.', 'record')
+                context.logger.error(f'exception encountered while writing to {os.path.join(local.directory, target)}.', 'record')
                 self.exception = exc
 
         res = {
@@ -373,7 +378,7 @@ class Record:
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        log.info('deserializing record ...', f'record')
+        context.logger.info('deserializing record ...', f'record')
         config: RecordConfig = deserialize(
             serialized.get('target', ''), ser_type=RecordConfig
         )
@@ -381,18 +386,18 @@ class Record:
         preload = serialized.get('preload', False)
         exception = deserialize(serialized.get('exception', None))
         if isinstance(exception, BaseInvalid):
-            log.error('error during earlier serialization:', 'record')
-            log.error(exception, 'record')
+            context.logger.error('error during earlier serialization:', 'record')
+            context.logger.error(exception, 'record')
 
         content = Undeserializable(type=sto_type, info=f'Could not read {config.target}')
         if isinstance(context, Context):
             target, local = Record.__parse(config, context)
             if preload:
-                log.info('preload enabled, loading from file ...', 'record')
+                context.logger.info('preload enabled, loading from file ...', 'record')
                 content = local.read(target, sto_type)
             else:
-                log.info('preload disabled, load deferred', 'record')
-                log.info(f'path: "{os.path.join(local.directory, target)}"', f'record')
+                context.logger.info('preload disabled, load deferred', 'record')
+                context.logger.info(f'path: "{normalize_path(os.path.join(local.directory, target))}"', f'record')
                 content = Unloaded(
                     sto_type, 
                     target, 

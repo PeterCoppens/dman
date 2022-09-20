@@ -10,7 +10,7 @@ from dman.model.record import Context, record
 from dman.core.serializables import deserialize, is_serializable, serialize
 from dman.core.storables import is_storable
 from dman.utils import sjson
-from dman.core.path import prepare
+from dman.core.path import prepare, normalize_path
 from dman.core.storables import storable
 
 import signal
@@ -117,7 +117,7 @@ def save(
     *,
     subdir: os.PathLike = "",
     cluster: bool = True,
-    verbose: int = -1,
+    verbose: int = False,
     validate: bool = None,
     gitignore: bool = True,
     generator: str = MISSING,
@@ -172,15 +172,17 @@ def save(
     ctx = context(dir)
     if validate is not None:
         ctx.validate = validate
-    target = os.path.join(dir, key + ".json")
-    log.emphasize(f'saving {type(obj).__name__} with key "{key}" to "{target}".', "save")
-    ser = serialize(obj, context=ctx)
-    with open(target, "w") as f:
-        sjson.dump(ser, f, indent=4)
-    log.emphasize(
-        f'finished saving {type(obj).__name__} with key "{key}" to "{target}".', "save"
-    )
-    return ser
+        
+    with ctx.logger.layer(key, 'saving', kind='key'):
+        target = os.path.join(dir, key + ".json")
+        log.emphasize(f'saving {type(obj).__name__} with key "{key}" to "{normalize_path(target)}".', "save")
+        ser = serialize(obj, context=ctx)
+        with open(target, "w") as f:
+            sjson.dump(ser, f, indent=4)
+        log.emphasize(
+            f'finished saving {type(obj).__name__} with key "{key}" to "{normalize_path(target)}".', "save"
+        )
+        return ser
 
 
 def load(
@@ -190,7 +192,7 @@ def load(
     default_factory=MISSING,
     subdir: os.PathLike = "",
     cluster: bool = True,
-    verbose: int = -1,
+    verbose: int = False,
     validate: bool = None,
     gitignore: bool = True,
     generator: str = MISSING,
@@ -254,21 +256,22 @@ def load(
         ctx.validate = validate
     target = os.path.join(dir, key + ".json")
 
-    if not os.path.exists(target):
-        log.emphasize(f'file not available at "{target}", using default', "load")
-        if default is MISSING and default_factory is MISSING:
-            raise FileNotFoundError(f'could not find tracked file "{target}".')
-        elif default is MISSING:
-            return default_factory()
-        else:
-            return default
+    with ctx.logger.layer(key, 'loading', kind='key'):
+        if not os.path.exists(target):
+            ctx.logger.emphasize(f'file not available at "{normalize_path(target)}", using default', "load")
+            if default is MISSING and default_factory is MISSING:
+                raise FileNotFoundError(f'could not find tracked file "{normalize_path(target)}".')
+            elif default is MISSING:
+                return default_factory()
+            else:
+                return default
 
-    log.emphasize(f'loading with key "{key}" from "{target}".', "load")
-    with open(target, "r") as f:
-        ser = sjson.load(f)
-    res = deserialize(ser, context=ctx)
-    log.emphasize(f'finished loading with key "{key}" from "{target}".', "load")
-    return res
+        ctx.logger.emphasize(f'loading with key "{key}" from "{normalize_path(target)}".', "load")
+        with open(target, "r") as f:
+            ser = sjson.load(f)
+        res = deserialize(ser, context=ctx)
+        ctx.logger.emphasize(f'finished loading with key "{key}" from "{normalize_path(target)}".', "load")
+        return res
 
 
 class Track:
@@ -351,7 +354,7 @@ def track(
     default_factory=MISSING,
     subdir: os.PathLike = "",
     cluster: bool = True,
-    verbose: int = -1,
+    verbose: int = False,
     validate: bool = False,
     gitignore: bool = True,
     generator: str = MISSING,
@@ -426,23 +429,34 @@ class LogTarget(log.backend.FileHandler):
             baseFilename = filename
         super().__init__(baseFilename)
 
-    def __write__(self, path: os.PathLike):
-        if self.tempdir is None:
-            return 
+    def __write__(self, path: os.PathLike, context: Context):
+        if os.path.abspath(self.baseFilename) == os.path.abspath(path):
+            return
+ 
+        context.logger.info(f'switching\n\tfrom "{normalize_path(self.baseFilename)}"\n\tto   "{normalize_path(path)}".', 'logtarget')
 
         # close current stream
         super().close()
 
-        # copy temporary file
+        # copy original log file (or move if temporary)
         if os.path.exists(self.baseFilename):
-            shutil.move(self.baseFilename, path)
+            if self.tempdir is not None:
+                shutil.move(self.baseFilename, path)
+            else:
+                shutil.copy(self.baseFilename, path)
         
         # set stream to target file
         self.baseFilename = path
         self.setStream(
             open(self.baseFilename, 'a', encoding=self.encoding)
         )
-        self.tempdir.cleanup()
+
+        if self.tempdir is not None:
+            self.tempdir.cleanup()
+
+    def __remove__(self, context: Context):
+        self.__init__()     # switch back to temporary file
+        context.logger.info(f'switching back to temporary file {normalize_path(self.baseFilename)}.', 'logtarget')
     
     @classmethod
     def __read__(cls, path: os.PathLike):

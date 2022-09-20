@@ -1,5 +1,6 @@
 from enum import Enum
 import logging as backend
+from tempfile import TemporaryDirectory
 import textwrap
 from typing import Dict
 
@@ -8,7 +9,7 @@ _LOGGER_NAME_ERROR = "__dman"
 DEFAULT_LOGGING_FORMAT = "%(message)s"
 DEFAULT_HEADER_WIDTH = 20
 DEFAULT_INDENT = 4
-DEFAULT_LEVEL = backend.CRITICAL
+DEFAULT_LEVEL = backend.WARNING
 
 from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
 
@@ -16,58 +17,17 @@ try:
     from rich.logging import RichHandler
     from rich.theme import Theme
     from rich.console import Console
-    from rich.highlighter import RegexHighlighter, Highlighter, _combine_regex
-    from rich.text import Text
+    from rich.highlighter import RegexHighlighter, Highlighter
+
     _rich_available = True
 except ImportError:
     _rich_available = False
 
 
-class colors(Enum):
-    """
-    colors for printing
-        see https://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
-    """
-
-    HEADER = 'purple'
-    OKBLUE = 'blue'
-    OKCYAN = 'cyan'
-    OKGREEN = 'green'
-    WARNING = "orange1"
-    DEBUG = "bright_black"
-    FAIL = "red"
-    FRAME = "bold"
-
-
-class LoggingHighlighter(RegexHighlighter):
-    """Apply style to anything that looks like an email."""
-    base_style = "logging."
-    highlights = [
-        r"(?P<label>\[[\w]+\])",
-        _combine_regex(
-            r"(?P<path>\B(/[-\w._+]+)*\/)(?P<filename>[-\w._+]*)?",
-            r"(?<![\\\w])(?P<str>b?'''.*?(?<!\\)'''|b?'.*?(?<!\\)'|b?\"\"\".*?(?<!\\)\"\"\"|b?\".*?(?<!\\)\")",
-            r"(?P<url>(file|https|http|ws|wss)://[-0-9a-zA-Z$_+!`(),.?/;:&=%#]*)"
-        )
-    ]
-
-
-class ColorHighlighter(Highlighter):
-    def __init__(self, base_color = None) -> None:
-        self.base_color = base_color
-        super().__init__()
-        
-    def highlight(self, text):
-        text._text = [t.replace('\[', '[') for t in text._text]
-        if self.base_color is not None:
-            text.stylize(self.base_color)
-        highlighter = LoggingHighlighter()
-        highlighter.highlight(text)
-        return text
-
-
 class DmanFormatter(backend.Formatter):
-    def __init__(self, fmt=DEFAULT_LOGGING_FORMAT, datefmt=None, style='%', validate=True):
+    def __init__(
+        self, fmt=DEFAULT_LOGGING_FORMAT, datefmt=None, style="%", validate=True
+    ):
         """
         Initialize the formatter with specified format strings.
 
@@ -97,8 +57,8 @@ class Logger(backend.Logger):
             parent: "Logger",
             msg,
             label,
+            kind,
             owner,
-            width,
             args,
             kwargs,
             indent=DEFAULT_INDENT,
@@ -106,7 +66,7 @@ class Logger(backend.Logger):
             self.parent = parent
             self.msg = msg
             self.label = label
-            self.width = width
+            self.kind = kind
             self.owner = owner
             self.args = args
             self.kwargs = kwargs
@@ -114,7 +74,7 @@ class Logger(backend.Logger):
 
         def __enter__(self):
             self.parent.header(
-                self.msg, self.label, self.width, *self.args, **self.kwargs
+                self.msg, self.label, self.kind, *self.args, **self.kwargs
             )
             self.parent.indent(self.indent)
             self.parent.put(self.owner)
@@ -122,9 +82,7 @@ class Logger(backend.Logger):
 
         def __exit__(self, *_):
             self.parent.indent(-self.indent)
-            self.parent.header(
-                self.msg, f"end {self.label}", self.width, *self.args, **self.kwargs
-            )
+            self.parent.header(self.msg, f"/{self.label}", self.kind, *self.args, **self.kwargs)
             self.parent.pop()
 
     def __init__(self, name: str, level=backend.NOTSET) -> None:
@@ -144,71 +102,64 @@ class Logger(backend.Logger):
         self._indent = self._indent + indent if increment else indent
 
     def stack(self):
-        return "".join([a + "." for a in self._stack if a is not None])[:-1]
+        return "".join([a + "." for a in self._stack if a is not None])[:-1]        
 
     def pack(self, msg: str, label: str = None):
-        if label is not None:
-            msg = f"[{label}]" + ' ' + msg
         if 0 < self.level <= INFO:
+            if label is not None:
+                msg = f"[{label}]" + " " + msg
             return textwrap.indent(msg, prefix=" " * self._indent)
         stack = self.stack()
         if len(stack) == 0:
-            return msg
-        return f"[{stack}]" + ' ' + msg
+            return msg if label is None else f"[{label}]" + " " + msg
+        return f"[@{stack}" + ("" if label is None else f" | {label}") + "] " + msg
 
     def info(self, msg: str, label: str = None, *args, **kwargs):
-        super().info(self.pack(msg, label), *args, **kwargs, extra={'highlighter': ColorHighlighter()})
+        super().info(self.pack(msg, label), *args, **kwargs)
 
     def debug(self, msg, label=None, *args, **kwargs):
-        super().debug(
-            self.apply_color(
-                self.pack(msg, label),
-                colors.DEBUG
-            ), *args, **kwargs
-        )
+        super().debug(self.pack(msg, label), *args, **kwargs)
 
     def warning(self, msg, label=None, *args, **kwargs):
-        super().warning(
-            self.apply_color(
-                self.pack(msg, label),
-                colors.WARNING
-            ), *args, **kwargs
-        )
+        super().warning(self.pack(msg, label), *args, **kwargs)
 
     def error(self, msg, label=None, *args, **kwargs):
         super().error(self.pack(msg, label), *args, **kwargs)
 
     def emphasize(self, msg: str, label: str = None, *args, **kwargs):
-        super().info(self.pack(msg, label), *args, **kwargs, extra={'highlighter': ColorHighlighter('blue')})
+        super().info(self.pack(msg, label), *args, **kwargs)
 
     def io(self, msg: str, label: str = None, *args, **kwargs):
-        super().info(self.pack(msg, label), *args, **kwargs, extra={'highlighter': ColorHighlighter('cyan')})
+        super().info(self.pack(msg, label), *args, **kwargs)
 
-    def header(self, msg: str, label: str = None, width: int = None, *args, **kwargs):
-        if width is None:
-            width = self.header_width
+    def header(self, msg: str, label: str = None, kind: str = "type", *args, **kwargs):
         if label is not None:
-            label = label + " " * (width - len(label))
-            label = label.upper()
-            msg = label + msg
+            msg = f"<{label} {kind}={msg}>"
         self.info(msg, *args, **kwargs)
 
     def layer(
         self,
         msg: str,
         label: str = None,
+        kind: str = "type",
         owner: str = None,
-        width: int = None,
         *args,
         **kwargs,
     ):
-        return self._LogLayer(self, msg, label, owner, width, args=args, kwargs=kwargs)
+        return self._LogLayer(self, msg, label, kind, owner, args=args, kwargs=kwargs)
 
 
 _loggers: Dict[str, Logger] = {}
 
 
-def getLogger(name: str = None, *, level: int = None) -> Logger:
+def get_default_handler():
+    formatter = DmanFormatter(DEFAULT_LOGGING_FORMAT)
+    handler = backend.StreamHandler()
+    handler.setFormatter(formatter)
+    return handler
+
+
+def getLogger(name: str = None, *, level: int = None, bare: bool = False) -> Logger:
     """Returns logger used by dman."""
     global _loggers
 
@@ -229,27 +180,10 @@ def getLogger(name: str = None, *, level: int = None) -> Logger:
             logger._indent = 0
             logger._stack = []
             logger.setLevel(DEFAULT_LEVEL)
-
-            formatter = DmanFormatter(DEFAULT_LOGGING_FORMAT)
-            handler = RichHandler(
-                show_level=False, 
-                show_path=True, 
-                show_time=False, 
-                keywords=['SERIALIZING', 'DESERIALIZING', 'END'], 
-                markup=False, 
-                highlighter=LoggingHighlighter(),
-                console=Console(
-                    theme=Theme({
-                        'logging.keyword': 'purple', 
-                        'logging.label': 'bold green',
-                        'logging.str': 'green',
-                        'logging.path': 'green'
-                    })
-                )
-            )
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-            logger._stream = handler
+            if not bare:
+                handler = get_default_handler()
+                logger.addHandler(handler)
+                logger._stream = handler
             _loggers[name] = logger
 
     if level is not None:
@@ -259,6 +193,7 @@ def getLogger(name: str = None, *, level: int = None) -> Logger:
 
 def setLevel(level: int, *, name: str = LOGGER_NAME):
     return getLogger().setLevel(level)
+
 
 def info(msg: str, label: str = None, *args, **kwargs):
     return getLogger().info(msg, label, *args, **kwargs)
@@ -284,15 +219,157 @@ def io(msg: str, label: str = None, *args, **kwargs):
     return getLogger().io(msg, label, *args, **kwargs)
 
 
-def header(msg: str, label: str = None, width: int = None, *args, **kwargs):
-    return getLogger().header(msg, label, width, *args, **kwargs)
+def header(msg: str, label: str = None, *args, **kwargs):
+    return getLogger().header(msg, label, *args, **kwargs)
 
 
-def layer(
-    msg: str, label: str = None, owner: str = None, width: int = None, *args, **kwargs
-):
-    return getLogger().layer(msg, label, owner, width, *args, **kwargs)
+def layer(msg: str, label: str = None, kind: str = 'type', owner: str = None, *args, **kwargs):
+    return getLogger().layer(msg, label, kind, owner, *args, **kwargs)
 
 
 class LogTarget(backend.FileHandler):
-    ...
+    def __init__(self, filename = None):
+        self.tempdir = None
+
+
+if _rich_available:
+
+    log_theme = Theme(
+        {
+            "logging.label": "bright_green",
+            "logging.tag": "purple",
+            "logging.str": "green",
+            "logging.path": "green",
+            "logging.filename": "green",
+            "logging.error": "red",
+            "logging.fail": "red",
+            "logging.warning": "yellow",
+            "logging.warn": "yellow",
+            "logging.debug": "bright_black",
+            "logging.emphasis": "blue",
+            "logging.io": "bright_cyan",
+        }
+    )
+
+    class LoggingHighlighter(RegexHighlighter):
+        """Apply style to anything that looks like an email."""
+
+        base_style = "logging."
+        highlights = [
+            r"(?P<label>^ *\[(.*?)\])",
+            r"(?<![\\\w])(?P<str>b?'''.*?(?<!\\)'''|b?'.*?(?<!\\)'|b?\"\"\".*?(?<!\\)\"\"\"|b?\".*?(?<!\\)\")",
+            r"(?P<path>\B(/[-\w._:+]+)*\/)(?P<filename>[-\w._+]*)?",
+            r"(?P<tag>^ *<(.*?)>)",
+        ]
+
+    class MinimalHighlighter(RegexHighlighter):
+        """Apply style to anything that looks like an email."""
+
+        base_style = "logging."
+        highlights = [
+            r"(?P<label>^ *\[(.*?)\])",
+        ]
+
+    class ColorHighlighter(Highlighter):
+        def __init__(self, base_color=None, base=LoggingHighlighter) -> None:
+            self.base_color = base_color
+            self.base = base
+            super().__init__()
+
+        def highlight(self, text):
+            if self.base_color is not None:
+                text.stylize(self.base_color)
+            highlighter = self.base()
+            highlighter.highlight(text)
+            return text
+
+    def get_default_handler():
+        return RichHandler(
+            show_level=False,
+            show_path=False,
+            show_time=False,
+            markup=False,
+            highlighter=LoggingHighlighter(),
+            console=Console(theme=log_theme),
+        )
+
+    def _rich_info(self: Logger, msg: str, label: str = None, *args, **kwargs):
+        super(Logger, self).info(
+            self.pack(msg, label),
+            *args,
+            **kwargs,
+            extra={"highlighter": ColorHighlighter()},
+        )
+
+    def _rich_debug(self: Logger, msg, label=None, *args, **kwargs):
+        super(Logger, self).info(
+            self.pack(msg, label),
+            *args,
+            **kwargs,
+            extra={"highlighter": ColorHighlighter("logging.debug")},
+        )
+
+    def _rich_warning(self: Logger, msg, label=None, *args, **kwargs):
+        super(Logger, self).warning(
+            self.pack(msg, label),
+            *args,
+            **kwargs,
+            extra={
+                "highlighter": ColorHighlighter(
+                    "logging.warning", base=MinimalHighlighter
+                )
+            },
+        )
+
+    def _rich_error(self: Logger, msg, label=None, *args, **kwargs):
+        super(Logger, self).error(
+            self.pack(msg, label),
+            *args,
+            **kwargs,
+            extra={
+                "highlighter": ColorHighlighter(
+                    "logging.error", base=MinimalHighlighter
+                )
+            },
+        )
+
+    def _rich_emphasize(self: Logger, msg: str, label: str = None, *args, **kwargs):
+        super(Logger, self).info(
+            self.pack(msg, label),
+            *args,
+            **kwargs,
+            extra={"highlighter": ColorHighlighter("logging.emphasis")},
+        )
+
+    def _rich_io(self: Logger, msg: str, label: str = None, *args, **kwargs):
+        super(Logger, self).info(
+            self.pack(msg, label),
+            *args,
+            **kwargs,
+            extra={"highlighter": ColorHighlighter("logging.io")},
+        )
+
+    Logger.info = _rich_info
+    Logger.debug = _rich_debug
+    Logger.warning = _rich_warning
+    Logger.error = _rich_error
+    Logger.emphasize = _rich_emphasize
+    Logger.io = _rich_io
+
+
+if __name__ == "__main__":
+    setLevel(INFO)
+    emphasize("test", "label")
+    info("test", "label")
+    debug("test", "label")
+    error("test\n    test", "label")
+    warning("test", "label")
+    emphasize("test", "label")
+    io("test", "label")
+    with layer("Record", "serializing", owner="record"):
+        info("inner", "label")
+        warning("inner", "label")
+        with layer("Record", "serializing", owner="record"):
+            info("inner", "label")
+            warning("inner", "label")
+            warning("inner")
