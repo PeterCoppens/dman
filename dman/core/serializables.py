@@ -426,6 +426,9 @@ class BaseContext:
         if isinstance(ser, BaseInvalid):
             self._process_invalid('Invalid object encountered during serialization.', ser)
 
+        if sjson.atomic_type(ser):
+            return self._serialize__atomic(ser)
+
         if isinstance(ser, (list, tuple)):
             with self.logger.layer(f'list({len(ser)})', 'serializing', owner='list'):
                 return self._serialize__list(ser)
@@ -433,9 +436,6 @@ class BaseContext:
         if isinstance(ser, dict):
             with self.logger.layer(f'dict({len(ser)})', 'serializing', owner='dict'):
                 return self._serialize__dict(ser)
-
-        if sjson.atomic_type(ser):
-            return self._serialize__atomic(ser)
 
         with self.logger.layer(f'{type(ser).__name__}', 'serializing', owner=f'{type(ser).__name__}'):
             ser_type, content = self._serialize__object(ser)
@@ -505,21 +505,11 @@ class BaseContext:
         return ser
 
     def _serialize__list(self, ser: list):
-        res = []
-        for itm in ser:
-            if not sjson.atomic_type(itm):
-                itm = self.serialize(itm)
-            res.append(itm)
-        return res
+        return [itm if sjson.atomic_type(itm) else self.serialize(itm) for itm in ser]
 
     def _serialize__dict(self, ser: dict):
-        res = {}
-        for k, v in ser.items():
-            k = self.serialize(k)
-            res[k] = self.serialize(v)
-
-        return res
-
+        return {self.serialize(k): self.serialize(v) for k, v in ser.items()}
+        
     def _get_type_name(_, ser_type):
         name = getattr(ser_type, '__name__', None)
         if name is None:
@@ -647,16 +637,13 @@ class BaseContext:
         return serialized
 
     def _deserialize__list(self, cls, ser):
-        res: list = cls()
-        for itm in ser:
-            if not sjson.atomic_type(itm):
-                itm = self.deserialize(itm)
-            res.append(itm)
-        return res
+        res = [itm if sjson.atomic_type(itm) else self.deserialize(itm) for itm in ser]
+        if cls is list:
+            return res
+        return cls(res)
 
     def _deserialize__dict(self, cls, ser: dict):
-        res: dict = cls()
-        for k, v in ser.items():
-            k = self.deserialize(k)
-            res[k] = self.deserialize(v)
-        return res
+        res = {self.deserialize(k): self.deserialize(v) for k, v in ser.items()}
+        if cls is dict:
+            return res
+        return cls(res)
