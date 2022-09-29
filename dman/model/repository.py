@@ -49,6 +49,7 @@ def store(
     subdir: os.PathLike = "",
     cluster: bool = False,
     verbose: int = None,
+    validate: bool = None,
     gitignore: bool = True,
     generator: str = MISSING,
     base: os.PathLike = None,
@@ -77,6 +78,7 @@ def store(
     :param bool subdir: Specifies optional subdirectory in generator folder
     :param bool cluster: A subfolder ``key`` is automatically created when set to True.
     :param int verbose: Level of verbosity (1 == print log).
+    :param bool validate: Validate the serialization. Defaults to False or as specified by context.
     :param bool gitignore: Automatically adds a .gitignore file to ignore the created object when set to True.
     :param str generator: Specifies the generator that created the file.
     :param str base: Specifies the root folder (.dman by default).
@@ -100,15 +102,19 @@ def store(
         base=base,
     )
     ctx = context(dir)
-    target = os.path.join(dir, rec.config.name)
-    log.emphasize(
-        f'storing {type(obj).__name__} with key {key} to "{target}".', "store"
-    )
-    ser = serialize(rec, context=ctx)
-    log.emphasize(
-         f'finished storing {type(obj).__name__} with key {key} to "{target}".', "store"
-    )
-    return ser
+    if validate is not None:
+        ctx.validate = validate
+
+    with ctx.logger.layer(key, 'storing', kind='key'):
+        target = os.path.join(dir, rec.config.name)
+        ctx.logger.emphasize(
+            f'storing {type(obj).__name__} with key {key} to "{target}".', "store"
+        )
+        ser = serialize(rec, context=ctx)
+        ctx.logger.emphasize(
+            f'finished storing {type(obj).__name__} with key {key} to "{target}".', "store"
+        )
+        return ser
 
 
 def save(
@@ -117,7 +123,7 @@ def save(
     *,
     subdir: os.PathLike = "",
     cluster: bool = True,
-    verbose: int = False,
+    verbose: int = None,
     validate: bool = None,
     gitignore: bool = True,
     generator: str = MISSING,
@@ -175,11 +181,11 @@ def save(
         
     with ctx.logger.layer(key, 'saving', kind='key'):
         target = os.path.join(dir, key + ".json")
-        log.emphasize(f'saving {type(obj).__name__} with key "{key}" to "{normalize_path(target)}".', "save")
+        ctx.logger.emphasize(f'saving {type(obj).__name__} with key "{key}" to "{normalize_path(target)}".', "save")
         ser = serialize(obj, context=ctx)
         with open(target, "w") as f:
             sjson.dump(ser, f, indent=4)
-        log.emphasize(
+        ctx.logger.emphasize(
             f'finished saving {type(obj).__name__} with key "{key}" to "{normalize_path(target)}".', "save"
         )
         return ser
@@ -192,7 +198,7 @@ def load(
     default_factory=MISSING,
     subdir: os.PathLike = "",
     cluster: bool = True,
-    verbose: int = False,
+    verbose: int = None,
     validate: bool = None,
     gitignore: bool = True,
     generator: str = MISSING,
@@ -428,6 +434,12 @@ class LogTarget(log.backend.FileHandler):
             self.tempdir = None
             baseFilename = filename
         super().__init__(baseFilename)
+    
+    def transfer(self, src: str, dst: str):
+        with open(dst, 'ab') as wfd:
+            with open(src, 'rb') as fd:
+                shutil.copyfileobj(fd, wfd)
+
 
     def __write__(self, path: os.PathLike, context: Context):
         if os.path.abspath(self.baseFilename) == os.path.abspath(path):
@@ -441,9 +453,10 @@ class LogTarget(log.backend.FileHandler):
         # copy original log file (or move if temporary)
         if os.path.exists(self.baseFilename):
             if self.tempdir is not None:
-                shutil.move(self.baseFilename, path)
+                self.transfer(self.baseFilename, path)
+                os.remove(self.baseFilename)
             else:
-                shutil.copy(self.baseFilename, path)
+                self.transfer(self.baseFilename, path)
         
         # set stream to target file
         self.baseFilename = path

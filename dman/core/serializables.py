@@ -4,7 +4,7 @@ from dataclasses import MISSING, dataclass, field, fields, is_dataclass, asdict
 import re
 import sys
 import traceback
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Sequence, Type
 
 
 from dman.utils import sjson
@@ -407,6 +407,15 @@ def validate(obj, msg: str = 'Could not validate object'):
         return
     raise ValidationError(msg, str(obj))
 
+
+def compare_type(base: Type, check: Sequence[Type]):
+    if not isinstance(check, Sequence):
+        check = (check,)
+    if base in check:
+        return True
+    base = getattr(base, '__origin__', MISSING)
+    return base is not MISSING and base in check
+
  
 class BaseContext: 
     """
@@ -416,11 +425,11 @@ class BaseContext:
     def __init__(self, validate: bool = None, logger: log.Logger = None):
         self.logger = log.getLogger(logger)
         self.validate = self.VALIDATE if validate is None else validate
-        self._invalid = False
     
     def _process_invalid(self, msg: str, obj: BaseInvalid):
         self.logger.warning(msg + '\n' + str(obj), 'context')
-        self._invalid = True
+        if self.validate:
+            raise ValidationError(msg + '\n' + f'[{self.logger.stack()}] ' + str(obj))
 
     def serialize(self, ser, content_only: bool = False):         
         if isinstance(ser, BaseInvalid):
@@ -445,9 +454,6 @@ class BaseContext:
         if content_only:
             return content
 
-        if self.validate and self._invalid:
-            self._invalid = False
-            raise ValidationError(f'Failed to serialize {ser}.')
         return {SER_TYPE: ser_type, SER_CONTENT: content}
     
     def _serialize__object(self, ser):
@@ -493,7 +499,9 @@ class BaseContext:
         
         try:
             content = standard_ser_method()
-        except Exception:
+        except Exception as e:
+            if isinstance(e, ValidationError):
+                raise e
             return None, ExcUnserializable(
                 type=type(ser), 
                 info='Error during serialization:'
@@ -518,9 +526,8 @@ class BaseContext:
     
     def deserialize(self, serialized, ser_type=None):
         res = self._deserialize_inner(serialized, ser_type)
-        if self.validate and self._invalid:
-            self._invalid = False
-            raise ValidationError(f'Failed to deserialize.')
+        if isinstance(res, BaseInvalid):
+            self._process_invalid('An error occured during deserialization:', res)
         return res
 
     def _deserialize_inner(self, serialized, ser_type=None):            
@@ -536,12 +543,10 @@ class BaseContext:
                 return self._deserialize__atomic(type(serialized), serialized)
 
             if not isinstance(serialized, dict):
-                res =  Undeserializable(type=ser_type,
+                return Undeserializable(type=ser_type,
                     info=f'Unexpected type for serialized: {type(serialized)}. Expected either list, tuple, atomic type or dict.',
                     serialized=serialized
                 )
-                self._process_invalid('An error occurred during deserialization:', res)
-                return res
 
             ser_type = serialized.get(SER_TYPE, MISSING)
             if ser_type is MISSING:
@@ -551,37 +556,33 @@ class BaseContext:
                 serialized = serialized.get(SER_CONTENT, {})
                 ser_type_get = ser_str2type(ser_type)
                 if ser_type_get is None:
-                    res = Undeserializable(type=ser_type_get, 
+                    return Undeserializable(type=ser_type_get, 
                         info=f'Unregistered type stored in serialized.', 
                         serialized=serialized,
                         ser_type=ser_type
                     )
-                    self._process_invalid('An error occurred during deserialization:', res)
-                    return res
 
                 _ser_name = self._get_type_name(ser_type_get)
                 with self.logger.layer(f'{_ser_name}', 'deserializing', owner=f'{_ser_name}'):
                     return self._deserialize__object(serialized, ser_type_get)
 
-        if ser_type is dict:
+        if compare_type(ser_type, dict):
             with self.logger.layer(f'dict({len(serialized)})', 'deserializing', owner='dict'):
                 return self._deserialize__dict(dict, serialized)
 
-        if ser_type in (list, tuple):
+        if compare_type(ser_type, (list, tuple)):
             with self.logger.layer(f'list({len(serialized)})', 'deserializing', owner='list'):
                 return self._deserialize__list(list, serialized)
 
         if isinstance(ser_type, str) and type(serialized) is not str:
             ser_type_get = ser_str2type(ser_type)
             if ser_type_get is None:
-                res = Undeserializable(
+                return Undeserializable(
                     type=ser_type_get, 
                     info=f'Unregistered type provided as argument.', 
                     serialized=serialized,
                     ser_type=ser_type
                 )
-                self._process_invalid('An error occurred during deserialization:', res)
-                return res
 
             _ser_name = self._get_type_name(ser_type_get)
             with self.logger.layer(f'{_ser_name}', 'deserializing', owner=f'{_ser_name}'):
@@ -619,7 +620,9 @@ class BaseContext:
                     serialized=serialized,
                     ser_type=expected
                 )
-        except Exception:
+        except Exception as e:
+            if isinstance(e, ValidationError):
+                raise e
             return ExcUndeserializable(
                 type=expected, 
                 info=f'Exception encountered while deserializing {expected}:', 

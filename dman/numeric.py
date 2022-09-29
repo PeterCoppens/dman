@@ -26,6 +26,8 @@ class barray(np.ndarray):
 @serializable(name="_num__sarray")
 class sarray(np.ndarray):
     def __serialize__(self):
+        if self.ndim == 0:
+            return sjson.dumps(float(self))
         if self.size == 0:
             return {"shape": sjson.dumps(self.shape)}
         elif self.ndim == 1:
@@ -36,8 +38,10 @@ class sarray(np.ndarray):
     def __deserialize__(cls, obj: Union[list, str]):
         if isinstance(obj, str):
             return np.asarray(sjson.loads(obj)).view(cls)
-        elif isinstance(obj, dict):
+        if isinstance(obj, dict):
             return np.zeros(sjson.loads(obj.get("shape")))
+        if isinstance(obj, (float, int)):
+            return np.asarray(obj).view(cls)
         return np.asarray([sarray.__deserialize__(a) for a in obj]).view(cls)
 
 

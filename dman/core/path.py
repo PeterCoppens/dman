@@ -56,12 +56,9 @@ def script_label(base: os.PathLike):
 
 def normalize_path(path: str):
     try:
-        root = Path(os.getcwd())
-        # root = Path(get_root_path()).parent
-        return os.path.join(
-            '.',
-            str(Path(path).resolve().relative_to(root))
-        )
+        # root = Path(os.getcwd())
+        root = Path(get_root_path()).parent
+        return str(Path(path).resolve().relative_to(root))
     except RootError:
         return path
     except ValueError:

@@ -22,6 +22,7 @@ If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_com
    gallery/patterns/common.rst
    gallery/patterns/index.rst
    gallery/fundamentals/index.rst
+   usage/serialization.rst
    .. usage/errors.rst
    .. api/serializables.rst
 

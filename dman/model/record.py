@@ -4,7 +4,7 @@ from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any
 import uuid
 from dman.core import log
-from dman.core.serializables import SER_CONTENT, SER_TYPE, BaseInvalid, deserialize, is_serializable, serializable, BaseContext, serialize
+from dman.core.serializables import SER_CONTENT, SER_TYPE, BaseInvalid, deserialize, is_serializable, serializable, BaseContext, serialize, ValidationError
 from dman.core.serializables import ExcUndeserializable, ExcUnserializable, Unserializable, Undeserializable
 from dman.utils.smartdataclasses import AUTO, overrideable
 from dman.core.storables import is_storable, storable_type, read, write
@@ -87,7 +87,9 @@ class Context(BaseContext):
             self.logger.io(f'writing to file: "{normalize_path(path)}".', 'context')
             write(storable, path, self)
             return None
-        except Exception:
+        except Exception as e:
+            if isinstance(e, ValidationError):
+                raise e
             res = ExcUnWritable(
                 type=type(storable), info='Exception encountered while writing.'
             )
@@ -103,7 +105,9 @@ class Context(BaseContext):
             res = NoFile(type=sto_type, info='Missing File.')
             self._process_invalid('An error occurred while writing.', res)
             return res
-        except Exception:
+        except Exception as e:
+            if isinstance(e, ValidationError):
+                raise e
             res = ExcUnReadable(
                 type=sto_type, info='Exception encountered while reading.'
             )
@@ -171,7 +175,6 @@ class Context(BaseContext):
         res = self.__class__(os.path.join(self.directory, other), parent=self)
         self.children[other] = res
         res.validate = self.validate
-        res._invalid = self._invalid
         return res
 
 
@@ -283,6 +286,10 @@ class Record:
         return not isinstance(self._content, NoFile)
 
     @property
+    def target(self):
+        return self.config.target
+
+    @property
     def config(self):
         if self._evaluated:
             return self._config
@@ -319,10 +326,10 @@ class Record:
         if self.preload:
             preload_str=', preload'
         if content is None:
-            return f'Record(None, target={self.config.target}{preload_str})'
+            return f'Record(None, target={self.target}{preload_str})'
         if is_unloaded(content):
-            return f'Record({content}, target={self.config.target}{preload_str})'
-        return f'Record({storable_type(content)}, target={self.config.target}{preload_str})'
+            return f'Record({content}, target={self.target}{preload_str})'
+        return f'Record({storable_type(content)}, target={self.target}{preload_str})'
     
     @staticmethod
     def __parse(config: RecordConfig, context: Context):

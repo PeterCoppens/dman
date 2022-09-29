@@ -39,6 +39,13 @@ class barray(np.ndarray):
             return res.view(cls)
 
 # %%
+# .. note::
+#       
+#       It is usually best to have a ``storable`` write to just one file.
+#       Whenever you require multiple classes then it is usually better 
+#       to wrap them in a ``serializable`` class like the models 
+#       provided by ``dman`` (e.g. ``mlist``, ``mdict``, ``modelclass``). 
+#
 # The ``barray`` class is also provided in ``dman.numeric`` which can 
 # be imported when ``numpy`` is installed. We can use it as follows:
 

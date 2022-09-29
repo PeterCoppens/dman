@@ -22,7 +22,7 @@ from rich.json import JSON
 from rich.syntax import Syntax
 from rich.pretty import pprint
 
-from dman.core.path import get_root_path
+from dman.core.path import get_root_path, normalize_path
 from dman.core.serializables import BaseContext, serialize
 from dman import sjson
 
@@ -132,14 +132,18 @@ class TaskStack:
     def print(self, msg: str):
         self.progress.print(msg)
     
-    def update(self, task: int, **kwargs):
+    def update(self, task: int, description: str = None, **kwargs):
         t = self.lookup[task]
-        d, _, _, default = self.registered[t]
-        fields = dict.copy(default)
-        fields.update(kwargs)
+
+        if description is None:
+            d, _, _, default = self.registered[t]
+            fields = dict.copy(default)
+            fields.update(kwargs)
+            description = str.format(d, **fields)
+
         self.progress.update(
             self.tasks[t], 
-            description=str.format(d, **fields)
+            description=description
         )        
 
 
@@ -164,7 +168,7 @@ def walk_directory(
     *,
     show_content: bool = False,
     tree: Tree = None,
-    normalize: bool = False,
+    normalize: bool = True,
     show_hidden: bool = False,
     console: Console = None,
 ) -> None:
@@ -181,7 +185,7 @@ def walk_directory(
     if is_root:
         name = directory
         if normalize:
-            name = os.path.relpath(name, os.path.join(get_root_path(), ".."))
+            name = normalize_path(name)
         tree = Tree(
             f":open_file_folder: [link file://{directory}]{name}",
             guide_style="bold bright_blue",

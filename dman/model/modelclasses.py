@@ -762,13 +762,15 @@ class _bruns(_blist):
         res.store_subdir = serialized.get('store_subdir', True)
         return res
 
-    def record(self, value, idx: int = None, /, *, suffix: str = AUTO, subdir: os.PathLike = '', preload: str = False):
+    def record(self, value, idx: int = None, /, *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = '', preload: str = False):
         """
         Record a storable into this list.
 
         :param value:           The value to store.
         :param int:             The index at which to store it (if not specified, the value is appended).
+        :param str stem:        The stem of a file.
         :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
+        :param str name:        The full name of the file.
         :param str subdir:      The subdirectory in which to store te file. 
         :param bool preload:    When ``True`` the file will be loaded during deserialization.
 
@@ -783,7 +785,9 @@ class _bruns(_blist):
         if is_storable(value):
             rec: Record = self.store.__getitem__(idx)
             cfg = recordconfig(
+                stem=stem,
                 suffix=suffix, 
+                name=name,
                 subdir=os.path.join(rec._config.subdir, subdir)
             )
             rec._config = rec._config << cfg
@@ -839,5 +843,5 @@ def mruns_factory(stem: str = 'run', subdir: os.PathLike = '', preload: bool = F
 
 def smruns_factory(stem: str = None, subdir: os.PathLike = '', preload: bool = False, store_subdir: bool = True):
     def factory():
-        return mruns(stem=stem, subdir=subdir, preload=preload, store_subdir=store_subdir)
+        return smruns(stem=stem, subdir=subdir, preload=preload, store_subdir=store_subdir)
     return factory
