@@ -4,3 +4,4 @@ dist/
 **/__pycache__/*
 dman.egg-info/
 studies/
+.vscode/launch.json
