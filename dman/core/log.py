@@ -1,5 +1,7 @@
+from dataclasses import MISSING
 from enum import Enum
 import logging as backend
+from tarfile import DEFAULT_FORMAT
 from tempfile import TemporaryDirectory
 import textwrap
 from typing import Dict
@@ -22,6 +24,7 @@ try:
     _rich_available = True
 except ImportError:
     _rich_available = False
+
 
 
 class DmanFormatter(backend.Formatter):
@@ -85,7 +88,7 @@ class Logger(backend.Logger):
             self.parent.header(self.msg, f"/{self.label}", self.kind, *self.args, **self.kwargs)
             self.parent.pop()
 
-    def __init__(self, name: str, level=backend.NOTSET) -> None:
+    def __init__(self, name: str, level=DEFAULT_LEVEL) -> None:
         super().__init__(name, level)
         self._indent = 0
         self.header_width = DEFAULT_HEADER_WIDTH
@@ -105,7 +108,7 @@ class Logger(backend.Logger):
         return "".join([a + "." for a in self._stack if a is not None])[:-1]        
 
     def pack(self, msg: str, label: str = None):
-        if 0 < self.level <= INFO:
+        if self.level <= INFO:
             if label is not None:
                 msg = f"[{label}]" + " " + msg
             return textwrap.indent(msg, prefix=" " * self._indent)
@@ -148,78 +151,147 @@ class Logger(backend.Logger):
     ):
         return self._LogLayer(self, msg, label, kind, owner, args=args, kwargs=kwargs)
 
+    def setLevel(self, level):
+        """
+        Set the logging level of this logger.  level must be an int or a str.
+        """
+        super().setLevel(level)
+        if _rich_available:
+            for h in self.handlers:
+                if isinstance(h, RichHandler):
+                    h.setLevel(level)
 
-_loggers: Dict[str, Logger] = {}
+
+backend.setLoggerClass(Logger)
+root = backend.getLogger(name=LOGGER_NAME)
+root.setLevel(level=WARNING)
 
 
-def get_default_handler():
-    formatter = DmanFormatter(DEFAULT_LOGGING_FORMAT)
+
+def get_default_handler(format: str = DEFAULT_LOGGING_FORMAT):
+    formatter = DmanFormatter(format)
     handler = backend.StreamHandler()
     handler.setFormatter(formatter)
     return handler
 
 
-def getLogger(name: str = None, *, level: int = None, bare: bool = False) -> Logger:
-    """Returns logger used by dman."""
-    global _loggers
+def basicConfig(**kwargs):
+    global root
+    backend._acquireLock()
+    try:
+        force = kwargs.pop('force', False)
+        if force:
+            for h in root.handlers[:]:
+                root.removeHandler(h)
+                h.close()
+        if len(root.handlers) == 0:
+            handlers = kwargs.pop("handlers", None)
+            if handlers is None:
+                if "stream" in kwargs and "filename" in kwargs:
+                    raise ValueError("'stream' and 'filename' should not be "
+                                     "specified together")
+            else:
+                if "stream" in kwargs or "filename" in kwargs:
+                    raise ValueError("'stream' or 'filename' should not be "
+                                     "specified together with 'handlers'")
+            if handlers is None:
+                filename = kwargs.pop("filename", None)
+                mode = kwargs.pop("filemode", 'a')
+                if filename:
+                    h = backend.FileHandler(filename, mode)
+                else:
+                    stream = kwargs.pop("stream", MISSING)
+                    if stream is MISSING:
+                        h = get_default_handler()
+                    else:
+                        h = backend.StreamHandler(stream)
+                handlers = [h]
+            fmt = DmanFormatter()
+            for h in handlers:
+                if h.formatter is None:
+                    h.setFormatter(fmt)
+                root.addHandler(h)
+            level = kwargs.pop("level", None)
+            if level is not None:
+                root.setLevel(level)
+            if kwargs:
+                keys = ', '.join(kwargs.keys())
+                raise ValueError('Unrecognised argument(s): %s' % keys)
+    finally:
+        backend._releaseLock()
 
+
+# backend.basicConfig(**kwargs)
+# logger = getLogger()
+# handler = get_default_handler(
+#     format=kwargs.get('format', DEFAULT_LOGGING_FORMAT)
+# )
+# logger.addHandler(handler)
+# logger._stream = handler
+
+
+
+
+def getLogger(name: str = LOGGER_NAME, *, level=None):
     if name is None:
         name = LOGGER_NAME
 
-    if isinstance(name, backend.Logger):
-        name = name.name
+    if name == LOGGER_NAME:
+        if len(root.handlers) == 0:
+            basicConfig()
 
     if isinstance(name, Logger):
-        logger = name
-    else:
-        logger = _loggers.get(name, None)
-        if logger is None:
-            logger: Logger = backend.getLogger(name)
-            logger.__class__ = Logger
-            logger.header_width = DEFAULT_HEADER_WIDTH
-            logger._indent = 0
-            logger._stack = []
-            logger.setLevel(DEFAULT_LEVEL)
-            if not bare:
-                handler = get_default_handler()
-                logger.addHandler(handler)
-                logger._stream = handler
-            _loggers[name] = logger
-
+        name = name.name
+    logger: Logger = backend.getLogger(name)
+    if level == True:
+        level = INFO
+    if level == False:
+        level = DEFAULT_LEVEL
     if level is not None:
         logger.setLevel(level)
+    
     return logger
 
 
-def setLevel(level: int, *, name: str = LOGGER_NAME):
-    return getLogger().setLevel(level)
-
-
 def info(msg: str, label: str = None, *args, **kwargs):
+    if len(root.handlers) == 0:
+        basicConfig()
     return getLogger().info(msg, label, *args, **kwargs)
 
 
 def debug(msg, label=None, *args, **kwargs):
+    if len(root.handlers) == 0:
+        basicConfig()
     return getLogger().debug(msg, label, *args, **kwargs)
 
 
 def warning(msg, label=None, *args, **kwargs):
+    if len(root.handlers) == 0:
+        basicConfig()
     return getLogger().warning(msg, label, *args, **kwargs)
 
 
 def error(msg, label=None, *args, **kwargs):
+    if len(root.handlers) == 0:
+        basicConfig()
     return getLogger().error(msg, label, *args, **kwargs)
 
 
 def emphasize(msg: str, label: str = None, *args, **kwargs):
+    if len(root.handlers) == 0:
+        basicConfig()
     return getLogger().emphasize(msg, label, *args, **kwargs)
 
 
 def io(msg: str, label: str = None, *args, **kwargs):
+    if len(root.handlers) == 0:
+        basicConfig()
     return getLogger().io(msg, label, *args, **kwargs)
 
 
 def header(msg: str, label: str = None, *args, **kwargs):
+    if len(root.handlers) == 0:
+        basicConfig()
     return getLogger().header(msg, label, *args, **kwargs)
 
 
@@ -233,7 +305,6 @@ class LogTarget(backend.FileHandler):
 
 
 if _rich_available:
-
     log_theme = Theme(
         {
             "logging.label": "bright_green",
@@ -283,8 +354,9 @@ if _rich_available:
             highlighter.highlight(text)
             return text
 
-    def get_default_handler():
+    def get_default_handler(level=DEFAULT_LEVEL):
         return RichHandler(
+            level=level,
             show_level=False,
             show_path=False,
             show_time=False,
@@ -358,7 +430,7 @@ if _rich_available:
 
 
 if __name__ == "__main__":
-    setLevel(INFO)
+    basicConfig(level=INFO)
     emphasize("test", "label")
     info("test", "label")
     debug("test", "label")

@@ -11,13 +11,13 @@ from dman.model.record import Record, Context, is_unloaded
 
 @storable(name='test')
 @dataclass
-class Test:
+class Base:
     value: str
 
 
 @storable(name='test-ext')
 @dataclass
-class TestExt:
+class Ext:
     __ext__ = '.requested'
     value: str
 
@@ -45,7 +45,7 @@ def assert_equals(rec: Record, other: Record):
 
 
 def test_auto_config():
-    test = Test(value='hello world!')
+    test = Base(value='hello world!')
     encountered_names = []
     for i in range(100):
         rec = record(test)
@@ -55,7 +55,7 @@ def test_auto_config():
 
 
 def test_suffix_config():
-    test = Test(value='hello world!')
+    test = Base(value='hello world!')
     rec = record(test, suffix='.txt')
     _, suffix = rec.config.name.split('.')
     assert(suffix == 'txt')
@@ -63,7 +63,7 @@ def test_suffix_config():
 
 
 def test_stem_suffix_config():
-    test = Test(value='hello world!')
+    test = Base(value='hello world!')
     rec = record(test, stem='teststr', suffix='.testsuffix')
     stem, suffix = rec.config.name.split('.')
     assert(stem == 'teststr' and suffix == 'testsuffix')
@@ -71,7 +71,7 @@ def test_stem_suffix_config():
 
 
 def test_name_config():
-    test = Test(value='hello world!')
+    test = Base(value='hello world!')
     rec = record(test, name='testname.other')
     stem, suffix = rec.config.name.split('.')
     assert(stem == 'testname' and suffix == 'other')
@@ -79,7 +79,7 @@ def test_name_config():
 
 
 def test_ext_stem_config():
-    testext = TestExt(value='hello world!.json')
+    testext = Ext(value='hello world!.json')
     rec = record(testext, stem='morename') 
     stem, suffix = rec.config.name.split('.')
     assert(stem == 'morename' and suffix == 'requested')
@@ -87,14 +87,14 @@ def test_ext_stem_config():
 
 
 def test_ext_name_config():
-    testext = TestExt(value='hello world!.json')
+    testext = Ext(value='hello world!.json')
     rec = record(testext, name='morename')
     assert(len(rec.config.name.split('.')) == 1)
     assert_creates_file(rec)
 
 
 def test_ext_stem_suffix_config():
-    testext = TestExt(value='hello world!.json')
+    testext = Ext(value='hello world!.json')
     rec = record(testext, stem='morename', suffix='.somesuffix')
     stem, suffix = rec.config.name.split('.')
     assert(stem == 'morename' and suffix == 'somesuffix')
@@ -102,7 +102,7 @@ def test_ext_stem_suffix_config():
 
 
 def test_re_serialize():
-    test = Test(value='hello world!')
+    test = Base(value='hello world!')
     rec = record(test, preload=True)
     with TemporaryDirectory() as base:
         res = recreate(rec, context(base))
@@ -111,7 +111,7 @@ def test_re_serialize():
 
 
 def test_no_preload():
-    test = Test(value='hello world!')
+    test = Base(value='hello world!')
     rec = record(test)
     with TemporaryDirectory() as base:
         res = recreate(rec, context(base))
@@ -128,7 +128,7 @@ def test_no_preload():
 
 
 def test_exists():
-    test = Test(value='hello world!')
+    test = Base(value='hello world!')
     rec = record(test, name='temp.txt', preload=False)
     with TemporaryDirectory() as base:
         ctx = context(base)
@@ -141,7 +141,7 @@ def test_exists():
 
 
 def test_move():
-    test = Test(value='hello world!')
+    test = Base(value='hello world!')
     rec = record(test, name='temp.txt')
     with TemporaryDirectory() as base:
         ctx = context(os.path.join(base, 'first'))

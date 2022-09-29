@@ -6,7 +6,7 @@ from enum import Enum
 from dman.core import log
 
 if __name__ == '__main__':
-    log.setLevel(log.INFO)
+    log.basicConfig(level=log.INFO)
     @serializable
     class Mode(Enum):
         RED = 1

@@ -17,11 +17,12 @@ def default():
 
 
 def main():
-    with dman.track("log", default_factory=default, verbose=True) as content:
+    # dman.log.basicConfig(level=dman.log.WARNING)
+    with dman.track("log", default_factory=default, verbose=False) as content:
         content: Content = content
         path = dman.get_directory("log")
         dman.remove(content, context=dman.context(path))
-        logger = dman.log.getLogger(None, level=dman.log.INFO)
+        logger = dman.log.getLogger(level=dman.log.INFO)
         logger.addHandler(content.log)
         dman.log.info("test")
     dman.log.info("more tests ...")
@@ -34,7 +35,7 @@ def main():
 
     # tail log target
     target = dman.log.LogTarget()
-    logger = dman.log.getLogger("trailing", level=dman.log.INFO, bare=True)
+    logger = dman.log.getLogger("trailing", level=dman.log.INFO)
     logger.addHandler(target)
     logger.info("test")
 
