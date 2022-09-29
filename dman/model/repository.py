@@ -1,6 +1,6 @@
+from contextlib import contextmanager
 from dataclasses import MISSING
 import os
-from typing import Type
 from tempfile import TemporaryDirectory
 from uuid import uuid4
 import shutil
@@ -10,37 +10,24 @@ from dman.model.record import Context, record
 from dman.core.serializables import deserialize, is_serializable, serialize
 from dman.core.storables import is_storable
 from dman.utils import sjson
-from dman.core.path import prepare, normalize_path
+from dman.core.path import prepare, normalize_path, logger_context
 from dman.core.storables import storable
 
 import signal
 
 
-class _SafeContext:
-    def __init__(self):
-        self.values = None
-        self.original = None
-
-    def handler(self, signum, frame):
-        self.values = (signum, frame)
-    
-    def __enter__(self):
-        self.original = signal.getsignal(signal.SIGINT)
-        signal.signal(signal.SIGINT, self.handler)
-    
-    def __exit__(self, *_):
-        signal.signal(signal.SIGINT, self.original)
-        self.original = None
-
-        if self.values is not None:
-            raise KeyboardInterrupt()
-            
-        self.values = None
-
-
+@contextmanager
 def uninterrupted():
-    return _SafeContext()
-
+    values = None
+    def handler(signum, frame):
+        global values
+        values = (signum, frame)
+    original = signal.getsignal(signal.SIGINT)
+    signal.signal(signal.SIGINT, handler)
+    yield
+    signal.signal(signal.SIGINT, original)
+    if values is not None:
+        raise KeyboardInterrupt()
 
 def store(
     key: str,
@@ -52,8 +39,7 @@ def store(
     validate: bool = None,
     gitignore: bool = True,
     generator: str = MISSING,
-    base: os.PathLike = None,
-    context: Type[Context] = Context,
+    base: os.PathLike = None
 ):
     """
     Save a storable object.
@@ -82,7 +68,6 @@ def store(
     :param bool gitignore: Automatically adds a .gitignore file to ignore the created object when set to True.
     :param str generator: Specifies the generator that created the file.
     :param str base: Specifies the root folder (.dman by default).
-    :param Type[Context] context: Serialization context.
 
     :raises RuntimeError: if either generator or base is not provided and no .dman folder exists.
     :raises ValueError: if the provided object is not storable
@@ -90,31 +75,30 @@ def store(
     if not is_storable(obj):
         raise ValueError("Can only store storable objects.")
 
-    rec = record(obj, stem=key)
-    dir = prepare(
-        key,
-        suffix=rec.config.suffix,
-        subdir=subdir,
-        cluster=cluster,
-        verbose=verbose,
-        gitignore=gitignore,
-        generator=generator,
-        base=base,
-    )
-    ctx = context(dir)
-    if validate is not None:
-        ctx.validate = validate
-
-    with ctx.logger.layer(key, 'storing', kind='key'):
-        target = os.path.join(dir, rec.config.name)
-        ctx.logger.emphasize(
-            f'storing {type(obj).__name__} with key {key} to "{target}".', "store"
+    with logger_context(verbose):
+        rec = record(obj, stem=key)
+        dir = prepare(
+            key,
+            suffix=rec.config.suffix,
+            subdir=subdir,
+            cluster=cluster,
+            gitignore=gitignore,
+            generator=generator,
+            base=base,
         )
-        ser = serialize(rec, context=ctx)
-        ctx.logger.emphasize(
-            f'finished storing {type(obj).__name__} with key {key} to "{target}".', "store"
-        )
-        return ser
+        ctx = Context(dir)
+        if validate is not None:
+            ctx.validate = validate
+        with log.layer(key, 'storing', prefix='key'):
+            target = os.path.join(dir, rec.config.name)
+            log.emphasize(
+                f'storing {type(obj).__name__} with key {key} to "{target}".', "store"
+            )
+            ser = serialize(rec, context=ctx)
+            log.emphasize(
+                f'finished storing {type(obj).__name__} with key {key} to "{target}".', "store"
+            )
+            return ser
 
 
 def save(
@@ -127,8 +111,7 @@ def save(
     validate: bool = None,
     gitignore: bool = True,
     generator: str = MISSING,
-    base: os.PathLike = None,
-    context: Type[Context] = Context,
+    base: os.PathLike = None
 ):
     """
     Save a serializable object to a file.
@@ -157,7 +140,6 @@ def save(
     :param bool gitignore: Automatically adds a .gitignore file to ignore the created object when set to True.
     :param str generator: Specifies the generator that created the file.
     :param str base: Specifies the root folder (.dman by default).
-    :param Type[Context] context: Serialization context.
 
     :raises RuntimeError: if either generator or base is not provided and no .dman folder exists.
     :raises ValueError: if the provided object is not serializable
@@ -165,30 +147,30 @@ def save(
     if not is_serializable(obj):
         raise ValueError("Can only save serializable objects.")
 
-    dir = prepare(
-        key,
-        suffix=".json",
-        subdir=subdir,
-        cluster=cluster,
-        verbose=verbose,
-        gitignore=gitignore,
-        generator=generator,
-        base=base,
-    )
-    ctx = context(dir)
-    if validate is not None:
-        ctx.validate = validate
-        
-    with ctx.logger.layer(key, 'saving', kind='key'):
-        target = os.path.join(dir, key + ".json")
-        ctx.logger.emphasize(f'saving {type(obj).__name__} with key "{key}" to "{normalize_path(target)}".', "save")
-        ser = serialize(obj, context=ctx)
-        with open(target, "w") as f:
-            sjson.dump(ser, f, indent=4)
-        ctx.logger.emphasize(
-            f'finished saving {type(obj).__name__} with key "{key}" to "{normalize_path(target)}".', "save"
+    with logger_context(verbose):
+        dir = prepare(
+            key,
+            suffix=".json",
+            subdir=subdir,
+            cluster=cluster,
+            gitignore=gitignore,
+            generator=generator,
+            base=base,
         )
-        return ser
+        ctx = Context(dir)
+        if validate is not None:
+            ctx.validate = validate
+            
+        with log.layer(key, 'saving', prefix='key'):
+            target = os.path.join(dir, key + ".json")
+            log.emphasize(f'saving {type(obj).__name__} with key "{key}" to "{normalize_path(target)}".', "save")
+            ser = serialize(obj, context=ctx)
+            with open(target, "w") as f:
+                sjson.dump(ser, f, indent=4)
+            log.emphasize(
+                f'finished saving {type(obj).__name__} with key "{key}" to "{normalize_path(target)}".', "save"
+            )
+            return ser
 
 
 def load(
@@ -202,8 +184,7 @@ def load(
     validate: bool = None,
     gitignore: bool = True,
     generator: str = MISSING,
-    base: os.PathLike = None,
-    context: Type[Context] = Context,
+    base: os.PathLike = None
 ):
     """
     Load a serializable or storable object from a file.
@@ -241,43 +222,43 @@ def load(
     :param bool gitignore: Automatically adds a .gitignore file to ignore the created object when set to True.
     :param str generator: Specifies the generator that created the file.
     :param str base: Specifies the root folder (.dman by default).
-    :param Type[Context] context: Serialization context.
 
     :returns: Loaded object or default value if file does not exist.
 
     :raises RuntimeError: if either generator or base is not provided and no .dman folder exists.
     """
-    dir = prepare(
-        key,
-        suffix=".json",
-        subdir=subdir,
-        cluster=cluster,
-        verbose=verbose,
-        gitignore=gitignore,
-        generator=generator,
-        base=base,
-    )
-    ctx = context(dir)
-    if validate is not None:
-        ctx.validate = validate
-    target = os.path.join(dir, key + ".json")
+    with logger_context(verbose):
+        dir = prepare(
+            key,
+            suffix=".json",
+            subdir=subdir,
+            cluster=cluster,
+            gitignore=gitignore,
+            generator=generator,
+            base=base,
+        )
+        ctx = Context(dir)
+        if validate is not None:
+            ctx.validate = validate
+        target = os.path.join(dir, key + ".json")
 
-    with ctx.logger.layer(key, 'loading', kind='key'):
-        if not os.path.exists(target):
-            ctx.logger.emphasize(f'file not available at "{normalize_path(target)}", using default', "load")
-            if default is MISSING and default_factory is MISSING:
-                raise FileNotFoundError(f'could not find tracked file "{normalize_path(target)}".')
-            elif default is MISSING:
-                return default_factory()
-            else:
-                return default
+        with log.layer(key, 'loading', prefix='key'):
+            if not os.path.exists(target):
+                log.emphasize(f'file not available at "{normalize_path(target)}", using default', "load")
+                if default is MISSING and default_factory is MISSING:
+                    raise FileNotFoundError(f'could not find tracked file "{normalize_path(target)}".')
+                elif default is MISSING:
+                    return default_factory()
+                else:
+                    return default
 
-        ctx.logger.emphasize(f'loading with key "{key}" from "{normalize_path(target)}".', "load")
-        with open(target, "r") as f:
-            ser = sjson.load(f)
-        res = deserialize(ser, context=ctx)
-        ctx.logger.emphasize(f'finished loading with key "{key}" from "{normalize_path(target)}".', "load")
-        return res
+            log.emphasize(f'loading with key "{key}" from "{normalize_path(target)}".', "load")
+            with open(target, "r") as f:
+                ser = sjson.load(f)
+            res = deserialize(ser, context=ctx)
+            log.emphasize(f'finished loading with key "{key}" from "{normalize_path(target)}".', "load")
+            return res
+
 
 
 class Track:
@@ -292,8 +273,7 @@ class Track:
         validate: bool,
         gitignore: bool,
         generator: str,
-        base: os.PathLike,
-        context: Type[Context],
+        base: os.PathLike
     ) -> None:
         self.key = key
         self._content = None
@@ -306,7 +286,6 @@ class Track:
         self.base = base
         self.verbose = verbose
         self.validate = validate
-        self.context = context
 
     @property
     def content(self):
@@ -324,8 +303,7 @@ class Track:
             base=self.base,
             cluster=self.cluster,
             verbose=self.verbose,
-            validate=self.validate,
-            context=self.context,
+            validate=self.validate
         )
         if unload:
             return self.load()
@@ -341,8 +319,7 @@ class Track:
             cluster=self.cluster,
             gitignore=self.gitignore,
             verbose=self.verbose,
-            validate=self.validate,
-            context=self.context,
+            validate=self.validate
         )
         return self._content
 
@@ -360,12 +337,11 @@ def track(
     default_factory=MISSING,
     subdir: os.PathLike = "",
     cluster: bool = True,
-    verbose: int = False,
-    validate: bool = False,
+    verbose: int = None,
+    validate: bool = None,
     gitignore: bool = True,
     generator: str = MISSING,
-    base: os.PathLike = None,
-    context: Type[Context] = Context,
+    base: os.PathLike = None
 ):
     """
     Create track a serializable or storable object with a file.
@@ -403,7 +379,6 @@ def track(
     :param bool gitignore: Automatically adds a .gitignore file to ignore the created object when set to True.
     :param str generator: Specifies the generator that created the file.
     :param str base: Specifies the root folder (.dman by default).
-    :param Type[Context] context: Serialization context.
 
     :raises RuntimeError: if either generator or base is not provided and no .dman folder exists.
     """
@@ -417,8 +392,7 @@ def track(
         validate,
         gitignore,
         generator,
-        base,
-        context,
+        base
     )
 
 
@@ -445,7 +419,7 @@ class LogTarget(log.backend.FileHandler):
         if os.path.abspath(self.baseFilename) == os.path.abspath(path):
             return
  
-        context.logger.info(f'switching\n\tfrom "{normalize_path(self.baseFilename)}"\n\tto   "{normalize_path(path)}".', 'logtarget')
+        log.info(f'switching\n\tfrom "{normalize_path(self.baseFilename)}"\n\tto   "{normalize_path(path)}".', 'logtarget')
 
         # close current stream
         super().close()
@@ -469,7 +443,7 @@ class LogTarget(log.backend.FileHandler):
 
     def __remove__(self, context: Context):
         self.__init__()     # switch back to temporary file
-        context.logger.info(f'switching back to temporary file {normalize_path(self.baseFilename)}.', 'logtarget')
+        log.info(f'switching back to temporary file {normalize_path(self.baseFilename)}.', 'logtarget')
     
     @classmethod
     def __read__(cls, path: os.PathLike):

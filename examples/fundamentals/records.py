@@ -15,11 +15,14 @@ from dman.numeric import barray
 from dman import tui
 import numpy as np
 
+# turn of logging
+dman.log.basicConfig(level=dman.log.CRITICAL)
+
 # %% 
 # By default a ``barray`` object is not serializable:
 array = np.arange(3).view(barray)
 ser = dman.serialize(array)
-print(dman.sjson.dumps(ser, indent=4))
+tui.print_json(dman.sjson.dumps(ser, indent=4))
 
 # %%
 # Note how ``dman`` does not throw an error here. This is to make sure that 
@@ -43,7 +46,7 @@ base = dir.name
 ctx = dman.context(base)
 rec = dman.record(array)
 ser = dman.serialize(rec, context=ctx)
-print(dman.sjson.dumps(ser, indent=4))
+tui.print_json(dman.sjson.dumps(ser, indent=4))
 
 # %%
 # You can see that the result of serialization now provides a pointer to 
@@ -55,7 +58,7 @@ tui.walk_directory(base)
 # And we can load its content again
 
 rec = dman.deserialize(ser, context=ctx)
-print(rec)
+tui.print(rec)
 
 # %%
 # Note how the record specifies that it contains a ``_num__barray``
@@ -64,8 +67,8 @@ print(rec)
 # the ``content`` field:
 
 array = rec.content
-print(array)
-print(rec)
+tui.print(array)
+tui.print(rec)
 
 # %%
 # Now the record no longer specifies that the ``content`` is unloaded.

@@ -1,19 +1,52 @@
-from dataclasses import MISSING
-from enum import Enum
 import logging as backend
-from tarfile import DEFAULT_FORMAT
-from tempfile import TemporaryDirectory
+from contextlib import contextmanager
 import textwrap
-from typing import Dict
+from types import ModuleType
+from typing import Mapping, Type
+import re
+
 
 LOGGER_NAME = "dman"
-_LOGGER_NAME_ERROR = "__dman"
-DEFAULT_LOGGING_FORMAT = "%(message)s"
-DEFAULT_HEADER_WIDTH = 20
-DEFAULT_INDENT = 4
-DEFAULT_LEVEL = backend.WARNING
+DEFAULT_FORMAT = "%(indent)s%(context)s%(message)s"
+BASE_INDENT = "  "
 
-from logging import CRITICAL, FATAL, ERROR, WARNING, WARN, INFO, DEBUG, NOTSET
+from logging import CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET
+from logging import basicConfig
+
+
+class IndentedFormatter(backend.Formatter):
+    def __init__(self, fmt=DEFAULT_FORMAT, datefmt=None, style="%", validate=True, capitalize_levelname: bool = False):
+        super().__init__(fmt, datefmt, style, validate)
+        self.capitalize_levelname = capitalize_levelname
+    
+    def _format_inner(self, record: backend.LogRecord, fmt: str, include_stack: bool = False):
+        if not include_stack:
+            formatter = backend.Formatter(fmt)
+            record.message = record.getMessage()
+            if formatter.usesTime():
+                record.asctime = self.formatTime(record, self.datefmt)
+            return formatter.formatMessage(record)
+        if len(fmt or '') == 0: 
+            return fmt
+        try:
+            return backend.Formatter(fmt).format(record)
+        except ValueError:
+            return fmt
+    
+    def format(self, record):
+        if self.capitalize_levelname:
+            record.levelname = record.levelname.upper()
+        else:
+            record.levelname = record.levelname.lower()
+        splits = re.split('\%\(indent\)[-0-9]*s', self._fmt)
+        if len(splits) != 2 or len(record.indent) == 0:
+            return super().format(record)
+        prefix, indented = [self._format_inner(record, s, '%(message)' in s) for s in splits]
+        lines = indented.split('\n')
+        s = prefix + textwrap.indent(lines.pop(0), record.indent)
+        if len(lines) > 0:
+            s += '\n' + textwrap.indent('\n'.join(lines), ' '*len(prefix) + record.indent)
+        return s
 
 try:
     from rich.logging import RichHandler
@@ -21,324 +54,40 @@ try:
     from rich.console import Console
     from rich.highlighter import RegexHighlighter, Highlighter
 
-    _rich_available = True
-except ImportError:
-    _rich_available = False
-
-
-
-class DmanFormatter(backend.Formatter):
-    def __init__(
-        self, fmt=DEFAULT_LOGGING_FORMAT, datefmt=None, style="%", validate=True
-    ):
-        """
-        Initialize the formatter with specified format strings.
-
-        Initialize the formatter either with the specified format string, or a
-        default as described above. Allow for specialized date formatting with
-        the optional datefmt argument. If datefmt is omitted, you get an
-        ISO8601-like (or RFC 3339-like) format.
-
-        Use a style parameter of '%', '{' or '$' to specify that you want to
-        use one of %-formatting, :meth:`str.format` (``{}``) formatting or
-        :class:`string.Template` formatting in your format string.
-
-        .. versionchanged:: 3.2
-           Added the ``style`` parameter.
-        """
-        super().__init__(fmt, datefmt, style, validate)
-
-    def format(self, record):
-        record.levelname = record.levelname.lower()
-        return backend.Formatter.format(self, record)
-
-
-class Logger(backend.Logger):
-    class _LogLayer:
-        def __init__(
-            self,
-            parent: "Logger",
-            msg,
-            label,
-            kind,
-            owner,
-            args,
-            kwargs,
-            indent=DEFAULT_INDENT,
-        ):
-            self.parent = parent
-            self.msg = msg
-            self.label = label
-            self.kind = kind
-            self.owner = owner
-            self.args = args
-            self.kwargs = kwargs
-            self.indent = indent
-
-        def __enter__(self):
-            self.parent.header(
-                self.msg, self.label, self.kind, *self.args, **self.kwargs
-            )
-            self.parent.indent(self.indent)
-            self.parent.put(self.owner)
-            return self.parent
-
-        def __exit__(self, *_):
-            self.parent.indent(-self.indent)
-            self.parent.header(self.msg, f"/{self.label}", self.kind, *self.args, **self.kwargs)
-            self.parent.pop()
-
-    def __init__(self, name: str, level=DEFAULT_LEVEL) -> None:
-        super().__init__(name, level)
-        self._indent = 0
-        self.header_width = DEFAULT_HEADER_WIDTH
-        self._stream = None
-        self._stack = []
-
-    def put(self, owner: str):
-        self._stack.append(owner)
-
-    def pop(self):
-        self._stack.pop()
-
-    def indent(self, indent: int = 0, *, increment: bool = True):
-        self._indent = self._indent + indent if increment else indent
-
-    def stack(self):
-        return "".join([a + "." for a in self._stack if a is not None])[:-1]        
-
-    def pack(self, msg: str, label: str = None):
-        if self.level <= INFO:
-            if label is not None:
-                msg = f"[{label}]" + " " + msg
-            return textwrap.indent(msg, prefix=" " * self._indent)
-        stack = self.stack()
-        if len(stack) == 0:
-            return msg if label is None else f"[{label}]" + " " + msg
-        return f"[@{stack}" + ("" if label is None else f" | {label}") + "] " + msg
-
-    def info(self, msg: str, label: str = None, *args, **kwargs):
-        super().info(self.pack(msg, label), *args, **kwargs)
-
-    def debug(self, msg, label=None, *args, **kwargs):
-        super().debug(self.pack(msg, label), *args, **kwargs)
-
-    def warning(self, msg, label=None, *args, **kwargs):
-        super().warning(self.pack(msg, label), *args, **kwargs)
-
-    def error(self, msg, label=None, *args, **kwargs):
-        super().error(self.pack(msg, label), *args, **kwargs)
-
-    def emphasize(self, msg: str, label: str = None, *args, **kwargs):
-        super().info(self.pack(msg, label), *args, **kwargs)
-
-    def io(self, msg: str, label: str = None, *args, **kwargs):
-        super().info(self.pack(msg, label), *args, **kwargs)
-
-    def header(self, msg: str, label: str = None, kind: str = "type", *args, **kwargs):
-        if label is not None:
-            msg = f"<{label} {kind}={msg}>"
-        self.info(msg, *args, **kwargs)
-
-    def layer(
-        self,
-        msg: str,
-        label: str = None,
-        kind: str = "type",
-        owner: str = None,
-        *args,
-        **kwargs,
-    ):
-        return self._LogLayer(self, msg, label, kind, owner, args=args, kwargs=kwargs)
-
-    def setLevel(self, level):
-        """
-        Set the logging level of this logger.  level must be an int or a str.
-        """
-        super().setLevel(level)
-        if _rich_available:
-            for h in self.handlers:
-                if isinstance(h, RichHandler):
-                    h.setLevel(level)
-
-
-backend.setLoggerClass(Logger)
-root = backend.getLogger(name=LOGGER_NAME)
-root.setLevel(level=WARNING)
-
-
-
-def get_default_handler(format: str = DEFAULT_LOGGING_FORMAT):
-    formatter = DmanFormatter(format)
-    handler = backend.StreamHandler()
-    handler.setFormatter(formatter)
-    return handler
-
-
-def basicConfig(**kwargs):
-    global root
-    backend._acquireLock()
-    try:
-        force = kwargs.pop('force', False)
-        if force:
-            for h in root.handlers[:]:
-                root.removeHandler(h)
-                h.close()
-        if len(root.handlers) == 0:
-            handlers = kwargs.pop("handlers", None)
-            if handlers is None:
-                if "stream" in kwargs and "filename" in kwargs:
-                    raise ValueError("'stream' and 'filename' should not be "
-                                     "specified together")
-            else:
-                if "stream" in kwargs or "filename" in kwargs:
-                    raise ValueError("'stream' or 'filename' should not be "
-                                     "specified together with 'handlers'")
-            if handlers is None:
-                filename = kwargs.pop("filename", None)
-                mode = kwargs.pop("filemode", 'a')
-                if filename:
-                    h = backend.FileHandler(filename, mode)
-                else:
-                    stream = kwargs.pop("stream", MISSING)
-                    if stream is MISSING:
-                        h = get_default_handler()
-                    else:
-                        h = backend.StreamHandler(stream)
-                handlers = [h]
-            fmt = DmanFormatter()
-            for h in handlers:
-                if h.formatter is None:
-                    h.setFormatter(fmt)
-                root.addHandler(h)
-            level = kwargs.pop("level", None)
-            if level is not None:
-                root.setLevel(level)
-            if kwargs:
-                keys = ', '.join(kwargs.keys())
-                raise ValueError('Unrecognised argument(s): %s' % keys)
-    finally:
-        backend._releaseLock()
-
-
-# backend.basicConfig(**kwargs)
-# logger = getLogger()
-# handler = get_default_handler(
-#     format=kwargs.get('format', DEFAULT_LOGGING_FORMAT)
-# )
-# logger.addHandler(handler)
-# logger._stream = handler
-
-
-
-
-def getLogger(name: str = LOGGER_NAME, *, level=None):
-    if name is None:
-        name = LOGGER_NAME
-
-    if name == LOGGER_NAME:
-        if len(root.handlers) == 0:
-            basicConfig()
-
-    if isinstance(name, Logger):
-        name = name.name
-    logger: Logger = backend.getLogger(name)
-    if level == True:
-        level = INFO
-    if level == False:
-        level = DEFAULT_LEVEL
-    if level is not None:
-        logger.setLevel(level)
-    
-    return logger
-
-
-def info(msg: str, label: str = None, *args, **kwargs):
-    if len(root.handlers) == 0:
-        basicConfig()
-    return getLogger().info(msg, label, *args, **kwargs)
-
-
-def debug(msg, label=None, *args, **kwargs):
-    if len(root.handlers) == 0:
-        basicConfig()
-    return getLogger().debug(msg, label, *args, **kwargs)
-
-
-def warning(msg, label=None, *args, **kwargs):
-    if len(root.handlers) == 0:
-        basicConfig()
-    return getLogger().warning(msg, label, *args, **kwargs)
-
-
-def error(msg, label=None, *args, **kwargs):
-    if len(root.handlers) == 0:
-        basicConfig()
-    return getLogger().error(msg, label, *args, **kwargs)
-
-
-def emphasize(msg: str, label: str = None, *args, **kwargs):
-    if len(root.handlers) == 0:
-        basicConfig()
-    return getLogger().emphasize(msg, label, *args, **kwargs)
-
-
-def io(msg: str, label: str = None, *args, **kwargs):
-    if len(root.handlers) == 0:
-        basicConfig()
-    return getLogger().io(msg, label, *args, **kwargs)
-
-
-def header(msg: str, label: str = None, *args, **kwargs):
-    if len(root.handlers) == 0:
-        basicConfig()
-    return getLogger().header(msg, label, *args, **kwargs)
-
-
-def layer(msg: str, label: str = None, kind: str = 'type', owner: str = None, *args, **kwargs):
-    return getLogger().layer(msg, label, kind, owner, *args, **kwargs)
-
-
-class LogTarget(backend.FileHandler):
-    def __init__(self, filename = None):
-        self.tempdir = None
-
-
-if _rich_available:
     log_theme = Theme(
         {
-            "logging.label": "bright_green",
-            "logging.tag": "purple",
-            "logging.str": "green",
-            "logging.path": "green",
-            "logging.filename": "green",
-            "logging.error": "red",
-            "logging.fail": "red",
-            "logging.warning": "yellow",
-            "logging.warn": "yellow",
-            "logging.debug": "bright_black",
-            "logging.emphasis": "blue",
-            "logging.io": "bright_cyan",
+            "backend.label": "bright_green",
+            "backend.tag": "purple",
+            "backend.str": "green",
+            "backend.path": "green",
+            "backend.filename": "green",
+            "backend.error": "red",
+            "backend.fail": "red",
+            "backend.warning": "yellow",
+            "backend.warn": "yellow",
+            "backend.debug": "bright_black",
+            "backend.emphasis": "blue",
+            "backend.io": "bright_cyan",
         }
     )
 
     class LoggingHighlighter(RegexHighlighter):
         """Apply style to anything that looks like an email."""
 
-        base_style = "logging."
+        base_style = "backend."
         highlights = [
-            r"(?P<label>^ *\[(.*?)\])",
+            r"(?P<label>\[(.*?)\]:)",
             r"(?<![\\\w])(?P<str>b?'''.*?(?<!\\)'''|b?'.*?(?<!\\)'|b?\"\"\".*?(?<!\\)\"\"\"|b?\".*?(?<!\\)\")",
             r"(?P<path>\B(/[-\w._:+]+)*\/)(?P<filename>[-\w._+]*)?",
-            r"(?P<tag>^ *<(.*?)>)",
+            r"(?P<tag><(.*?)>)",
         ]
 
     class MinimalHighlighter(RegexHighlighter):
         """Apply style to anything that looks like an email."""
 
-        base_style = "logging."
+        base_style = "backend."
         highlights = [
-            r"(?P<label>^ *\[(.*?)\])",
+            r"(?P<label>\[(.*?)\]:)",
         ]
 
     class ColorHighlighter(Highlighter):
@@ -354,94 +103,223 @@ if _rich_available:
             highlighter.highlight(text)
             return text
 
-    def get_default_handler(level=DEFAULT_LEVEL):
-        return RichHandler(
-            level=level,
-            show_level=False,
-            show_path=False,
-            show_time=False,
-            markup=False,
-            highlighter=LoggingHighlighter(),
+    def format_type(obj):
+        if isinstance(obj, (ModuleType, Type)):
+            return obj.__name__
+        return type(obj).__name__
+
+    def get_highlighter(color: str, minimal: bool):
+        return (LoggingHighlighter()
+            if color is None
+            else ColorHighlighter(
+                color, base=MinimalHighlighter if minimal else LoggingHighlighter
+            )
+        )
+    
+    def default_handler(fmt: str = DEFAULT_FORMAT, capitalize_levelname: bool = True):
+        handler = RichHandler(
+            rich_tracebacks=True,
+            tracebacks_show_locals=True,
             console=Console(theme=log_theme),
         )
+        fmt = IndentedFormatter(fmt, capitalize_levelname=capitalize_levelname)
+        handler.setFormatter(fmt)
+        return handler
+        
 
-    def _rich_info(self: Logger, msg: str, label: str = None, *args, **kwargs):
-        super(Logger, self).info(
-            self.pack(msg, label),
-            *args,
-            **kwargs,
-            extra={"highlighter": ColorHighlighter()},
-        )
+except ImportError:
+    def get_highlighter(color: str, minimal: bool):
+        return None
 
-    def _rich_debug(self: Logger, msg, label=None, *args, **kwargs):
-        super(Logger, self).info(
-            self.pack(msg, label),
-            *args,
-            **kwargs,
-            extra={"highlighter": ColorHighlighter("logging.debug")},
-        )
-
-    def _rich_warning(self: Logger, msg, label=None, *args, **kwargs):
-        super(Logger, self).warning(
-            self.pack(msg, label),
-            *args,
-            **kwargs,
-            extra={
-                "highlighter": ColorHighlighter(
-                    "logging.warning", base=MinimalHighlighter
-                )
-            },
-        )
-
-    def _rich_error(self: Logger, msg, label=None, *args, **kwargs):
-        super(Logger, self).error(
-            self.pack(msg, label),
-            *args,
-            **kwargs,
-            extra={
-                "highlighter": ColorHighlighter(
-                    "logging.error", base=MinimalHighlighter
-                )
-            },
-        )
-
-    def _rich_emphasize(self: Logger, msg: str, label: str = None, *args, **kwargs):
-        super(Logger, self).info(
-            self.pack(msg, label),
-            *args,
-            **kwargs,
-            extra={"highlighter": ColorHighlighter("logging.emphasis")},
-        )
-
-    def _rich_io(self: Logger, msg: str, label: str = None, *args, **kwargs):
-        super(Logger, self).info(
-            self.pack(msg, label),
-            *args,
-            **kwargs,
-            extra={"highlighter": ColorHighlighter("logging.io")},
-        )
-
-    Logger.info = _rich_info
-    Logger.debug = _rich_debug
-    Logger.warning = _rich_warning
-    Logger.error = _rich_error
-    Logger.emphasize = _rich_emphasize
-    Logger.io = _rich_io
+    def default_handler(fmt: str = DEFAULT_FORMAT, capitalize_levelname: bool = True):
+        handler = backend.StreamHandler()
+        fmt = IndentedFormatter(fmt, capitalize_levelname=capitalize_levelname)
+        handler.setFormatter(fmt)
+        return handler
 
 
-if __name__ == "__main__":
-    basicConfig(level=INFO)
-    emphasize("test", "label")
-    info("test", "label")
-    debug("test", "label")
-    error("test\n    test", "label")
-    warning("test", "label")
-    emphasize("test", "label")
-    io("test", "label")
-    with layer("Record", "serializing", owner="record"):
-        info("inner", "label")
-        warning("inner", "label")
-        with layer("Record", "serializing", owner="record"):
-            info("inner", "label")
-            warning("inner", "label")
-            warning("inner")
+def defaultConfig():
+    backend.basicConfig(format=DEFAULT_FORMAT, handlers=[default_handler()])
+
+
+class Logger(backend.Logger):
+    def __init__(self, name: str, level=backend.NOTSET, stack: list = None):
+        super().__init__(name, level)
+        self.stack = [] if stack is None else stack
+
+    @property
+    def indent(self):
+        return len(self.stack)
+
+    def pack(
+        self,
+        msg: str,
+        label: str,
+        color: str = None,
+        minimal: bool = False,
+        use_rich_highlighter: bool = False,
+    ):
+        enabled = self.isEnabledFor(backend.INFO)
+        stack = self.stack
+        if enabled or len(stack) == 0:
+            context = "" if label is None else f"[{label}]: "
+        else:
+            stack = "".join([format_type(a) + "." for a in stack if a is not None])[:-1]
+            context = f"[@{stack}" + ("" if label is None else f" | {label}") + "]: "
+
+        indent = ""
+        if enabled and self.indent > 0:
+            indent = BASE_INDENT * self.indent + " "
+
+        extra = {"context": context, "indent": indent}
+        if not use_rich_highlighter:
+            extra["highlighter"] = get_highlighter(color, minimal)
+        return msg, extra
+
+    def info(
+        self,
+        msg: str,
+        label: str = None,
+        color: str = None,
+        use_rich_highlighter: bool = False,
+    ):
+        msg, extra = self.pack(msg, label, color, use_rich_highlighter)
+        super().info(msg, extra=extra)
+
+    def debug(self, msg: str, label: str = None):
+        msg, extra = self.pack(msg, label)
+        super().debug(msg, extra=extra, color="backend.debug")
+
+    def warning(self, msg: str, label: str = None, exc_info=False):
+        msg, extra = self.pack(msg, label, color="backend.warning")
+        super().warning(msg, extra=extra, exc_info=exc_info)
+
+    def error(self, msg: str, label: str = None, exc_info=False):
+        msg, extra = self.pack(msg, label, color="backend.error")
+        super().error(msg, extra=extra, exc_info=exc_info)
+
+    def emphasize(self, msg: str, label: str = None):
+        self.info(msg, label, color="backend.emphasis")
+
+    def io(self, msg: str, label: str = None):
+        self.info(msg, label, color="backend.io")
+
+    def header(self, msg: str, label: str, prefix: str = "type"):
+        if label is not None:
+            msg = f"<{label} {prefix}={msg}>"
+        self.info(msg)
+
+    @contextmanager
+    def layer(
+        self, msg: str, label: str = None, prefix: str = "type", owner: str = None
+    ):
+        self.header(msg, label, prefix)
+        self.stack.append(owner)
+        yield self
+        self.stack.pop()
+        self.header(msg, f"end {label}", prefix)
+
+    def makeRecord(
+        self,
+        name,
+        level,
+        fn,
+        lno,
+        msg,
+        args,
+        exc_info,
+        func=None,
+        extra=None,
+        sinfo=None,
+    ):
+        """
+        A factory method which can be overridden in subclasses to create
+        specialized LogRecords.
+        """
+        _record_factory = backend.getLogRecordFactory()
+        rv = _record_factory(name, level, fn, lno, msg, args, exc_info, func, sinfo)
+        if extra is not None:
+            for key, value in extra.items():
+                if key == "context":
+                    if rv.context != "":
+                        raise KeyError("Attempt to overwrite %r in LogRecord" % key)
+                    rv.content = value
+                elif key == "indent":
+                    if rv.indent != "":
+                        raise KeyError("Attempt to overwrite %r in LogRecord" % key)
+                    rv.indent = value
+                elif (key in ["message", "asctime"]) or (key in rv.__dict__):
+                    raise KeyError("Attempt to overwrite %r in LogRecord" % key)
+                rv.__dict__[key] = value
+        return rv
+
+
+logger: Logger = backend.getLogger(LOGGER_NAME)
+logger.__class__ = Logger
+logger.stack = []
+
+_record_factory = backend.getLogRecordFactory()
+
+
+def record_factory(
+    name, level, fn, lno, msg, args, exc_info, func=None, sinfo=None, **kwargs
+):
+    record = _record_factory(
+        name, level, fn, lno, msg, args, exc_info, func, sinfo, **kwargs
+    )
+    record.context, record.indent = "", ""
+    return record
+
+
+backend.setLogRecordFactory(record_factory)
+
+
+def info(
+    msg: str, label: str = None, color: str = None, use_rich_highlighter: bool = True
+):
+    if len(logger.handlers) == 0:
+        defaultConfig()
+    return logger.info(msg, label, color, use_rich_highlighter)
+
+
+def debug(msg: str, label: str = None):
+    if len(logger.handlers) == 0:
+        defaultConfig()
+    return logger.debug(msg, label)
+
+
+def warning(msg: str, label: str = None, exc_info=False):
+    if len(logger.handlers) == 0:
+        defaultConfig()
+    return logger.warning(msg, label, exc_info)
+
+
+def error(msg: str, label: str = None, exc_info=False):
+    if len(logger.handlers) == 0:
+        defaultConfig()
+    return logger.error(msg, label, exc_info)
+
+
+def emphasize(msg: str, label: str = None):
+    if len(logger.handlers) == 0:
+        defaultConfig()
+    return logger.emphasize(msg, label)
+
+
+def io(msg: str, label: str = None):
+    if len(logger.handlers) == 0:
+        defaultConfig()
+    return logger.io(msg, label)
+
+
+def layer(msg: str, label: str = None, prefix: str = "type", owner: str = None):
+    if len(logger.handlers) == 0:
+        defaultConfig()
+    return logger.layer(msg, label, prefix, owner)
+
+
+
+class LogTarget(backend.FileHandler):
+    def __init__(self, filename = None):
+        super().__init__(filename)
+        self.tempdir = None

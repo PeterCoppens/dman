@@ -1,4 +1,4 @@
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from dataclasses import MISSING
 from logging import getLogger
 from pathlib import Path
@@ -8,13 +8,14 @@ from dman.core import log
 
 ROOT_FOLDER = ".dman"
 
+from logging import CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET
+
 
 class RootError(RuntimeError):
     ...
 
 
-def get_root_path(create: bool = False, *, logger: log.Logger = None):
-    logger = getLogger(logger)
+def get_root_path(create: bool = False):
     root_path = None
     cwd = Path.cwd()
 
@@ -26,7 +27,7 @@ def get_root_path(create: bool = False, *, logger: log.Logger = None):
             current_path = current_path.parent
             if current_path.parent == current_path:
                 if create:
-                    logger.io(f"no .dman folder found, created one in {normalize_path(cwd)}", "path")
+                    log.io(f"no .dman folder found, created one in {normalize_path(cwd)}", "path")
                     root_path = os.path.join(cwd, ROOT_FOLDER)
                     os.makedirs(root_path)
                     return root_path
@@ -65,23 +66,37 @@ def normalize_path(path: str):
         return path
 
 
+@contextmanager
+def directory_context(path: str, clean: bool = False):
+    if os.path.exists(path):
+        yield path
+    else:
+        log.io(f"created directory {normalize_path(path)}.", "path")
+        os.makedirs(path)
+        clean = True
+        yield path
+    if clean and len(os.listdir(path)) == 0:
+        os.rmdir(path)
+        log.io(f"removed empty directory {normalize_path(path)}.", "path")
+
+
+
 class Directory:
-    def __init__(self, path: str, clean: bool = False, logger: log.Logger = None):
-        self.logger = log.getLogger(logger)
+    def __init__(self, path: str, clean: bool = False):
         self.path = path
         self.clean = clean
 
     def __enter__(self):
         if os.path.exists(self.path):
             return
-        self.logger.io(f"created directory {normalize_path(self.path)}.", "path")
+        log.io(f"created directory {normalize_path(self.path)}.", "path")
         os.makedirs(self.path)
         self.clean = True
 
     def __exit__(self, *_):
         if self.clean and len(os.listdir(self.path)) == 0:
             os.rmdir(self.path)
-            self.logger.io(f"removed empty directory {normalize_path(self.path)}.", "path")
+            log.io(f"removed empty directory {normalize_path(self.path)}.", "path")
 
 
 class GitIgnore:
@@ -91,9 +106,7 @@ class GitIgnore:
         ignored: set = None,
         clean: bool = False,
         check_exists: bool = False,
-        logger: log.Logger = None,
     ):
-        self.logger = log.getLogger(logger)
         self.directory = directory
         self.path = os.path.join(directory, ".gitignore")
         self.ignored = set() if ignored is None else set()
@@ -123,6 +136,9 @@ class GitIgnore:
         return self
 
     def build(self, ignored: list):
+        if not os.path.exists(self.path):
+            log.io(f'created gitignore at "{normalize_path(self.path)}".', "path")
+
         with open(self.path, "w") as f:
             for i, line in enumerate(ignored):
                 if i < len(ignored) - 1:
@@ -130,11 +146,9 @@ class GitIgnore:
                 else:
                     f.write(line)
 
-        self.logger.io(f'created gitignore at "{normalize_path(self.path)}".', "path")
-
     def __exit__(self, *_):
         if not self.check_exists:
-            with Directory(self.directory, logger=self.logger):
+            with directory_context(self.directory):
                 self.build(self.ignored)
                 return
 
@@ -147,12 +161,12 @@ class GitIgnore:
         if len(ignored) <= 1 and not os.path.exists(self.directory):
             return
 
-        with Directory(self.directory, self.clean, self.logger):
+        with directory_context(self.directory, self.clean):
             if len(ignored) <= 1:
                 # clean up if we do not need to ignore anything
                 if os.path.exists(self.path):
                     os.remove(self.path)
-                    self.logger.io(
+                    log.io(
                         f"removed empty gitignore {normalize_path(self.path)}.", "path"
                     )
                 return
@@ -166,14 +180,34 @@ def add_gitignore(
         git.append(file)
 
 
+@contextmanager
+def logger_context(verbose: bool = None):
+    if verbose is None:
+        yield log.logger
+        return
+
+    level = log.logger.level
+    if verbose == True: 
+        log.logger.setLevel(log.backend.INFO)
+        yield log.logger
+        log.logger.setLevel(level)
+    elif verbose == False:
+        log.logger.setLevel(log.backend.WARNING)
+        yield log.logger
+        log.logger.setLevel(level)
+    else:
+        log.logger.setLevel(verbose)
+        yield log.logger
+        log.logger.setLevel(level)
+
+
 def get_directory(
     key: str,
     *,
     subdir: os.PathLike = "",
     cluster: bool = True,
     generator: str = MISSING,
-    base: os.PathLike = None,
-    logger: log.Logger = None,
+    base: os.PathLike = None
 ):
     """
     Get the directory where a file with the given key is stored by dman.
@@ -201,11 +235,10 @@ def get_directory(
     :param bool gitignore: Automatically adds a .gitignore file to ignore the created object when set to True.
     :param str generator: Specifies the generator that created the file.
     :param str base: Specifies the root folder (.dman by default).
-    :param Logger logger: Specifies the logger.
 
     :returns str: The directory where the file is stored by dman.
     """
-    base = get_root_path(logger) if base is None else base
+    base = get_root_path() if base is None else base
     if generator is None:
         generator = ""
     if generator is MISSING:
@@ -222,11 +255,9 @@ def prepare(
     suffix: str = ".json",
     subdir: os.PathLike = "",
     cluster: bool = True,
-    verbose: int = None,
     gitignore: bool = True,
     generator: str = MISSING,
-    base: os.PathLike = None,
-    logger: log.Logger = None,
+    base: os.PathLike = None
 ):
     """
     Prepare directory and log for dman file access.
@@ -250,38 +281,26 @@ def prepare(
     :param str obj: The serializable object.
     :param bool subdir: Specifies optional subdirectory in generator folder
     :param bool cluster: A subfolder ``key`` is automatically created when set to True.
-    :param int verbose: Specify log level (False == WARNING, True == INFO).
     :param bool gitignore: Automatically adds a .gitignore file to ignore the created object when set to True.
     :param str generator: Specifies the generator that created the file.
     :param str base: Specifies the root folder (.dman by default).
-    :param Logger logger: Logger used for io reporting.
 
     :returns str: The directory where files are stored by dman.
     """
-    # load the logger
-    logger = log.getLogger(logger, level=verbose)
-
     # get the directory
     dir = get_directory(
         key,
         subdir=subdir,
         cluster=cluster,
         generator=generator,
-        base=base,
-        logger=logger,
+        base=base
     )
 
     # create directory
     created_dir = not os.path.exists(dir)
     if created_dir:
         os.makedirs(dir)
-        logger.io(f"created directory {normalize_path(dir)}.", "path")
-
-    # configure logger
-    if verbose == False:
-        verbose = log.WARNING
-    elif verbose == True:
-        verbose = log.INFO
+        log.io(f"created directory {normalize_path(dir)}.", "path")
 
     # log the creation of the directory
     if created_dir:

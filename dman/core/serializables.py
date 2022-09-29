@@ -422,14 +422,13 @@ class BaseContext:
     The basic interface for serialization contexts.
     """
     VALIDATE = False
-    def __init__(self, validate: bool = None, logger: log.Logger = None):
-        self.logger = log.getLogger(logger)
+    def __init__(self, validate: bool = None):
         self.validate = self.VALIDATE if validate is None else validate
     
     def _process_invalid(self, msg: str, obj: BaseInvalid):
-        self.logger.warning(msg + '\n' + str(obj), 'context')
+        log.warning(msg + '\n' + str(obj), 'context')
         if self.validate:
-            raise ValidationError(msg + '\n' + f'[{self.logger.stack()}] ' + str(obj))
+            raise ValidationError(msg + '\n' + f'[{log.stack()}] ' + str(obj))
 
     def serialize(self, ser, content_only: bool = False):         
         if isinstance(ser, BaseInvalid):
@@ -439,14 +438,14 @@ class BaseContext:
             return self._serialize__atomic(ser)
 
         if isinstance(ser, (list, tuple)):
-            with self.logger.layer(f'list({len(ser)})', 'serializing', owner='list'):
+            with log.layer(f'list({len(ser)})', 'serializing', owner='list'):
                 return self._serialize__list(ser)
 
         if isinstance(ser, dict):
-            with self.logger.layer(f'dict({len(ser)})', 'serializing', owner='dict'):
+            with log.layer(f'dict({len(ser)})', 'serializing', owner='dict'):
                 return self._serialize__dict(ser)
 
-        with self.logger.layer(f'{type(ser).__name__}', 'serializing', owner=f'{type(ser).__name__}'):
+        with log.layer(f'{type(ser).__name__}', 'serializing', owner=f'{type(ser).__name__}'):
             ser_type, content = self._serialize__object(ser)
             if isinstance(content, Unserializable):
                 return serialize(content, self, content_only=False)
@@ -536,7 +535,7 @@ class BaseContext:
 
         if ser_type is None:
             if isinstance(serialized, (list, tuple)):
-                with self.logger.layer(f'list({len(serialized)})', 'deserializing', owner='list'):
+                with log.layer(f'list({len(serialized)})', 'deserializing', owner='list'):
                     return self._deserialize__list(list, serialized)
 
             if sjson.atomic_type(serialized):
@@ -550,7 +549,7 @@ class BaseContext:
 
             ser_type = serialized.get(SER_TYPE, MISSING)
             if ser_type is MISSING:
-                with self.logger.layer(f'dict({len(serialized)})', 'deserializing', owner='dict'):
+                with log.layer(f'dict({len(serialized)})', 'deserializing', owner='dict'):
                     return self._deserialize__dict(dict, serialized)
             else:
                 serialized = serialized.get(SER_CONTENT, {})
@@ -563,15 +562,15 @@ class BaseContext:
                     )
 
                 _ser_name = self._get_type_name(ser_type_get)
-                with self.logger.layer(f'{_ser_name}', 'deserializing', owner=f'{_ser_name}'):
+                with log.layer(f'{_ser_name}', 'deserializing', owner=f'{_ser_name}'):
                     return self._deserialize__object(serialized, ser_type_get)
 
         if compare_type(ser_type, dict):
-            with self.logger.layer(f'dict({len(serialized)})', 'deserializing', owner='dict'):
+            with log.layer(f'dict({len(serialized)})', 'deserializing', owner='dict'):
                 return self._deserialize__dict(dict, serialized)
 
         if compare_type(ser_type, (list, tuple)):
-            with self.logger.layer(f'list({len(serialized)})', 'deserializing', owner='list'):
+            with log.layer(f'list({len(serialized)})', 'deserializing', owner='list'):
                 return self._deserialize__list(list, serialized)
 
         if isinstance(ser_type, str) and type(serialized) is not str:
@@ -585,14 +584,14 @@ class BaseContext:
                 )
 
             _ser_name = self._get_type_name(ser_type_get)
-            with self.logger.layer(f'{_ser_name}', 'deserializing', owner=f'{_ser_name}'):
+            with log.layer(f'{_ser_name}', 'deserializing', owner=f'{_ser_name}'):
                 return self._deserialize__object(serialized, ser_type_get)
 
         if ser_type in sjson.atomic_types:
             return self._deserialize__atomic(ser_type, serialized)
 
         _ser_name = self._get_type_name(ser_type)
-        with self.logger.layer(f'{_ser_name}', 'deserializing', owner=f'{_ser_name}'):
+        with log.layer(f'{_ser_name}', 'deserializing', owner=f'{_ser_name}'):
             return self._deserialize__object(serialized, ser_type)
     
     def _deserialize__object(self, serialized, expected):

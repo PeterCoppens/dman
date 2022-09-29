@@ -1,4 +1,4 @@
-from dman import context, record
+from dman import record
 from dman import storable
 from dman import serialize, deserialize, sjson
 from dman import dataclass
@@ -24,7 +24,7 @@ class Ext:
 
 def assert_creates_file(rec: Record):
     with TemporaryDirectory() as base:
-        ctx = context(base)
+        ctx = Context(base)
         serialize(rec, ctx)
         target = os.path.join(base, rec.config.target)
         assert(os.path.exists(target))
@@ -105,7 +105,7 @@ def test_re_serialize():
     test = Base(value='hello world!')
     rec = record(test, preload=True)
     with TemporaryDirectory() as base:
-        res = recreate(rec, context(base))
+        res = recreate(rec, Context(base))
         assert(not is_unloaded(res._content))
         assert_equals(res, rec)
 
@@ -114,14 +114,14 @@ def test_no_preload():
     test = Base(value='hello world!')
     rec = record(test)
     with TemporaryDirectory() as base:
-        res = recreate(rec, context(base))
+        res = recreate(rec, Context(base))
         assert(is_unloaded(res._content))
         assert_equals(res, rec)
         assert(not is_unloaded(res._content))
 
         res = rec
         for _ in range(10):
-            res = recreate(res, context(base))
+            res = recreate(res, Context(base))
             assert(is_unloaded(res._content))
         assert_equals(res, rec)
         assert(not is_unloaded(res._content))
@@ -131,7 +131,7 @@ def test_exists():
     test = Base(value='hello world!')
     rec = record(test, name='temp.txt', preload=False)
     with TemporaryDirectory() as base:
-        ctx = context(base)
+        ctx = Context(base)
         ser = serialize(rec, ctx)
         os.remove(os.path.join(base, rec.config.target))
         res: Record = deserialize(ser, ctx)
@@ -144,10 +144,10 @@ def test_move():
     test = Base(value='hello world!')
     rec = record(test, name='temp.txt')
     with TemporaryDirectory() as base:
-        ctx = context(os.path.join(base, 'first'))
+        ctx = Context(os.path.join(base, 'first'))
         ser = serialize(rec, ctx)
         res: Record = deserialize(ser, ctx)
         
-        ctx = context(os.path.join(base, 'second'))
+        ctx = Context(os.path.join(base, 'second'))
         ser = serialize(res, ctx)
         assert(os.path.exists(os.path.join(ctx.directory, 'temp.txt')))
