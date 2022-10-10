@@ -1,11 +1,10 @@
-import inspect
+from contextlib import suppress
 
 from dataclasses import asdict, is_dataclass
 from os import PathLike
-import traceback
 from typing import Type, Union
 
-from dman.core.serializables import is_serializable, serializable, serialize, deserialize, BaseContext
+from dman.core.serializables import is_serializable, serialize, deserialize, BaseContext, _call_optional_context
 from dman.utils import sjson
 
 STO_TYPE = '_sto__type'
@@ -51,6 +50,11 @@ def storable(cls=None, /, *, name: str = None, ignore_serializable: bool = None,
             if getattr(cls, READ, None) is None:
                 setattr(cls, READ, _read__dataclass)
 
+                
+        
+        if not hasattr(cls, READ) or not hasattr(cls, WRITE):
+            raise ValueError(f'Class {cls} could not be made serializable. Provide a manual definition of a `__write__` and `__read__` method.')
+
         return cls
 
     # See if we're being called as @storable or @storable().
@@ -60,43 +64,6 @@ def storable(cls=None, /, *, name: str = None, ignore_serializable: bool = None,
 
     # We're called as @storable without parens.
     return wrap(cls)
-
-
-# @storable(name='__unreadable', ignore_serializable=True)
-# @serializable(name='__unreadable')
-# class Unreadable(Unserializable):
-#     def __init__(self, type: str = 'null', info: str = '', path: str = ''):
-#         Unserializable.__init__(self, type=type, info=f'{path}: {info}')
-
-#     def __write__(self, _: PathLike):
-#         pass
-
-#     @classmethod
-#     def __read__(cls, path: PathLike):
-#         return cls(path=path)
-
-
-# @storable(name='__exc_unreadable', ignore_serializable=True)
-# @serializable(name='__exc_unreadable')
-# class ExcUnreadable(ExcUnserializable):
-#     def __init__(self, type: str = 'null', info: str = '', path: str = ''):
-#         Unserializable.__init__(self, type=type, info=f'{path}: {info}')
-
-#     def __write__(self, _: PathLike):
-#         pass
-
-#     @classmethod
-#     def __read__(cls, path: PathLike):
-#         return cls(path=path)
-
-
-# @storable(name='__no_file', ignore_serializable=True)
-# @serializable(name='__no_file')
-# class NoFile(ExcUnreadable): ...
-
-
-# def unreadable(path: PathLike, type: str):
-#     return Unreadable(path, type)
 
 
 def _write__dataclass(self, path: PathLike):
@@ -131,15 +98,7 @@ def write(storable, path: PathLike, context: BaseContext = None):
     inner_write = getattr(storable, WRITE, None)
     if inner_write is None:
         raise WriteException('__write__ method not found.')
-    sig = inspect.signature(inner_write)
-    if len(sig.parameters) == 1:
-        inner_write(path)
-    elif len(sig.parameters) == 2:
-        if context is None:
-            context = BaseContext()
-        inner_write(path, context)    
-    else:
-        raise WriteException('__write__ method has invalid signature.')
+    return _call_optional_context(inner_write, path, context=context)
 
 
 def read(type: Union[str, Type], path: PathLike, context: BaseContext = None):
@@ -151,13 +110,4 @@ def read(type: Union[str, Type], path: PathLike, context: BaseContext = None):
     inner_read = getattr(type, READ, None)
     if inner_read is None:
         raise ReadException(f'__read__ method not found.')
-
-    sig = inspect.signature(inner_read)
-    if len(sig.parameters) == 1:
-        return inner_read(path)
-    elif len(sig.parameters) == 2:
-        if context is None:
-            context = BaseContext()
-        return inner_read(path, context)
-    else:
-        raise ReadException(f'__read__ method has invalid signature.')
+    return _call_optional_context(inner_read, path, context=context)

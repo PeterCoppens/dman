@@ -32,8 +32,11 @@ from rich import print
 
 
 def print_serializable(obj, context: BaseContext = None, content_only: bool = False):
-    res = serialize(obj, context=context, content_only=content_only)
-    print(JSON(sjson.dumps(res, indent=4)))
+    print_serialized(serialize(obj, context=context, content_only=content_only))
+
+
+def print_serialized(ser):
+    print_json(sjson.dumps(ser, indent=4))
 
 
 def print_json(json: str):

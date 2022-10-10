@@ -181,24 +181,24 @@ def add_gitignore(
 
 
 @contextmanager
-def logger_context(verbose: bool = None):
-    if verbose is None:
+def logger_context(level: bool = None):
+    if level is None:
         yield log.logger
         return
 
-    level = log.logger.level
-    if verbose == True: 
-        log.logger.setLevel(log.backend.INFO)
+    _level = log.logger.level
+    if level == True: 
+        log.logger.setLevel(log.INFO)
         yield log.logger
-        log.logger.setLevel(level)
-    elif verbose == False:
-        log.logger.setLevel(log.backend.WARNING)
+        log.logger.setLevel(_level)
+    elif level == False:
+        log.logger.setLevel(log.WARNING)
         yield log.logger
-        log.logger.setLevel(level)
+        log.logger.setLevel(_level)
     else:
-        log.logger.setLevel(verbose)
-        yield log.logger
         log.logger.setLevel(level)
+        yield log.logger
+        log.logger.setLevel(_level)
 
 
 def get_directory(

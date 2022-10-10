@@ -151,6 +151,12 @@ class Logger(backend.Logger):
     def indent(self):
         return len(self.stack)
 
+    def format_stack(self):
+        if len(self.stack) == 0:
+            return ''
+        return "".join([format_type(a) + "." for a in self.stack if a is not None])[:-1]
+
+
     def pack(
         self,
         msg: str,
@@ -164,7 +170,7 @@ class Logger(backend.Logger):
         if enabled or len(stack) == 0:
             context = "" if label is None else f"[{label}]: "
         else:
-            stack = "".join([format_type(a) + "." for a in stack if a is not None])[:-1]
+            stack = self.format_stack()
             context = f"[@{stack}" + ("" if label is None else f" | {label}") + "]: "
 
         indent = ""
@@ -195,6 +201,10 @@ class Logger(backend.Logger):
         super().warning(msg, extra=extra, exc_info=exc_info)
 
     def error(self, msg: str, label: str = None, exc_info=False):
+        msg, extra = self.pack(msg, label, color="backend.error")
+        super().error(msg, extra=extra, exc_info=exc_info)
+
+    def exception(self, msg: str, label: str = None, exc_info=True):
         msg, extra = self.pack(msg, label, color="backend.error")
         super().error(msg, extra=extra, exc_info=exc_info)
 
@@ -298,6 +308,12 @@ def error(msg: str, label: str = None, exc_info=False):
     if len(logger.handlers) == 0:
         defaultConfig()
     return logger.error(msg, label, exc_info)
+
+
+def exception(msg: str, label: str = None, exc_info=True):
+    if len(logger.handlers) == 0:
+        defaultConfig()
+    return logger.exception(msg, label, exc_info)
 
 
 def emphasize(msg: str, label: str = None):
