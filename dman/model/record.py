@@ -27,7 +27,15 @@ from dman.core.serializables import (
     Undeserializable,
 )
 from dman.utils.smartdataclasses import AUTO, overrideable
-from dman.core.storables import STO_TYPE, is_storable, storable_type, read, write, storable, _read__serializable
+from dman.core.storables import (
+    STO_TYPE,
+    is_storable,
+    storable_type,
+    read,
+    write,
+    storable,
+    _read__serializable,
+)
 from dman.core.path import logger_context, normalize_path
 
 
@@ -62,12 +70,12 @@ class UnReadable(Unserializable):
 
     def __serialize__(self):
         res = super().__serialize__()
-        res['target'] = self.target
+        res["target"] = self.target
         return res
-    
+
     @classmethod
     def __deserialize__(cls, ser: dict, context):
-        target = ser.pop('target')
+        target = ser.pop("target")
         res: Unserializable = Unserializable.__deserialize__(ser, context)
         return cls(type=res.type, info=res.info, target=target)
 
@@ -78,21 +86,29 @@ class ExcUnReadable(ExcUnserializable):
     target: str
 
     @classmethod
-    def from_exception(cls, type: str, info: str, target: str, exc_type: Type[BaseException], exc_value: BaseException, exc_tb: TracebackType):
+    def from_exception(
+        cls,
+        type: str,
+        info: str,
+        target: str,
+        exc_type: Type[BaseException],
+        exc_value: BaseException,
+        exc_tb: TracebackType,
+    ):
         trace = Trace.from_exception(exc_type, exc_value, exc_tb)
         return cls(type, info, trace, target)
 
     def __repr__(self):
         return f"UnReadable: {self.type}"
-    
+
     def __serialize__(self):
         res = super().__serialize__()
-        res['target'] = self.target
+        res["target"] = self.target
         return res
-    
+
     @classmethod
     def __deserialize__(cls, ser: dict, context):
-        target = ser.pop('target')
+        target = ser.pop("target")
         res: ExcUnserializable = ExcUnserializable.__deserialize__(ser, context)
         return cls(res.type, res.info, res.trace, target=target)
 
@@ -145,8 +161,10 @@ class Context(BaseContext):
         except Exception as e:
             if isinstance(e, ValidationError):
                 raise e
+            if not isinstance(storable, str):
+                storable = getattr(storable, STO_TYPE, None)
             res = ExcUnWritable.from_exception(
-                type(storable), "Exception encountered while writing.", *sys.exc_info()
+                storable, "Exception encountered while writing.", *sys.exc_info()
             )
             self._process_invalid("An error occurred while writing.", res)
             return res
@@ -157,14 +175,22 @@ class Context(BaseContext):
             log.io(f'reading from file: "{normalize_path(path)}".', "context")
             return read(sto_type, path, self)
         except FileNotFoundError:
+            if not isinstance(sto_type, str):
+                sto_type = getattr(sto_type, STO_TYPE, None)
             res = NoFile(type=sto_type, info=f"Missing File: {path}.")
             self._process_invalid("An error occurred while writing.", res)
             return res
         except Exception as e:
             if isinstance(e, ValidationError):
                 raise e
+
+            if not isinstance(sto_type, str):
+                sto_type = getattr(sto_type, STO_TYPE, None)
             res = ExcUnReadable.from_exception(
-                sto_type, "Exception encountered while reading.", target, *sys.exc_info()
+                sto_type,
+                "Exception encountered while reading.",
+                target,
+                *sys.exc_info(),
             )
             self._process_invalid("An error occurred while reading.", res)
             return res
@@ -336,7 +362,7 @@ class Unloaded:
         return f"UL[{self.type}]"
 
 
-@serializable(name='_record_exceptions')
+@serializable(name="_record_exceptions")
 @dataclass
 class _RecordExceptions:
     write: Any = None
@@ -345,10 +371,10 @@ class _RecordExceptions:
     def __serialize__(self):
         res = {}
         if self.write is not None:
-            res['write'] = serialize(self.write)
+            res["write"] = serialize(self.write)
         if self.read is not None:
-            res['read'] = serialize(self.read)
-        return res   
+            res["read"] = serialize(self.read)
+        return res
 
     def empty(self):
         return self.write is None and self.read is None
@@ -360,6 +386,7 @@ class Undefined:
 
     def __repr__(self) -> str:
         return f"ERR[{self.type}]"
+
 
 def is_undefined(obj):
     return isinstance(obj, Undefined)
@@ -384,6 +411,11 @@ class Record:
 
     def exists(self):
         return not isinstance(self.exceptions.read, NoFile)
+
+    def isvalid(self, *, load: bool = False):
+        if load:
+            self.content
+        return self.exceptions.read is None
 
     @property
     def target(self):
@@ -456,23 +488,31 @@ class Record:
             else:
                 local.remove(self._content)  # remove contents
                 local.delete(target)  # remove this file
+            self.exceptions = _RecordExceptions()
 
     def __serialize__(self, context: BaseContext):
         if is_unloaded(self._content):
             unloaded: Unloaded = self._content
             sto_type = unloaded.type
-            if isinstance(context, Context) and unloaded.base != context.directory:
+
+            # load unloaded if a move is requested or if previous write failed
+            if (
+                isinstance(context, Context) and unloaded.base != context.directory
+            ) or self.exceptions.write is not None:
+
+                # attempt load
                 self.content
-                return self.__serialize__(context)
-                
+                if not is_unloaded(self._content):
+                    return self.__serialize__(context)
+
         elif is_undefined(self._content):
             sto_type = self._content.type
         else:
             sto_type = storable_type(self._content)
             if not isinstance(context, Context):
                 exc = UnWritable(
-                    type=sto_type, 
-                    info=f"Invalid context passed to Record({sto_type}, target={self.target})."
+                    type=sto_type,
+                    info=f"Invalid context passed to Record({sto_type}, target={self.target}).",
                 )
                 log.warning(
                     f"Invalid context passed to record during serialization.",
@@ -516,7 +556,7 @@ class Record:
             exceptions = _RecordExceptions()
         else:
             exceptions = _RecordExceptions.__deserialize__(exceptions, context)
-        
+
         # try to load the contents of the record
         if isinstance(context, Context):
             target, local = Record.__parse(config, context)
@@ -541,7 +581,7 @@ class Record:
             exceptions.read = UnReadable(
                 type=sto_type,
                 info=f"Could not read {config.target} due to invalid context.",
-                target=config.target
+                target=config.target,
             )
             log.warning(exceptions, "record")
             content = Undefined(sto_type)
