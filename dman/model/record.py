@@ -18,6 +18,7 @@ from dman.core.serializables import (
     serialize,
     ValidationError,
     Trace,
+    isvalid,
 )
 from dman.utils import sjson
 from dman.core.serializables import (
@@ -439,18 +440,20 @@ class Record:
 
     @property
     def content(self):
-        if is_unloaded(self._content):
-            ul: Unloaded = self._content
-            with log.layer(ul.type, "deferred load"):
-                content = ul.__load__()
-                if isinstance(content, BaseInvalid):
-                    log.warning("error encountered during read:", "record")
-                    log.warning(content, "record")
-                    self.exceptions.read = content
-                    return content
-                else:
-                    self.exceptions.read = None
-                self._content = content
+        if not is_unloaded(self._content):
+            return self._content
+
+        ul: Unloaded = self._content
+        with log.layer("loading content", "record", owner="record"):
+            content = ul.__load__()
+            if isvalid(content):
+                self.exceptions.read = None
+            else:
+                log.warning("error encountered during read:", "record")
+                log.warning(content, "record")
+                self.exceptions.read = content
+                return content
+            self._content = content
         return self._content
 
     @content.setter
@@ -477,59 +480,46 @@ class Record:
     def __remove__(self, context: BaseContext):
         if isinstance(context, Context):
             target, local = Record.__parse(self.config, context)
-            # remove all subfiles of content
-            if is_unloaded(self._content):
-                ul: Unloaded = self._content
-                with log.layer(ul.type, "deferred load"):
-                    self._content = ul.__load__()
-            if isinstance(self._content, BaseInvalid):
-                log.error("loaded content is invalid:", "record")
-                log.error(str(self._content), "record")
-            else:
-                local.remove(self._content)  # remove contents
+            content = self.content
+            if isvalid(content):
+                local.remove(content)  # remove contents
                 local.delete(target)  # remove this file
-            self.exceptions = _RecordExceptions()
+            else:
+                log.error("loaded content is invalid:", "record")
+                log.error(str(content), "record")
+
+    def store(self, context: BaseContext):
+        if isinstance(context, Context):
+            if is_unloaded(self._content) and self._content.base != context.directory:
+                self.content  # the target was moved
+            elif self.exceptions.write is not None:
+                self.content  # the previous store failed
+            elif is_unloaded(self._content):
+                return  # no load needed
+
+            # execute store
+            target, local = Record.__parse(self.config, context)
+            self.exceptions.write = local.write(target, self._content)
+            if self.exceptions.write is not None:
+                msg = f"exception encountered while writing to {os.path.join(local.directory, target)}."
+                log.warning(msg, "record")
+                log.warning(self.exceptions.write, "record")
+        else:
+            msg = f"Invalid context passed to Record({self.sto_type}, target={self.target})."
+            self.exceptions.write = UnWritable(type=self.sto_type, info=msg)
+            log.warning(
+                f"Invalid context passed to record during serialization.", "record"
+            )
+
+    @property
+    def sto_type(self):
+        if is_unloaded(self._content) or is_undefined(self._content):
+            return self._content.type
+        return storable_type(self._content)
 
     def __serialize__(self, context: BaseContext):
-        if is_unloaded(self._content):
-            unloaded: Unloaded = self._content
-            sto_type = unloaded.type
-
-            # load unloaded if a move is requested or if previous write failed
-            if (
-                isinstance(context, Context) and unloaded.base != context.directory
-            ) or self.exceptions.write is not None:
-
-                # attempt load
-                self.content
-                if not is_unloaded(self._content):
-                    return self.__serialize__(context)
-
-        elif is_undefined(self._content):
-            sto_type = self._content.type
-        else:
-            sto_type = storable_type(self._content)
-            if not isinstance(context, Context):
-                exc = UnWritable(
-                    type=sto_type,
-                    info=f"Invalid context passed to Record({sto_type}, target={self.target}).",
-                )
-                log.warning(
-                    f"Invalid context passed to record during serialization.",
-                    "record",
-                )
-                self.exceptions.write = exc
-            else:
-                target, local = Record.__parse(self.config, context)
-                log.info("content is loaded, executing write ...", "record")
-                exc = local.write(target, self._content)
-                if exc is not None:
-                    log.warning(
-                        f"exception encountered while writing to {os.path.join(local.directory, target)}.",
-                        "record",
-                    )
-                self.exceptions.write = exc
-
+        sto_type = self.sto_type
+        self.store(context)
         res = {
             "target": serialize(self.config, content_only=True),
             "sto_type": sto_type,
@@ -560,23 +550,7 @@ class Record:
         # try to load the contents of the record
         if isinstance(context, Context):
             target, local = Record.__parse(config, context)
-            if preload:
-                log.info("preload enabled, loading from file ...", "record")
-                content = local.read(target, sto_type)
-                if isinstance(content, BaseInvalid):
-                    log.warning("error encountered during read:", "record")
-                    log.warning(exceptions, "record")
-                    exceptions.read = content
-                    content = Unloaded(sto_type, target, context.directory, local)
-                else:
-                    exceptions.read = None
-            else:
-                log.info("preload disabled, load deferred", "record")
-                log.info(
-                    f'path: "{normalize_path(os.path.join(local.directory, target))}"',
-                    f"record",
-                )
-                content = Unloaded(sto_type, target, context.directory, local)
+            content = Unloaded(sto_type, target, context.directory, local)
         else:
             exceptions.read = UnReadable(
                 type=sto_type,
@@ -587,6 +561,8 @@ class Record:
             content = Undefined(sto_type)
 
         out = cls(content=content, config=config, preload=preload)
+        if preload:
+            out.content
         out.exceptions = exceptions
         return out
 
