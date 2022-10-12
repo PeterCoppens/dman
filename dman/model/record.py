@@ -86,22 +86,6 @@ class UnReadable(Unserializable):
 class ExcUnReadable(ExcUnserializable):
     target: str
 
-    @classmethod
-    def from_exception(
-        cls,
-        type: str,
-        info: str,
-        target: str,
-        exc_type: Type[BaseException],
-        exc_value: BaseException,
-        exc_tb: TracebackType,
-    ):
-        trace = Trace.from_exception(exc_type, exc_value, exc_tb)
-        return cls(type, info, trace, target)
-
-    def __repr__(self):
-        return f"UnReadable: {self.type}"
-
     def __serialize__(self):
         res = super().__serialize__()
         res["target"] = self.target
@@ -152,20 +136,24 @@ class Context(BaseContext):
             res = {SER_TYPE: "_ser__mdict", SER_CONTENT: {"store": res}}
         return res
 
+    @staticmethod
+    def _sto_type(obj):
+        return obj if isinstance(obj, str) else getattr(obj, STO_TYPE, None)
+
     def write(self, target: str, storable):
         self.open()
+        path = os.path.join(self.directory, target)
+        log.io(f'writing to file: "{normalize_path(path)}".', "context")
         try:
-            path = os.path.join(self.directory, target)
-            log.io(f'writing to file: "{normalize_path(path)}".', "context")
-            write(storable, path, self)
-            return None
+            return write(storable, path, self)
         except Exception as e:
             if isinstance(e, ValidationError):
                 raise e
-            if not isinstance(storable, str):
-                storable = getattr(storable, STO_TYPE, None)
             res = ExcUnWritable.from_exception(
-                storable, "Exception encountered while writing.", *sys.exc_info()
+                *sys.exc_info(),
+                type=self._sto_type(storable), 
+                info="Exception encountered while writing.", 
+                ignore=2
             )
             self._process_invalid("An error occurred while writing.", res)
             return res
@@ -184,14 +172,11 @@ class Context(BaseContext):
         except Exception as e:
             if isinstance(e, ValidationError):
                 raise e
-
-            if not isinstance(sto_type, str):
-                sto_type = getattr(sto_type, STO_TYPE, None)
             res = ExcUnReadable.from_exception(
-                sto_type,
-                "Exception encountered while reading.",
-                target,
                 *sys.exc_info(),
+                type=self._sto_type(sto_type),
+                info="Exception encountered while reading.",
+                target=target,
             )
             self._process_invalid("An error occurred while reading.", res)
             return res
@@ -199,7 +184,7 @@ class Context(BaseContext):
     def delete(self, target: str):
         path = os.path.join(self.directory, target)
         if os.path.exists(path):
-            log.io(f'deleting file: "{normalize_path(path)}".', "context")
+            log.io(f'Deleting file: "{normalize_path(path)}".', "context")
             os.remove(path)
         self.clean()
 
@@ -226,14 +211,14 @@ class Context(BaseContext):
 
     def open(self):
         if not os.path.isdir(self.directory):
-            log.io(f'creating directory "{normalize_path(self.directory)}".')
+            log.io(f'Creating directory "{normalize_path(self.directory)}".')
             os.makedirs(self.directory)
 
     def clean(self):
         if self.parent is None:
             return  # do not clean root
         if os.path.isdir(self.directory) and len(os.listdir(self.directory)) == 0:
-            log.io(f'removing empty directory "{normalize_path(self.directory)}".')
+            log.io(f'Removing empty directory "{normalize_path(self.directory)}".')
             os.rmdir(self.directory)
             self.parent.clean()
 
@@ -331,12 +316,12 @@ class RecordConfig:
     def target(self):
         return os.path.normpath(os.path.join(".", self.subdir, self.name))
 
-    def __serialize__(self, context: Context):
+    def __serialize__(self):
         log.info(f"target={self.target}", "record")
         return self.target
 
     @classmethod
-    def __deserialize__(cls, serialized, context: Context):
+    def __deserialize__(cls, serialized):
         log.info(f"target={serialized}", "record")
         return cls.from_target(target=serialized)
 
@@ -376,6 +361,10 @@ class _RecordExceptions:
         if self.read is not None:
             res["read"] = serialize(self.read)
         return res
+    
+    @classmethod
+    def __deserialize__(cls, ser: dict):
+        return cls(ser.get('write', None), ser.get('read', None))
 
     def empty(self):
         return self.write is None and self.read is None
@@ -415,7 +404,7 @@ class Record:
 
     def isvalid(self, *, load: bool = False):
         if load:
-            self.content
+            self.load()
         return self.exceptions.read is None
 
     @property
@@ -439,27 +428,19 @@ class Record:
         return self._config
 
     @property
-    def content(self):
-        if not is_unloaded(self._content):
-            return self._content
+    def sto_type(self):
+        if is_unloaded(self._content) or is_undefined(self._content):
+            return self._content.type
+        return storable_type(self._content)
 
-        ul: Unloaded = self._content
-        with log.layer("loading content", "record", owner="record"):
-            content = ul.__load__()
-            if isvalid(content):
-                self.exceptions.read = None
-            else:
-                log.warning("error encountered during read:", "record")
-                log.warning(content, "record")
-                self.exceptions.read = content
-                return content
-            self._content = content
-        return self._content
+    @property
+    def content(self):
+        return self.load()
 
     @content.setter
     def content(self, value: Any):
         if not is_storable(value):
-            raise ValueError("expected storable type")
+            raise ValueError("Expected storable type.")
         self._content = value
 
     def __repr__(self) -> str:
@@ -472,28 +453,32 @@ class Record:
         if is_unloaded(content) or is_undefined(content):
             return f"Record({content}, target={self.target}{preload_str})"
         return f"Record({storable_type(content)}, target={self.target}{preload_str})"
+    
+    def load(self):
+        if not is_unloaded(self._content):
+            return self._content
 
-    @staticmethod
-    def __parse(config: RecordConfig, context: Context):
-        return config.name, context.join(config.subdir)
-
-    def __remove__(self, context: BaseContext):
-        if isinstance(context, Context):
-            target, local = Record.__parse(self.config, context)
-            content = self.content
+        ul: Unloaded = self._content
+        with log.layer("loading content", "record", owner="record"):
+            content = ul.__load__()
             if isvalid(content):
-                local.remove(content)  # remove contents
-                local.delete(target)  # remove this file
+                self.exceptions.read = None
             else:
-                log.error("loaded content is invalid:", "record")
-                log.error(str(content), "record")
+                ul.context._process_invalid(
+                    "Exception encountered while reading.",
+                    content
+                )
+                self.exceptions.read = content
+                return content
+            self._content = content
+        return self._content
 
     def store(self, context: BaseContext):
         if isinstance(context, Context):
             if is_unloaded(self._content) and self._content.base != context.directory:
-                self.content  # the target was moved
+                self.load()  # the target was moved
             elif self.exceptions.write is not None:
-                self.content  # the previous store failed
+                self.load()  # the previous store failed
             elif is_unloaded(self._content):
                 return  # no load needed
 
@@ -501,21 +486,20 @@ class Record:
             target, local = Record.__parse(self.config, context)
             self.exceptions.write = local.write(target, self._content)
             if self.exceptions.write is not None:
-                msg = f"exception encountered while writing to {os.path.join(local.directory, target)}."
-                log.warning(msg, "record")
-                log.warning(self.exceptions.write, "record")
+                context._process_invalid(
+                    f"Exception encountered while writing to {os.path.join(local.directory, target)}.",
+                    self.exceptions.write
+                )
         else:
-            msg = f"Invalid context passed to Record({self.sto_type}, target={self.target})."
-            self.exceptions.write = UnWritable(type=self.sto_type, info=msg)
-            log.warning(
-                f"Invalid context passed to record during serialization.", "record"
+            self.exceptions.write = UnWritable(
+                type=self.sto_type, 
+                info=f"Invalid context passed to Record({self.sto_type}, target={self.target})."
             )
+            context._process_invalid('Exception encountered during write.', self.exceptions.write)
 
-    @property
-    def sto_type(self):
-        if is_unloaded(self._content) or is_undefined(self._content):
-            return self._content.type
-        return storable_type(self._content)
+    @staticmethod
+    def __parse(config: RecordConfig, context: Context):
+        return config.name, context.join(config.subdir)
 
     def __serialize__(self, context: BaseContext):
         sto_type = self.sto_type
@@ -533,7 +517,6 @@ class Record:
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        log.info("deserializing record ...", f"record")
         config: RecordConfig = deserialize(
             serialized.get("target", ""), ser_type=RecordConfig
         )
@@ -545,7 +528,7 @@ class Record:
         if exceptions is None:
             exceptions = _RecordExceptions()
         else:
-            exceptions = _RecordExceptions.__deserialize__(exceptions, context)
+            exceptions = _RecordExceptions.__deserialize__(exceptions)
 
         # try to load the contents of the record
         if isinstance(context, Context):
@@ -554,10 +537,13 @@ class Record:
         else:
             exceptions.read = UnReadable(
                 type=sto_type,
-                info=f"Could not read {config.target} due to invalid context.",
+                info=f"Invalid context passed to Record({sto_type}, target={config.target}).",
                 target=config.target,
             )
-            log.warning(exceptions, "record")
+            context._process_invalid(
+                'Exception encountered during read.', 
+                exceptions.read
+            )
             content = Undefined(sto_type)
 
         out = cls(content=content, config=config, preload=preload)
@@ -566,12 +552,22 @@ class Record:
         out.exceptions = exceptions
         return out
 
+    def __remove__(self, context: BaseContext):
+        if isinstance(context, Context):
+            target, local = Record.__parse(self.config, context)
+            content = self.content
+            if isvalid(content):
+                local.remove(content)  # remove contents
+                local.delete(target)  # remove this file
+            else:
+                log.warning("Loaded content is invalid. Could not continue removing.", "record")
+
 
 def recordconfig(
     *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = ""
 ):
     if name != AUTO and (stem != AUTO or suffix != AUTO):
-        raise ValueError("either provide a name or suffix + stem.")
+        raise ValueError("Either provide a name or suffix + stem.")
 
     config = RecordConfig.from_name(name=name, subdir=subdir)
     return config << RecordConfig(stem=stem, suffix=suffix)

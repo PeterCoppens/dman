@@ -12,6 +12,7 @@ from types import TracebackType
 
 from dman.utils import sjson
 from dman.core import log
+from dman.core.errors import Trace, Stack, Frame, BaseInvalid, ExcInvalid
 import textwrap
 
 from enum import Enum
@@ -247,221 +248,32 @@ def serializable(cls=None, /, *, name: str = None, template: Any = None):
     return wrap(cls)
  
 
-class BaseInvalid:
-    ...
-
-
-@serializable(name='__frame')
-@dataclass
-class Frame:
-    filename: str
-    lineno: int
-    name: str
-    line: str = ""
-
-    def __post_init__(self):
-        if isinstance(self.lineno, str):
-            self.lineno = int(self.lineno)
-
-    def __str__(self):
-        return f"File {self.filename}, line {self.lineno}, in {self.name}: {self.line}"
-
-    def __serialize__(self):
-        return str(self)
-
-    @classmethod
-    def __deserialize__(cls, ser):
-        pattern = r"File (?P<filename>.*), line (?P<lineno>[0-9]*), in (?P<name>.*): (?P<line>)"
-        res, *_ = re.findall(pattern, ser)
-        return cls(*res)
-    
-    def summary(self):
-        return traceback.FrameSummary(self.filename, self.lineno, self.name)
-
-
-
-@serializable(name='__stack')
-@dataclass
-class Stack:
-    exc_type: str
-    exc_value: str
-    is_cause: bool = False
-    frames: List[Frame] = field(default_factory=list)
-
-    def __serialize__(self):
-        res = {"exc": f"{self.exc_type}({self.exc_value})"}
-        if self.is_cause:
-            res["is_cause"] = True
-        res["frames"] = [frame.__serialize__() for frame in self.frames]
-        return res
-    
-    def __str__(self):
-        return self.format_exception()
-
-    @classmethod
-    def __deserialize__(cls, ser: dict):
-        exc = ser.pop("exc")
-        pattern = r"(?P<filename>.*)\((?P<name>.*)\)"
-        (ser["exc_type"], ser["exc_value"]), *_ = re.findall(pattern, exc)
-        res = cls(**ser)
-        res.frames = [Frame.__deserialize__(frame) for frame in res.frames]
-        return res
-
-    def format_exception(self):
-        yield f'{self.exc_type}: {self.exc_value}'
-    
-    def format(self, *, single: bool = False):
-        if single:
-            yield '\n'
-        elif not self.is_cause:
-            yield '\n\nThe above exception was the direct cause of the following exception:\n\n'
-            
-        if len(self.frames) > 0:
-            yield 'Traceback (most recent call last):\n'
-            yield from traceback.StackSummary.from_list(
-                [frame.summary() for frame in self.frames]
-            ).format()
-
-        yield from self.format_exception()
-
-
-@serializable(name='__trace')
-@dataclass
-class Trace:
-    stacks: List[Stack] = field(default_factory=list)
-
-    def __serialize__(self):
-        return [stack.__serialize__() for stack in self.stacks]
-
-    @classmethod
-    def __deserialize__(cls, ser: list):
-        return cls([Stack.__deserialize__(stack) for stack in ser])
-
-    @classmethod
-    def from_exception(
-        cls,
-        exc_type: Type[BaseException],
-        exc_value: BaseException,
-        exc_tb: TracebackType,
-    ):
-        def safe_str(_object: Any) -> str:
-            try:
-                return str(_object)
-            except Exception:
-                return "<exception str() failed>"
-
-        stacks: List[Stack] = []
-        is_cause = False
-
-        while True:
-            summary = traceback.extract_tb(exc_tb)
-            frames = [Frame(f.filename, f.lineno, f.name, f.line) for f in summary]
-            stacks.append(
-                Stack(
-                    safe_str(exc_type.__name__), safe_str(exc_value), is_cause, frames
-                )
-            )
-
-            cause = getattr(exc_value, "__cause__", None)
-            if cause and cause.__traceback__:
-                exc_type = cause.__class__
-                exc_value = cause
-                exc_tb = cause.__traceback__
-                is_cause = True
-                continue
-
-            cause = exc_value.__context__
-            if (
-                cause
-                and cause.__traceback__
-                and not getattr(exc_value, "__suppress_context__", False)
-            ):
-                exc_type = cause.__class__
-                exc_value = cause
-                exc_tb = cause.__traceback__
-                is_cause = False
-                continue
-            # No cover, code is reached but coverage doesn't recognize it.
-            break  # pragma: no cover
-
-        return cls(stacks)
-    
-    def format(self):
-        for stack in reversed(self.stacks):
-            yield from stack.format(single=len(self.stacks) == 1)
-
+serializable(Frame, name='__frame')
+serializable(Stack, name='__stack')
+serializable(Trace, name='__trace')
 
 
 @serializable(name='__unserializable')
-@dataclass(repr=False)
 class Unserializable(BaseInvalid):
-    type: str
-    info: str
-
-    def __serialize__(self):
-        res = {'type': self.type}
-        if len(self.info) > 0:
-            res['info'] = self.info
-        return res
-
-    def __repr__(self):
-        return f'{self.__class__.__name__}: {self.type}'
-
-    def __str__(self):
-        return self.__repr__() + '\n' + ' '*2 + self.info
+    ...
 
 
 @serializable(name = '__exc_unserializable')
-@dataclass(repr=False)
-class ExcUnserializable(Unserializable):
-    trace: Trace
-
-    @classmethod
-    def from_exception(
-        cls,
-        type: str,
-        info: str,
-        exc_type: Type[BaseException],
-        exc_value: BaseException,
-        exc_tb: TracebackType,
-    ):
-        trace = Trace.from_exception(exc_type, exc_value, exc_tb)
-        return cls(type, info, trace)
-
-    def __str__(self):
-        return super().__str__() + '\n' + ''.join(self.trace.format())
+class ExcUnserializable(ExcInvalid):
+    ...
     
-    def __serialize__(self):
-        res = super().__serialize__()
-        res['trace'] = self.trace.__serialize__()
-        return res
-    
-    @classmethod
-    def __deserialize__(cls, ser, context):
-        res = super().__deserialize__(ser, context)
-        res.trace = Trace.__deserialize__(res.trace)
-        return res
-
 
 @serializable(name='__undeserializable')
-@dataclass
-class Undeserializable(Unserializable):
+@dataclass(repr=False)
+class Undeserializable(BaseInvalid):
     serialized: dict = None
     expected: str = None
 
-    def __repr__(self):
-        return f'Undeserializable: {self.type}'
-    
-    def __post_init__(self):
-        if not isinstance(self.expected, str):
-            self.expected = ser_type2str(self.expected)
-
-    def __str__(self):
-        res = super().__str__()
+    def format(self):
+        yield from super().format()
         if self.serialized:
-            res += '\n\nSerialized\n'
-            res += textwrap.indent(sjson.dumps(self.serialized, indent=4), ' '*0)
-        return res
+            yield '\n\nSerialized\n'
+            yield textwrap.indent(sjson.dumps(self.serialized, indent=4), ' '*0)
 
     def __serialize__(self):
         res = super().__serialize__()
@@ -472,47 +284,25 @@ class Undeserializable(Unserializable):
         return res
     
     @classmethod
-    def __deserialize__(cls, serialized: dict, context):
-        res = cls(**deserialize(serialized, context))
+    def __deserialize__(cls, serialized: dict):
+        res = cls(**deserialize(serialized))
         if res.serialized is not None:
-            return deserialize(res.serialized, context, res.expected)
+            return deserialize(res.serialized, res.expected)
         return res
 
 
 
 @serializable(name='__exc_undeserializable')
-@dataclass
-class ExcUndeserializable(ExcUnserializable):
+@dataclass(repr=False)
+class ExcUndeserializable(ExcInvalid):
     serialized: dict
     expected: str
 
-    @classmethod
-    def from_exception(
-        cls,
-        type: str,
-        info: str,
-        serialized: dict,
-        expected: str,
-        exc_type: Type[BaseException],
-        exc_value: BaseException,
-        exc_tb: TracebackType,
-    ):
-        trace = Trace.from_exception(exc_type, exc_value, exc_tb)
-        return cls(type, info, trace, serialized, expected)
-
-    def __repr__(self):
-        return f'Undeserializable: {self.type}'
-    
-    def __post_init__(self):
-        if not isinstance(self.expected, str):
-            self.expected = ser_type2str(self.expected)
-
-    def __str__(self):
-        res = super().__str__()
+    def format(self):
+        yield from super().format()
         if self.serialized:
-            res += '\n\nSerialized\n'
-            res += textwrap.indent(sjson.dumps(self.serialized, indent=2), ' '*0)
-        return res
+            yield '\n\nSerialized\n'
+            yield textwrap.indent(sjson.dumps(self.serialized, indent=4), ' '*0)
 
     def __serialize__(self):
         res = super().__serialize__()
@@ -559,15 +349,18 @@ def validate(obj, msg: str = 'Could not validate object'):
     raise ValidationError(msg, str(obj))
 
 
-def _call_optional_context(method, *args, context=None):
-    sig = inspect.signature(method)
-    if len(sig.parameters) == len(args): 
-        return method(*args)
-    if len(sig.parameters) == len(args) + 1:
-        return method(*args, BaseContext() if context is None else context)
-    raise TypeError(f'Expected method that takes {len(args)} or {len(args)+1} positional arguments but got {len(sig.parameters)}.')
-
-
+def _call_optional_context(method, *args, context=None, exc_type: Type[ExcInvalid] = None, **kwargs):
+    try:
+        sig = inspect.signature(method)
+        if len(sig.parameters) == len(args): 
+            return method(*args)
+        if len(sig.parameters) == len(args) + 1:
+            return method(*args, BaseContext() if context is None else context)
+        raise TypeError(f'Expected method that takes {len(args)} or {len(args)+1} positional arguments but got {len(sig.parameters)}.')
+    except Exception as e:
+        if isinstance(e, ValidationError) or exc_type is None:
+            raise e
+        return exc_type.from_exception(*sys.exc_info(), **kwargs, ignore=1)
  
 class BaseContext: 
     """
@@ -578,7 +371,11 @@ class BaseContext:
         self.validate = self.VALIDATE if validate is None else validate
     
     def _process_invalid(self, msg: str, obj: BaseInvalid):
-        log.warning(msg + '\n' + str(obj), 'context')
+        if isinstance(obj, ExcInvalid):
+            log.warning(msg + '\n' + ''.join(BaseInvalid.format(obj)), 'context', obj.trace)
+        else:
+            log.warning(msg + '\n' + str(obj), 'context')
+
         if self.validate:
             raise ValidationError(msg + '\n\nDescription:\n' + f'[{log.logger.format_stack()}] ' + str(obj))
 
@@ -594,13 +391,13 @@ class BaseContext:
             with log.layer(f'dict({len(ser)})', 'serializing', owner=dict):
                 return self._serialize__dict(ser)
 
-        if isinstance(ser, BaseInvalid):
-            self._process_invalid('Invalid object encountered during serialization.', ser)
+        # if isinstance(ser, BaseInvalid):
+        #     self._process_invalid('Invalid object encountered during serialization.', ser)
 
         with log.layer(f'{type(ser).__name__}', 'serializing', owner=ser):
             ser_type, content = self._serialize__object(ser)
             if isinstance(content, BaseInvalid):
-                self._process_invalid('Invalid object encountered during serialization.', content)
+                self._process_invalid('Serialization resulted in an invalid object.', content)
                 ser_type, content = self._serialize__object(content)
 
         if content_only:
@@ -609,26 +406,29 @@ class BaseContext:
 
     def _serialize__object(self, ser):
         ser_type, ser_method, _ = get_custom_serializable(type(ser), (None, None, None))
-        
-        try:
-            if ser_type is None:
-                ser_type = getattr(ser, SER_TYPE, None)
-                if not is_serializable_type_str(ser_type):
-                    return None, Unserializable(
-                        type=type(ser).__name__, 
-                        info=f'Unserializable type: {type(ser).__name__}.'
-                    )
-                ser_method = getattr(ser, SERIALIZE, None)
-                return ser_type, _call_optional_context(ser_method, context=self)
-            else:
-                return ser_type, _call_optional_context(ser_method, ser, context=self)
-        except Exception as e:
-            if isinstance(e, ValidationError):
-                raise e
-            return ser_type, ExcUnserializable.from_exception(
-                type(ser).__name__, 
-                'Error during serialization:',
-                *sys.exc_info()
+        if ser_type is None:
+            ser_type = getattr(ser, SER_TYPE, None)
+            if not is_serializable_type_str(ser_type):
+                return None, Unserializable(
+                    type=type(ser).__name__, 
+                    info=f'Unserializable type: {type(ser).__name__}.'
+                )
+            ser_method = getattr(ser, SERIALIZE, None)
+            return ser_type, _call_optional_context(
+                ser_method, 
+                context=self, 
+                exc_type=ExcUnserializable, 
+                type=type(ser).__name__, 
+                info='Error during serialization:'
+            )
+        else:
+            return ser_type, _call_optional_context(
+                ser_method, 
+                ser, 
+                context=self, 
+                exc_type=ExcUnserializable, 
+                type=type(ser).__name__, 
+                info='Error during serialization:'
             )
 
     def _serialize__list(self, ser: list):
@@ -717,19 +517,16 @@ class BaseContext:
         _, _, ser_method = get_custom_serializable(expected, (None, None, None))
         if ser_method is None:
             ser_method = getattr(expected, DESERIALIZE, None)
-
-        try:
-            return _call_optional_context(ser_method, serialized, context=self)
-        except Exception as e:
-            if isinstance(e, ValidationError):
-                raise e
-            return ExcUndeserializable.from_exception(
-                expected, 
-                f'Exception encountered while deserializing {expected}:', 
-                serialized,
-                expected,
-                *sys.exc_info()
-            )
+        return _call_optional_context(
+            ser_method,
+            serialized,
+            context=self, 
+            exc_type=ExcUndeserializable, 
+            type=ser_type2str(expected), 
+            info=f'Exception encountered while deserializing {expected}:', 
+            serialized=serialized, 
+            expected=ser_type2str(expected)
+        )
 
     def _deserialize__atomic(self, cls, serialized):
         if cls is not type(serialized):
