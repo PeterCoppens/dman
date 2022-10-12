@@ -15,7 +15,7 @@ from dman import tui
 from dman import log
 
 # turn off warnings
-log.defaultConfig(level=log.WARNING)  
+log.defaultConfig(level=log.CRITICAL)  
 
 # %%
 # Serializables
