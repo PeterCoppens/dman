@@ -222,6 +222,9 @@ def test_fail_write():
             assert(dser.isvalid())
             assert(dser.content.value == 'recovered')
 
+if __name__ == '__main__':
+    test_fail_write()
+
 
 def test_fail_read():
     with TemporaryDirectory() as base:
