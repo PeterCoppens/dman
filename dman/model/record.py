@@ -6,6 +6,7 @@ import sys
 from types import TracebackType
 from typing import Any, Type
 import uuid
+from xml.dom import ValidationErr
 from dman.core import log
 from dman.core.serializables import (
     SER_CONTENT,
@@ -146,14 +147,14 @@ class Context(BaseContext):
         log.io(f'writing to file: "{normalize_path(path)}".', "context")
         try:
             return write(storable, path, self)
+        except ValidationError:
+            raise
         except Exception as e:
-            if isinstance(e, ValidationError):
-                raise e
             res = ExcUnWritable.from_exception(
                 *sys.exc_info(),
                 type=self._sto_type(storable), 
                 info="Exception encountered while writing.", 
-                ignore=2
+                ignore=4
             )
             self._process_invalid("An error occurred while writing.", res)
             return res
@@ -169,14 +170,15 @@ class Context(BaseContext):
             res = NoFile(type=sto_type, info=f"Missing File: {path}.")
             self._process_invalid("An error occurred while reading.", res)
             return res
+        except ValidationError:
+            raise
         except Exception as e:
-            if isinstance(e, ValidationError):
-                raise e
             res = ExcUnReadable.from_exception(
                 *sys.exc_info(),
                 type=self._sto_type(sto_type),
                 info="Exception encountered while reading.",
-                target=target,
+                target=target, 
+                ignore=4
             )
             self._process_invalid("An error occurred while reading.", res)
             return res
@@ -464,10 +466,6 @@ class Record:
             if isvalid(content):
                 self.exceptions.read = None
             else:
-                ul.context._process_invalid(
-                    "Exception encountered while reading.",
-                    content
-                )
                 self.exceptions.read = content
                 return content
             self._content = content
@@ -485,11 +483,6 @@ class Record:
             # execute store
             target, local = Record.__parse(self.config, context)
             self.exceptions.write = local.write(target, self._content)
-            if self.exceptions.write is not None:
-                context._process_invalid(
-                    f"Exception encountered while writing to {os.path.join(local.directory, target)}.",
-                    self.exceptions.write
-                )
         else:
             self.exceptions.write = UnWritable(
                 type=self.sto_type, 

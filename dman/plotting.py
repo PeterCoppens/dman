@@ -103,7 +103,7 @@ class SVGFigure:
             dman.log.warning('Inkscape is not installed on this platform.')
         
         if not os.path.exists(f'{base}.pdf_tex'):
-            raise RuntimeError('Inkscape failed to generate tex.')
+            raise RuntimeError('Inkscape failed to generate tex at "{base}.pdf_tex".')
         
         with open(f'{base}.pdf_tex', 'r') as f:
             content = f.readlines()
@@ -130,9 +130,9 @@ class SVGFigure:
         for i, line in enumerate(post):
             post[i] = pattern.sub(replace, line)
 
-
-        with open(os.path.join(dir, f'{base}.pdf.tex'), 'w') as f:
+        with open(f'{base}.tex', 'w') as f:
             f.writelines(pre+commands+post)
+        os.remove(f'{base}.pdf_tex')
 
     def __write__(self, path: str):
         if self.generate_tex:
@@ -153,13 +153,12 @@ class SVGFigure:
         self.fig.savefig(path, **self.kwargs)
 
         if self.generate_tex:
+            # TODO has no effect
             plt.rcParams.update(old)
             for cax, fmt in changes:
                 cax.set_major_formatter(fmt)
-
-            *base, ext = path.split('.')
-            base = ''.join(base)
-            self._generate_tex(base)
+            
+            self._generate_tex(os.path.splitext(path)[0])
 
     @classmethod
     def __read__(self):

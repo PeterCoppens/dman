@@ -151,6 +151,7 @@ try:
                 suppress=self.tracebacks_suppress,
             )
         def emit(self, record: backend.LogRecord) -> None:
+            super().emit
             """Invoked by logging."""
             traceback = None
             fmt = self.formatter if self.formatter else backend.Formatter()
@@ -237,7 +238,7 @@ try:
         return handler
 
 
-except ImportError:
+except ImportError as e:
     def get_highlighter(color: str, minimal: bool):
         return None
 

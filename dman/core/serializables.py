@@ -357,8 +357,10 @@ def _call_optional_context(method, *args, context=None, exc_type: Type[ExcInvali
         if len(sig.parameters) == len(args) + 1:
             return method(*args, BaseContext() if context is None else context)
         raise TypeError(f'Expected method that takes {len(args)} or {len(args)+1} positional arguments but got {len(sig.parameters)}.')
+    except ValidationError:
+        raise
     except Exception as e:
-        if isinstance(e, ValidationError) or exc_type is None:
+        if exc_type is None:
             raise e
         return exc_type.from_exception(*sys.exc_info(), **kwargs, ignore=1)
  
