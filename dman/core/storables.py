@@ -97,11 +97,11 @@ class ReadException(RuntimeError): ...
 def write(storable, path: PathLike, context: BaseContext = None):
     inner_write = getattr(storable, WRITE, None)
     if inner_write is None:
-        raise WriteException('__write__ method not found.')
+        raise WriteException('Could not find __write__ method.')
     return _call_optional_context(inner_write, path, context=context)
 
 
-def read(type: Union[str, Type], path: PathLike, context: BaseContext = None):
+def read(type: Union[str, Type], path: PathLike, context: BaseContext = None, **kwargs):
     if isinstance(type, str):
         type = __storable_types.get(type, None)
         if type is None:
@@ -109,5 +109,5 @@ def read(type: Union[str, Type], path: PathLike, context: BaseContext = None):
 
     inner_read = getattr(type, READ, None)
     if inner_read is None:
-        raise ReadException(f'__read__ method not found.')
-    return _call_optional_context(inner_read, path, context=context)
+        raise ReadException(f'Could not find __read__ method.')
+    return _call_optional_context(inner_read, path, context=context, **kwargs)
