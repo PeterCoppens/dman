@@ -158,7 +158,7 @@ class Context(BaseContext):
             return read(sto_type, path, self)
         except FileNotFoundError:
             res = NoFile(type=sto_type, info=f"Missing File: {path}.")
-            self._process_invalid("An error occurred while writing.", res)
+            self._process_invalid("An error occurred while reading.", res)
             return res
         except Exception as e:
             if isinstance(e, ValidationError):
