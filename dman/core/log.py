@@ -254,11 +254,9 @@ except ImportError as e:
 
 
 def defaultConfig(level: int = None):
+    logger.addHandler(default_handler())
     if level is not None:
         logger.setLevel(level)
-        logger.addHandler(default_handler())
-
-    # backend.basicConfig(format=DEFAULT_FORMAT, handlers=[default_handler()], level=level)
 
 
 class Logger(backend.Logger):
@@ -375,6 +373,7 @@ class Logger(backend.Logger):
 
 logger: Logger = backend.getLogger(LOGGER_NAME)
 logger.__class__ = Logger
+logger.propagate = False
 logger.stack = []
 
 
