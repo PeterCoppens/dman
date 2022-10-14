@@ -55,8 +55,8 @@ class IndentedFormatter(backend.Formatter):
             s += '\n' + textwrap.indent('\n'.join(lines), ' '*len(prefix) + record.indent)
             
         record.msg = s
-        record.indent = ''
-        record.context = ''
+        # record.indent = ''
+        # record.context = ''
         return s
 
 def format_type(obj):
@@ -154,40 +154,21 @@ try:
                 locals_max_string=self.locals_max_string,
                 suppress=self.tracebacks_suppress,
             )
-        def emit(self, record: backend.LogRecord) -> None:
-            super().emit
-            """Invoked by logging."""
-            traceback = None
-            fmt = self.formatter if self.formatter else backend.Formatter()
 
-            if self.rich_tracebacks:
-                if hasattr(record, 'trace') and record.trace is not None:
-                    traceback = _rich_tb.Traceback(
-                        trace2rich(record.trace),
-                        **self._traceback_kwargs()
-                    )
-                elif record.exc_info and record.exc_info != (None, None, None):
-                    exc_type, exc_value, exc_traceback = record.exc_info
-                    assert exc_type is not None
-                    assert exc_value is not None
-                    traceback = _rich_tb.Traceback.from_exception(
-                        exc_type,
-                        exc_value,
-                        exc_traceback,
-                        **self._traceback_kwargs()
-                    )
-                if traceback is not None:
-                    message = record.getMessage()
-                    if self.formatter:
-                        record.message = record.getMessage()
-                        formatter = self.formatter
-                        if hasattr(formatter, "usesTime") and formatter.usesTime():
-                            record.asctime = formatter.formatTime(record, formatter.datefmt)
-                        message = formatter.formatMessage(record)
-            elif record.exc_text:
-                traceback = Text(record.exc_text)
-            elif record.exc_info and record.exc_info != (None, None, None):
-                traceback = Text(fmt.formatException(record.exc_info))
+        def emit(self, record: backend.LogRecord) -> None:
+            if hasattr(record, 'trace'):
+                if self.rich_tracebacks:
+                    record.exc_text = ''
+                else:
+                    delattr(record, 'trace')
+            return super().emit(record)
+            
+        def render(self, *, record: backend.LogRecord, traceback, message_renderable):
+            if hasattr(record, 'trace'):
+                traceback = _rich_tb.Traceback(
+                    trace2rich(record.trace),
+                    **self._traceback_kwargs()
+                )
 
             # highlight traceback
             if isinstance(traceback, Text):
@@ -199,7 +180,8 @@ try:
                     traceback = self.highlighter(traceback)
             
             # apply indent if necessary
-            if len(getattr(record, 'indent', '')) > 0 and traceback:
+            fmt = self.formatter if self.formatter else backend.Formatter()
+            if len(record.indent) > 0 and traceback:
                 splits = re.split('\%\(indent\)[-0-9]*s', fmt._fmt)
                 if len(splits) == 2 and '%(message)' in splits[1]:
                     output = Table.grid(padding=(0, 0))
@@ -209,26 +191,8 @@ try:
                         Text(record.indent), traceback
                     )
                     traceback = output
-
-            record.exc_text = ''
-            record.exc_info = None
-            
-            message = fmt.format(record)
-
-            message_renderable = self.render_message(record, message)
-            log_renderable = self.render(
-                record=record, traceback=traceback, message_renderable=message_renderable
-            )
-            # if isinstance(self.console.file, NullFile):
-            #     # Handles pythonw, where stdout/stderr are null, and we return NullFile
-            #     # instance from Console.file. In this case, we still want to make a log record
-            #     # even though we won't be writing anything to a file.
-            #     self.handleError(record)
-            # else:
-            try:
-                self.console.print(log_renderable)
-            except Exception:
-                self.handleError(record)
+                    
+            return super().render(record=record, traceback=traceback, message_renderable=message_renderable)
     
     def default_handler(fmt: str = DEFAULT_FORMAT, capitalize_levelname: bool = True, rich_tracebacks: bool = True):
         handler = DManHandler(
@@ -364,6 +328,7 @@ class Logger(backend.Logger):
         trace: Trace = getattr(rv, 'trace', None)
         if trace:
             rv.exc_text = ''.join(trace.format())
+            rv.exc_info = None
         return rv
     
     def _log(self, level, msg, args, exc_info = None, extra=None, stack_info: bool=False, stacklevel: int=1) -> None:
