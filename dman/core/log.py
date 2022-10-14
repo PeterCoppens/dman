@@ -36,7 +36,11 @@ class IndentedFormatter(backend.Formatter):
         except ValueError:
             return fmt
     
-    def format(self, record):      
+    def format(self, record):
+        if not hasattr(record, 'context'):
+            setattr(record, 'context', '')
+        if not hasattr(record, 'indent'):
+            setattr(record, 'indent', '')
         if self.capitalize_levelname:
             record.levelname = record.levelname.upper()
         else:
@@ -67,7 +71,7 @@ try:
     from rich.text import Text
     from rich.highlighter import RegexHighlighter, Highlighter
     import rich.traceback as _rich_tb
-    from rich._null_file import NullFile
+    # from rich._null_file import NullFile
     from rich.table import Table
 
     log_theme = Theme(
@@ -195,7 +199,7 @@ try:
                     traceback = self.highlighter(traceback)
             
             # apply indent if necessary
-            if len(record.indent) > 0 and traceback:
+            if len(getattr(record, 'indent', '')) > 0 and traceback:
                 splits = re.split('\%\(indent\)[-0-9]*s', fmt._fmt)
                 if len(splits) == 2 and '%(message)' in splits[1]:
                     output = Table.grid(padding=(0, 0))
@@ -215,16 +219,16 @@ try:
             log_renderable = self.render(
                 record=record, traceback=traceback, message_renderable=message_renderable
             )
-            if isinstance(self.console.file, NullFile):
-                # Handles pythonw, where stdout/stderr are null, and we return NullFile
-                # instance from Console.file. In this case, we still want to make a log record
-                # even though we won't be writing anything to a file.
+            # if isinstance(self.console.file, NullFile):
+            #     # Handles pythonw, where stdout/stderr are null, and we return NullFile
+            #     # instance from Console.file. In this case, we still want to make a log record
+            #     # even though we won't be writing anything to a file.
+            #     self.handleError(record)
+            # else:
+            try:
+                self.console.print(log_renderable)
+            except Exception:
                 self.handleError(record)
-            else:
-                try:
-                    self.console.print(log_renderable)
-                except Exception:
-                    self.handleError(record)
     
     def default_handler(fmt: str = DEFAULT_FORMAT, capitalize_levelname: bool = True, rich_tracebacks: bool = True):
         handler = DManHandler(
@@ -250,7 +254,11 @@ except ImportError as e:
 
 
 def defaultConfig(level: int = None):
-    backend.basicConfig(format=DEFAULT_FORMAT, handlers=[default_handler()], level=level)
+    if level is not None:
+        logger.setLevel(level)
+        logger.addHandler(default_handler())
+
+    # backend.basicConfig(format=DEFAULT_FORMAT, handlers=[default_handler()], level=level)
 
 
 class Logger(backend.Logger):
