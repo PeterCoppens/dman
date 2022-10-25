@@ -4,8 +4,9 @@ import logging as backend
 from contextlib import contextmanager
 import sys
 import textwrap
+from tkinter import NONE
 from types import ModuleType
-from typing import Mapping, Type
+from typing import List, Mapping, Type
 import re
 from dman.core.errors import Trace
 
@@ -13,6 +14,7 @@ from dman.core.errors import Trace
 LOGGER_NAME = "dman"
 DEFAULT_FORMAT = "%(indent)s%(context)s%(message)s"
 BASE_INDENT = "  "
+CAPITALIZE_LEVELNAME = False
 
 from logging import CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET
 
@@ -54,7 +56,7 @@ class IndentedFormatter(backend.Formatter):
         if len(lines) > 0:
             s += '\n' + textwrap.indent('\n'.join(lines), ' '*len(prefix) + record.indent)
             
-        record.msg = s
+        # record.msg = s
         # record.indent = ''
         # record.context = ''
         return s
@@ -64,6 +66,11 @@ def format_type(obj):
         return obj.__name__
     return type(obj).__name__
 
+
+def default_formatter(fmt: str = DEFAULT_FORMAT, capitalize_levelname: bool = False):
+    return IndentedFormatter(fmt, capitalize_levelname=capitalize_levelname)
+
+
 try:
     from rich.logging import RichHandler
     from rich.theme import Theme
@@ -71,8 +78,9 @@ try:
     from rich.text import Text
     from rich.highlighter import RegexHighlighter, Highlighter
     import rich.traceback as _rich_tb
-    # from rich._null_file import NullFile
     from rich.table import Table
+
+    CAPITALIZE_LEVELNAME = True
 
     log_theme = Theme(
         {
@@ -194,34 +202,64 @@ try:
                     
             return super().render(record=record, traceback=traceback, message_renderable=message_renderable)
     
-    def default_handler(fmt: str = DEFAULT_FORMAT, capitalize_levelname: bool = True, rich_tracebacks: bool = True):
-        handler = DManHandler(
-            rich_tracebacks=rich_tracebacks,
+    def default_handler(stream=None, **kwargs):
+        console_style = {'theme': log_theme, 'file': stream}
+        console_style.update(kwargs.pop('console_style', {}))
+        default = dict(
+            rich_tracebacks=True,
             tracebacks_show_locals=False,
-            console=Console(theme=log_theme),
+            console=Console(**console_style),
             enable_link_path=False
         )
-        fmt = IndentedFormatter(fmt, capitalize_levelname=capitalize_levelname)
-        handler.setFormatter(fmt)
-        return handler
+        default.update(kwargs)
+        return DManHandler(**default)
 
 
 except ImportError as e:
     def get_highlighter(color: str, minimal: bool):
         return None
 
-    def default_handler(fmt: str = DEFAULT_FORMAT, capitalize_levelname: bool = True, **kwargs):
-        handler = backend.StreamHandler()
-        fmt = IndentedFormatter(fmt, capitalize_levelname=capitalize_levelname)
-        handler.setFormatter(fmt)
-        return handler
+    def default_handler(stream=NONE, **kwargs):
+        return backend.StreamHandler(stream)
 
 
-def defaultConfig(level: int = None):
-    logger.addHandler(default_handler())
-    if level is not None:
-        logger.setLevel(level)
+def default_config(level: int = None):
+    config(level=level)
 
+
+def config(level=None, filename: str=None, filemode: str = 'a', stream=None, handlers: List[backend.Handler] = None, force: bool = False, **kwargs):
+    if force:
+        for h in logger.handlers[:]:
+            logger.removeHandler(h)
+            h.close()
+
+    if len(logger.handlers) == 0:
+        if handlers is None:
+            if stream is not None and filename is not None:
+                raise ValueError("'stream' and 'filename' should not be "
+                                    "specified together")
+        elif stream is not None or filename is not None:
+            raise ValueError("'stream' or 'filename' should not be "
+                                "specified together with 'handlers'")
+        if handlers is None:
+            if filename:
+                h = backend.FileHandler(filename, filemode)
+            else:
+                h = default_handler(stream=stream, **kwargs)
+            handlers = [h]
+
+        fmt = default_formatter(DEFAULT_FORMAT, capitalize_levelname=CAPITALIZE_LEVELNAME)
+        for h in handlers:
+            if h.formatter is None:
+                h.setFormatter(fmt)
+            logger.addHandler(h)
+        
+        if level is not None:
+            logger.setLevel(level)
+
+                
+                
+            
 
 class Logger(backend.Logger):
     def __init__(self, name: str, level=backend.NOTSET, stack: list = None):
@@ -346,49 +384,49 @@ def info(
     msg: str, label: str = None, color: str = None, use_rich_highlighter: bool = False
 ):
     if len(logger.handlers) == 0:
-        defaultConfig()
+        default_config()
     return logger.info(msg, label, color, use_rich_highlighter, stacklevel=2)
 
 
 def debug(msg: str, label: str = None):
     if len(logger.handlers) == 0:
-        defaultConfig()
+        default_config()
     return logger.debug(msg, label, stacklevel=2)
 
 
 def warning(msg: str, label: str = None, exc_info=False):
     if len(logger.handlers) == 0:
-        defaultConfig()
+        default_config()
     return logger.warning(msg, label, exc_info, stacklevel=2)
 
 
 def error(msg: str, label: str = None, exc_info=False, stacklevel=1):
     if len(logger.handlers) == 0:
-        defaultConfig()
+        default_config()
     return logger.error(msg, label, exc_info, stacklevel=2)
 
 
 def exception(msg: str, label: str = None, exc_info=True):
     if len(logger.handlers) == 0:
-        defaultConfig()
+        default_config()
     return logger.exception(msg, label, exc_info, stacklevel=2)
 
 
 def emphasize(msg: str, label: str = None):
     if len(logger.handlers) == 0:
-        defaultConfig()
+        default_config()
     return logger.emphasize(msg, label, stacklevel=2)
 
 
 def io(msg: str, label: str = None):
     if len(logger.handlers) == 0:
-        defaultConfig()
+        default_config()
     return logger.io(msg, label, stacklevel=2)
 
 
 def layer(msg: str, label: str = None, prefix: str = "type", owner: str = None):
     if len(logger.handlers) == 0:
-        defaultConfig()
+        default_config()
     return logger.layer(msg, label, prefix, owner, stacklevel=2)
 
 

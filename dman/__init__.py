@@ -7,7 +7,7 @@ __version__ = '0.0.0'
 from dman.core.serializables import serializable, serialize, deserialize, BaseContext
 from dman.core.serializables import ser_type2str, ser_str2type, register_serializable
 from dman.core.serializables import isvalid, ValidationError
-from dman.core.storables import storable, write, read
+from dman.core.storables import storable, write, read, register_storable
 from dman.core.path import get_directory, get_root_path, logger_context
 from dman.core import log
 

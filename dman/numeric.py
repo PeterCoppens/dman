@@ -70,6 +70,8 @@ def sarrayfield(
     **kwargs
 ):
     def to_sarray(arg):
+        if isinstance(arg, (list, tuple)):
+            arg = np.array(arg)
         if isinstance(arg, np.ndarray):
             arg = arg.view(carray) if compare else arg.view(sarray)
         if as_type is not None:
@@ -80,6 +82,12 @@ def sarrayfield(
 
     return serializefield(**kwargs, pre=to_sarray)
 
+
+from dman.utils.sjson import register_atomic_alias
+register_atomic_alias(np.int32, int)
+register_atomic_alias(np.int64, int)
+register_atomic_alias(np.float32, float)
+register_atomic_alias(np.float64, float)
 
 
 register_serializable(

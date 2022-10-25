@@ -421,6 +421,8 @@ class Record:
         base = RecordConfig(stem=f"{uuid.uuid4()}", subdir=f"{uuid.uuid4()}")
         if is_serializable(self._content) or is_dataclass(self._content):
             base = base << RecordConfig(suffix=".json")
+        else:
+            base = base << RecordConfig(suffix=".sto")
 
         request = RecordConfig(suffix=getattr(self._content, Record.EXTENSION, AUTO))
 

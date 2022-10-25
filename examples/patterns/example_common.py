@@ -327,7 +327,7 @@ _ = dman.save("config", Config(), cluster=False, generator="demo")
 #
 # For reference, the final folder structure is as follows:
 tui.walk_directory(
-    dman.get_root_path(),
+    dman.get_directory('config', cluster=False, generator='demo'),
     show_content=False,
     normalize=True,
     show_hidden=True,

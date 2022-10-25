@@ -16,7 +16,7 @@ from dman import tui
 import numpy as np
 
 # turn of logging
-dman.log.defaultConfig(level=dman.log.CRITICAL)
+dman.log.default_config(level=dman.log.CRITICAL)
 
 # %% 
 # By default a ``barray`` object is not serializable:

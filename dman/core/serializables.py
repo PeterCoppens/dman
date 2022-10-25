@@ -374,9 +374,9 @@ class BaseContext:
     
     def _process_invalid(self, msg: str, obj: BaseInvalid):
         if isinstance(obj, ExcInvalid):
-            log.warning(msg + '\n' + ''.join(BaseInvalid.format(obj)), 'context', obj.trace)
+            log.logger.warning(msg + '\n' + ''.join(BaseInvalid.format(obj)), 'context', obj.trace, stacklevel=2)
         else:
-            log.warning(msg + '\n' + str(obj), 'context')
+            log.logger.warning(msg + '\n' + str(obj), 'context', stacklevel=2)
 
         if self.validate:
             raise ValidationError(msg + '\n\nDescription:\n' + f'[{log.logger.format_stack()}] ' + str(obj))

@@ -16,17 +16,27 @@ If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_com
 
 
 .. toctree::
-   :maxdepth: 2
-   :hidden:
+   :caption: Introduction
 
-   gallery/patterns/common.rst
-   gallery/patterns/index.rst
-   gallery/fundamentals/index.rst
-   usage/serialization.rst
+   gallery/patterns/example_common.rst
+   usage/glossary.rst
+   .. usage/serialization.rst
    .. usage/errors.rst
    .. api/serializables.rst
 
+.. toctree::
+   :caption: Examples
 
+   gallery/cases/index.rst
+   gallery/patterns/index.rst
+
+.. toctree::
+   :caption: API
+
+   gallery/fundamentals/index.rst
+   .. usage/serialization.rst
+   .. usage/errors.rst
+   .. api/serializables.rst
 
 
 .. Indices and tables
