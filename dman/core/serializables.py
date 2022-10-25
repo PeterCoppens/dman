@@ -329,7 +329,15 @@ def isvalid(obj):
     return not isinstance(obj, BaseInvalid)
 
 
-class ValidationError(Exception):
+class SerializationError(Exception):
+    """
+    Serialization Error raised when an object could not be serialized.
+    """
+
+    pass
+
+
+class ValidationError(SerializationError):
     """
     Validation Error raised when an object could not be validated.
     """
@@ -357,7 +365,7 @@ def _call_optional_context(method, *args, context=None, exc_type: Type[ExcInvali
         if len(sig.parameters) == len(args) + 1:
             return method(*args, BaseContext() if context is None else context)
         raise TypeError(f'Expected method that takes {len(args)} or {len(args)+1} positional arguments but got {len(sig.parameters)}.')
-    except ValidationError:
+    except SerializationError:
         raise
     except Exception as e:
         if exc_type is None:

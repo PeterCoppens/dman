@@ -1,12 +1,11 @@
-import copy
 import os
-
-from dataclasses import asdict, dataclass, fields, is_dataclass
 import sys
-from types import TracebackType
-from typing import Any, Type
 import uuid
-from xml.dom import ValidationErr
+
+from dataclasses import asdict, dataclass, is_dataclass
+from typing import Any
+from pathlib import Path
+
 from dman.core import log
 from dman.core.serializables import (
     SER_CONTENT,
@@ -17,17 +16,18 @@ from dman.core.serializables import (
     serializable,
     BaseContext,
     serialize,
-    ValidationError,
+    SerializationError,
     Trace,
     isvalid,
-)
-from dman.utils import sjson
-from dman.core.serializables import (
     ExcUndeserializable,
     ExcUnserializable,
     Unserializable,
     Undeserializable,
 )
+
+from dman.utils import sjson
+from dman.utils.user import prompt_user
+from dman.utils.regex import substitute
 from dman.utils.smartdataclasses import AUTO, overrideable
 from dman.core.storables import (
     STO_TYPE,
@@ -38,10 +38,108 @@ from dman.core.storables import (
     storable,
     _read__serializable,
 )
-from dman.core.path import logger_context, normalize_path
+from dman.core.path import logger_context, normalize_path, get_root_path
 
 
 REMOVE = "__remove__"
+
+
+@dataclass
+class Config:
+    on_retouch: str = "ignore"  # prompt | quit | ignore | auto       # TODO field with options
+
+
+config = Config()
+
+
+class FileSystem:
+    def __init__(self, root: os.PathLike = None):
+        self.root = get_root_path() if root is None else root
+        self.touched = []
+        if not os.path.exists(self.root):
+            os.makedirs(self.root)
+
+    def normalize(self, path: os.PathLike):
+        return str(Path(path).resolve().relative_to(self.root))
+
+    def get_default(self, path: os.PathLike):
+        directory, basename = os.path.split(path)
+        if path not in self.touched:
+            return directory, basename
+
+        stem, suffix = os.path.splitext(basename)
+        base, matches = substitute(r"[0-9]+\b", "", stem)
+        if len(matches) == 0:
+            base = f"{base}0"
+        else:
+            base = f"{base}{int(matches[0].group(0))+1}"
+        default = f"{base}{suffix}"
+        return self.get_default(os.path.join(directory, default))
+
+    def write(
+        self,
+        storable,
+        path: os.PathLike,
+        context: BaseContext = None,
+        *,
+        choice: str = None,
+    ):  
+        """Write a storable to disk, keeping in mind previous writes.
+
+        Args:
+            storable: The storable to write to disk.
+            path (os.PathLike): The path to which to write.
+            context (BaseContext, optional): The context for serialization. Defaults to None.
+            choice (str, optional): The default choice. Defaults to None.
+
+        Raises:
+            SerializationError: If the quit choice was passed 
+                and the system tries to write to the same file twice.
+        """
+
+        # Register the path in touched if not done so and execute write.
+        _path = self.normalize(path)
+        if _path not in self.touched:
+            self.touched.append(_path)
+            return write(storable, path, context)
+
+        # Get the default directory and choice.
+        directory, default = self.get_default(path)
+        choice = config.on_retouch if choice is None else choice
+
+        # If the choice is "prompt" then we request input from the user.
+        if choice == "prompt":
+            choice = prompt_user(
+                (
+                    f"Tried to write to same file twice: {path}.\n"
+                    "Specify alternative filename.\n"
+                    '    Enter "q" to cancel serialization and "x" to ignore'
+                ),
+                default=default,
+            )
+
+        # If the choice is "auto" (or the same as default) then write to the default
+        if choice == default or choice == "auto":
+            return self.write(
+                storable, os.path.join(directory, default), context, choice="auto"
+            )
+
+        # If the choice is "quit" then we raise a SerializationError, 
+        # which will cancel serialization.
+        if config.on_retouch == "quit" or choice in ("q", "quit"):
+            raise SerializationError(
+                f"Attempted to write to {path} twice during serialization. Operation exitted by user."
+            )
+
+        # If the choice is "ignore" then the file is overwritten.
+        if config.on_retouch == "ignore" or choice in ("x", "ignore"):
+            log.warning(f'Overwritten previously stored object at {path} during serialization.')
+            return write(storable, path, context)
+
+        # We reach this option if a custom file name was provided by the user.
+        return self.write(
+            storable, os.path.join(directory, choice), context, choice="prompt"
+        )
 
 
 @serializable(name="__no_file")
@@ -147,7 +245,7 @@ class Context(BaseContext):
         log.io(f'writing to file: "{normalize_path(path)}".', "context")
         try:
             return write(storable, path, self)
-        except ValidationError:
+        except SerializationError:
             raise
         except Exception as e:
             res = ExcUnWritable.from_exception(
@@ -170,7 +268,7 @@ class Context(BaseContext):
             res = NoFile(type=sto_type, info=f"Missing File: {path}.")
             self._process_invalid("An error occurred while reading.", res)
             return res
-        except ValidationError:
+        except SerializationError:
             raise
         except Exception as e:
             res = ExcUnReadable.from_exception(
