@@ -59,6 +59,12 @@ def is_wrapfield(fld: Field):
     return fld.metadata.get(PROP_KEY, None) is not None
 
 
+def get_wrapfield(fld: Field, *, default=None):
+    if fld.metadata is None:
+        return default
+    return fld.metadata.get(PROP_KEY, default)
+
+
 def wrappedclass(cls=None, /, *, init=True, repr=True, eq=True, order=False,
     unsafe_hash=False, frozen=False):
 
@@ -87,6 +93,8 @@ def _process__wrappedclass(cls, init, repr, eq, order, unsafe_hash, frozen):
             prop = f.metadata.get(PROP_KEY)
             if callable(prop):
                 prop = prop(key=f.name)
+            if hasattr(prop, '__set_name__'):
+                prop.__set_name__(cls, f.name)
             label = f.metadata.get(LABEL_KEY, None)
             f.metadata = f.metadata.get(BASE_KEY, None)
             setattr(res, f.name, prop)

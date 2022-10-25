@@ -14,7 +14,6 @@ from dman.core import log
 from dman.model.record import record, remove, context
 from dman.model.modelclasses import modelclass, recordfield, mdict, smdict, mlist, smlist, mruns, smruns, serializefield
 from dman.model.modelclasses import smlist_factory, smdict_factory, smruns_factory, mruns_factory, mdict_factory, mlist_factory
-from dman.model.configclasses import configclass, section
 from dman.model.repository import track, save, load, store
 from dman.model.repository import uninterrupted
 
