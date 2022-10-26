@@ -1,4 +1,4 @@
-
+import re
 
 
 def substitute(pattern: str, repl: str, string: str):

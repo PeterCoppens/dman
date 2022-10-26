@@ -1,18 +1,13 @@
-from contextlib import suppress
-
-from dataclasses import MISSING, dataclass, field, fields, is_dataclass, asdict
+from dataclasses import MISSING, dataclass, fields, is_dataclass, asdict
 import inspect
-import re
 import sys
-import traceback
-from typing import Any, Callable, List, Optional, Sequence, Type
-from types import TracebackType
-
+from typing import Any, Callable, Optional, Sequence, Type
 
 
 from dman.utils import sjson
 from dman.core import log
 from dman.core.errors import Trace, Stack, Frame, BaseInvalid, ExcInvalid
+from dman.utils.smartdataclasses import configclass
 import textwrap
 
 from enum import Enum
@@ -27,9 +22,15 @@ CONVERT = '__convert__'
 DECONVERT = '__de_convert__'
 
 
-
 __serializable_types = dict()
 __custom_serializable = dict()
+
+
+@configclass
+@dataclass
+class Config:
+    validate: bool = False
+config = Config()
 
 
 def compare_type(base: Type, check: Sequence[Type]):
@@ -375,18 +376,14 @@ def _call_optional_context(method, *args, context=None, exc_type: Type[ExcInvali
 class BaseContext: 
     """
     The basic interface for serialization contexts.
-    """
-    VALIDATE = False
-    def __init__(self, validate: bool = None):
-        self.validate = self.VALIDATE if validate is None else validate
-    
+    """    
     def _process_invalid(self, msg: str, obj: BaseInvalid):
         if isinstance(obj, ExcInvalid):
             log.logger.warning(msg + '\n' + ''.join(BaseInvalid.format(obj)), 'context', obj.trace, stacklevel=2)
         else:
             log.logger.warning(msg + '\n' + str(obj), 'context', stacklevel=2)
 
-        if self.validate:
+        if config.validate:
             raise ValidationError(msg + '\n\nDescription:\n' + f'[{log.logger.format_stack()}] ' + str(obj))
 
     def serialize(self, ser, content_only: bool = False):         

@@ -1,6 +1,7 @@
-from dataclasses import dataclass, field, Field, MISSING, is_dataclass, fields
+from dataclasses import asdict, dataclass, field, Field, MISSING, is_dataclass, fields
 import copy
-from typing import Callable, Union
+from typing import Callable, Union, Type, List
+from dman.utils import sjson
 
 
 def idataclass(cls=None, /, *, init=True, repr=True, eq=True, order=False, 
@@ -190,3 +191,154 @@ def _override__rshift__(self, other):
 
 def _override__lshift__(self, other):
     return _override__rshift__(other, self)
+
+
+
+
+CONFIGFIELD = "_configclass"
+OPTIONFIELD = "__option__"
+
+
+def is_configclass(cls):
+    return hasattr(cls, "_configclass")
+
+
+def _option_key(key: str):
+    return f"{OPTIONFIELD}{key}"
+
+
+def get_option(self, key: str, default=MISSING):
+    key = _option_key(key)
+    if default is MISSING:
+        return getattr(self, key)
+    else:
+        return getattr(self, key, default)
+
+
+def set_option(self, key: str, value):
+    setattr(self, _option_key(key), value)
+
+
+def options(cls, key: str):
+    if isinstance(key, str):
+        for f in fields(cls):
+            if f.name == key:
+                key = f
+                break
+        else:
+            raise ValueError(f'Could not find field with name "{key}"')
+    return getattr(get_wrapfield(key), "options", None)
+
+
+class OptionField:
+    def __init__(self, tp: Type = None, options: List = None):
+        self.tp = tp
+        self.options = options
+        self.key = None
+
+    def __set_name__(self, owner, name):
+        self.key = name
+
+    @property
+    def tp(self):
+        return self._tp
+
+    @tp.setter
+    def tp(self, value: Type):
+        if (
+            value is not None
+            and value not in sjson.atomic_types
+            and not is_configclass(value)
+        ):
+            raise TypeError(
+                "Invalid type for field of configclass. Only atomic types are supported."
+            )
+        self._tp = value
+    
+    def __get__(self, obj, objtype=None):
+        if not hasattr(obj, _option_key(self.key)):
+            return self.options
+        return get_option(obj, self.key)
+    
+    def __set__(self, obj, value):
+        if not isinstance(value, self.tp):
+            raise ValueError(
+                f"Invalid type assigned to field. Expected {self.tp} got {type(value)}"
+            )
+        if self.options is not None and value not in self.options:
+            raise ValueError(
+                (
+                    f"Invalid value assigned to field. "
+                    f'Expected "{"|".join([str(s) for s in  self.options])}" got "{value}".'
+                )
+            )
+        set_option(obj, self.key, value)
+
+
+def optionfield(
+    options: list = None,
+    *,
+    default=MISSING,
+    default_factory=MISSING,
+    repr: bool = True,
+    tp: Type = None,
+):
+    wrap = OptionField(tp=tp, options=options)
+    return wrapfield(
+        wrap,
+        default=default,
+        default_factory=default_factory,
+        label=OPTIONFIELD,
+        repr=repr,
+    )
+
+
+def configclass(cls=None):
+    """
+    Convert a class to a configclass
+    """
+
+    def wrap(cls):
+        if not is_dataclass(cls):
+            cls = dataclass(cls)
+        for f in fields(cls):
+            wrapped_field: Field = optionfield(tp=f.type, options=options(cls, f))
+            f.metadata = wrapped_field.metadata
+            if f.default is MISSING and f.default_factory is MISSING:
+                raise ValueError(
+                    (
+                        f"All fields for a configclass should have defaults."
+                        f" Found {f.name} without one."
+                    )
+                )
+        cls = wrappedclass(cls)
+        setattr(cls, CONFIGFIELD, True)
+        return cls
+
+    # See if we're being called as @configclass or @configclass().
+    if cls is None:
+        # We're called with parens.
+        return wrap
+
+    # We're called as @configclass without parens.
+    return wrap(cls)
+
+
+def override(left, right, *, inplace: bool = False, ignore: list = None):
+    if not inplace:
+        left = copy.deepcopy(left)
+    if ignore is None:
+        ignore = []
+
+    if is_configclass(right):
+        right = asdict(right)
+    for f in fields(left):
+        value = right.get(f.name, MISSING)
+        if value is MISSING or value in ignore:
+            continue
+        if is_configclass(f.type):
+            setattr(left, f.name, override(getattr(left, f.name), value, ignore=ignore))
+        else:
+            setattr(left, f.name, value)
+
+    return left     

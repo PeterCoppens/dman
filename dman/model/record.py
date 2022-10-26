@@ -4,7 +4,6 @@ import uuid
 
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any
-from pathlib import Path
 
 from dman.core import log
 from dman.core.serializables import (
@@ -21,118 +20,24 @@ from dman.core.serializables import (
     Unserializable,
 )
 
-from dman.utils.user import prompt_user
-from dman.utils.regex import substitute
 from dman.utils.smartdataclasses import AUTO, overrideable
 from dman.core.storables import (
     STO_TYPE,
     is_storable,
     storable_type,
-    read,
-    write,
+    storable_name,
+    FileSystem,
+    config
 )
-from dman.core.path import logger_context, normalize_path, get_root_path
+from dman.core.path import logger_context
 
 
 REMOVE = "__remove__"
+EXTENSION = "__ext__"
 
 
-@dataclass
-class Config:
-    on_retouch: str = "ignore"  # prompt | quit | ignore | auto       # TODO field with options
-
-
-config = Config()
-
-
-class FileSystem:
-    def __init__(self, root: os.PathLike = None):
-        self.root = get_root_path() if root is None else root
-        self.touched = []
-        if not os.path.exists(self.root):
-            os.makedirs(self.root)
-
-    def normalize(self, path: os.PathLike):
-        return str(Path(path).resolve().relative_to(self.root))
-
-    def get_default(self, path: os.PathLike):
-        directory, basename = os.path.split(path)
-        if path not in self.touched:
-            return directory, basename
-
-        stem, suffix = os.path.splitext(basename)
-        base, matches = substitute(r"[0-9]+\b", "", stem)
-        if len(matches) == 0:
-            base = f"{base}0"
-        else:
-            base = f"{base}{int(matches[0].group(0))+1}"
-        default = f"{base}{suffix}"
-        return self.get_default(os.path.join(directory, default))
-
-    def write(
-        self,
-        storable,
-        path: os.PathLike,
-        context: BaseContext = None,
-        *,
-        choice: str = None,
-    ):  
-        """Write a storable to disk, keeping in mind previous writes.
-
-        Args:
-            storable: The storable to write to disk.
-            path (os.PathLike): The path to which to write.
-            context (BaseContext, optional): The context for serialization. Defaults to None.
-            choice (str, optional): The default choice. Defaults to None.
-
-        Raises:
-            SerializationError: If the quit choice was passed 
-                and the system tries to write to the same file twice.
-        """
-
-        # Register the path in touched if not done so and execute write.
-        _path = self.normalize(path)
-        if _path not in self.touched:
-            self.touched.append(_path)
-            return write(storable, path, context)
-
-        # Get the default directory and choice.
-        directory, default = self.get_default(path)
-        choice = config.on_retouch if choice is None else choice
-
-        # If the choice is "prompt" then we request input from the user.
-        if choice == "prompt":
-            choice = prompt_user(
-                (
-                    f"Tried to write to same file twice: {path}.\n"
-                    "Specify alternative filename.\n"
-                    '    Enter "q" to cancel serialization and "x" to ignore'
-                ),
-                default=default,
-            )
-
-        # If the choice is "auto" (or the same as default) then write to the default
-        if choice == default or choice == "auto":
-            return self.write(
-                storable, os.path.join(directory, default), context, choice="auto"
-            )
-
-        # If the choice is "quit" then we raise a SerializationError, 
-        # which will cancel serialization.
-        if config.on_retouch == "quit" or choice in ("q", "quit"):
-            raise SerializationError(
-                f"Attempted to write to {path} twice during serialization. Operation exitted by user."
-            )
-
-        # If the choice is "ignore" then the file is overwritten.
-        if config.on_retouch == "ignore" or choice in ("x", "ignore"):
-            log.warning(f'Overwritten previously stored object at {path} during serialization.')
-            return write(storable, path, context)
-
-        # We reach this option if a custom file name was provided by the user.
-        return self.write(
-            storable, os.path.join(directory, choice), context, choice="prompt"
-        )
+def is_removable(obj):
+    return hasattr(obj, REMOVE)
 
 
 @serializable(name="__no_file")
@@ -194,14 +99,16 @@ class Context(BaseContext):
     def __init__(
         self,
         directory: os.PathLike,
-        parent: "Context" = None,
-        children: dict = None,
-        validate: bool = None,
+        fs: FileSystem = None
     ):
-        super().__init__(validate=validate)
-        self.directory = directory
-        self.parent = parent
-        self.children = dict() if children is None else children
+        super().__init__()
+        if fs is None:
+            fs = FileSystem(directory)
+        self.fs = fs
+        self.directory = fs.abspath(directory, validate=True)
+    
+    def abspath(self, path: str):
+        return self.fs.abspath(os.path.join(self.directory, path), validate=True)
 
     def _serialize__list(self, ser: list):
         res = []
@@ -228,58 +135,46 @@ class Context(BaseContext):
             res = {SER_TYPE: "_ser__mdict", SER_CONTENT: {"store": res}}
         return res
 
-    @staticmethod
-    def _sto_type(obj):
-        return obj if isinstance(obj, str) else getattr(obj, STO_TYPE, None)
-
     def write(self, target: str, storable):
-        self.open()
-        path = os.path.join(self.directory, target)
-        log.io(f'writing to file: "{normalize_path(path)}".', "context")
         try:
-            return write(storable, path, self)
+            return self.fs.write(storable, self.abspath(target), self)
         except SerializationError:
             raise
-        except Exception as e:
+        except Exception:
             res = ExcUnWritable.from_exception(
                 *sys.exc_info(),
-                type=self._sto_type(storable), 
-                info="Exception encountered while writing.", 
-                ignore=4
+                type=storable_name(storable),
+                info="Exception encountered while writing.",
+                ignore=4,
             )
             self._process_invalid("An error occurred while writing.", res)
             return res
 
     def read(self, target: str, sto_type):
         try:
-            path = os.path.join(self.directory, target)
-            log.io(f'reading from file: "{normalize_path(path)}".', "context")
-            return read(sto_type, path, self)
+            path = self.abspath(target)
+            return self.fs.read(sto_type, path, self)
         except FileNotFoundError:
             if not isinstance(sto_type, str):
                 sto_type = getattr(sto_type, STO_TYPE, None)
             res = NoFile(type=sto_type, info=f"Missing File: {path}.")
-            self._process_invalid("An error occurred while reading.", res)
+            self._process_invalid("Could not find specified file.", res)
             return res
         except SerializationError:
             raise
-        except Exception as e:
+        except Exception:
             res = ExcUnReadable.from_exception(
                 *sys.exc_info(),
-                type=self._sto_type(sto_type),
+                type=storable_name(sto_type),
                 info="Exception encountered while reading.",
-                target=target, 
-                ignore=4
+                target=target,
+                ignore=4,
             )
             self._process_invalid("An error occurred while reading.", res)
             return res
 
     def delete(self, target: str):
-        path = os.path.join(self.directory, target)
-        if os.path.exists(path):
-            log.io(f'Deleting file: "{normalize_path(path)}".', "context")
-            os.remove(path)
-        self.clean()
+        self.fs.delete(target)
 
     def remove(self, obj):
         original = obj
@@ -302,45 +197,9 @@ class Context(BaseContext):
                 for k in obj.keys():
                     self.remove(obj[k])
 
-    def open(self):
-        if not os.path.isdir(self.directory):
-            log.io(f'Creating directory "{normalize_path(self.directory)}".')
-            os.makedirs(self.directory)
+    def join(self, other: str):
+        return self.__class__(other, self.fs)
 
-    def clean(self):
-        if self.parent is None:
-            return  # do not clean root
-        if os.path.isdir(self.directory) and len(os.listdir(self.directory)) == 0:
-            log.io(f'Removing empty directory "{normalize_path(self.directory)}".')
-            os.rmdir(self.directory)
-            self.parent.clean()
-
-    def normalize(self, other: os.PathLike):
-        return os.path.relpath(
-            os.path.join(self.directory, other), start=self.directory
-        )
-
-    def make_child(self, other: os.PathLike):
-        res = self.__class__(os.path.join(self.directory, other), parent=self)
-        self.children[other] = res
-        res.validate = self.validate
-        return res
-
-    def join(self, other: os.PathLike) -> "Context":
-        # normalize
-        other = self.normalize(other)
-        if other == ".":
-            return self
-
-        head, tail = os.path.split(other)
-        if len(head) > 0:
-            return self.join(head).join(tail)
-
-        res = self.children.get(other, None)
-        if res is not None:
-            return res
-
-        return self.make_child(other)
 
 
 class _GenerateContext(Context):
@@ -356,10 +215,7 @@ class _GenerateContext(Context):
         self._logger_context.__exit__(*_)
 
     def make_child(self, other: os.PathLike):
-        res = Context(os.path.join(self.directory, other), parent=self)
-        self.children[other] = res
-        res.validate = self.validate
-        return res
+        return Context(os.path.join(self.directory, other), parent=self)
 
 
 def context(directory: str = None, *, verbose: bool = None, validate: bool = None):
@@ -441,6 +297,18 @@ class Unloaded:
         return f"UL[{self.type}]"
 
 
+@dataclass
+class Undefined:
+    type: str
+
+    def __repr__(self) -> str:
+        return f"ERR[{self.type}]"
+
+
+def is_undefined(obj):
+    return isinstance(obj, Undefined)
+
+
 @serializable(name="_record_exceptions")
 @dataclass
 class _RecordExceptions:
@@ -454,31 +322,17 @@ class _RecordExceptions:
         if self.read is not None:
             res["read"] = serialize(self.read)
         return res
-    
+
     @classmethod
     def __deserialize__(cls, ser: dict):
-        return cls(ser.get('write', None), ser.get('read', None))
+        return cls(ser.get("write", None), ser.get("read", None))
 
     def empty(self):
         return self.write is None and self.read is None
 
 
-@dataclass
-class Undefined:
-    type: str
-
-    def __repr__(self) -> str:
-        return f"ERR[{self.type}]"
-
-
-def is_undefined(obj):
-    return isinstance(obj, Undefined)
-
-
 @serializable(name="_ser__record")
 class Record:
-    EXTENSION = "__ext__"
-
     def __init__(
         self, content: Any, config: RecordConfig = None, preload: bool = False
     ):
@@ -513,9 +367,9 @@ class Record:
         if is_serializable(self._content) or is_dataclass(self._content):
             base = base << RecordConfig(suffix=".json")
         else:
-            base = base << RecordConfig(suffix=".sto")
+            base = base << RecordConfig(suffix=config.default_suffix)
 
-        request = RecordConfig(suffix=getattr(self._content, Record.EXTENSION, AUTO))
+        request = RecordConfig(suffix=getattr(self._content, EXTENSION, AUTO))
 
         self._config: RecordConfig = base << request << self._config
         self._evaluated = True
@@ -548,7 +402,7 @@ class Record:
         if is_unloaded(content) or is_undefined(content):
             return f"Record({content}, target={self.target}{preload_str})"
         return f"Record({storable_type(content)}, target={self.target}{preload_str})"
-    
+
     def load(self):
         if not is_unloaded(self._content):
             return self._content
@@ -578,10 +432,12 @@ class Record:
             self.exceptions.write = local.write(target, self._content)
         else:
             self.exceptions.write = UnWritable(
-                type=self.sto_type, 
-                info=f"Invalid context passed to Record({self.sto_type}, target={self.target})."
+                type=self.sto_type,
+                info=f"Invalid context passed to Record({self.sto_type}, target={self.target}).",
             )
-            context._process_invalid('Exception encountered during write.', self.exceptions.write)
+            context._process_invalid(
+                "Exception encountered during write.", self.exceptions.write
+            )
 
     @staticmethod
     def __parse(config: RecordConfig, context: Context):
@@ -627,14 +483,13 @@ class Record:
                 target=config.target,
             )
             context._process_invalid(
-                'Exception encountered during read.', 
-                exceptions.read
+                "Exception encountered during read.", exceptions.read
             )
             content = Undefined(sto_type)
 
         out = cls(content=content, config=config, preload=preload)
         if preload:
-            out.content
+            out.load()
         out.exceptions = exceptions
         return out
 
@@ -646,7 +501,9 @@ class Record:
                 local.remove(content)  # remove contents
                 local.delete(target)  # remove this file
             else:
-                log.warning("Loaded content is invalid. Could not continue removing.", "record")
+                log.warning(
+                    "Loaded content is invalid. Could not continue removing.", "record"
+                )
 
 
 def recordconfig(
@@ -690,10 +547,6 @@ def record(
         recordconfig(stem=stem, suffix=suffix, name=name, subdir=subdir),
         preload,
     )
-
-
-def is_removable(obj):
-    return hasattr(obj, REMOVE)
 
 
 def remove(obj, context: Context = None):
