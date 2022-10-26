@@ -257,6 +257,52 @@ class FileSystem:
         default = f"{base}{suffix}"
         return self.suggest_alternative(os.path.join(directory, default))
 
+    def make_valid(self, path: os.PathLike, choice: str = None):
+        # Check if already valid
+        if self.normalize(path) not in self.touched:
+            return path
+
+        # Get the default directory and choice.
+        directory, default = self.suggest_alternative(path)
+        choice = config.on_retouch if choice is None else choice
+
+        # If the choice is "prompt" then we request input from the user.
+        if choice == "prompt":
+            choice = prompt_user(
+                (
+                    f"Tried to write to same file twice: {path}.\n"
+                    "Specify alternative filename.\n"
+                    '    Enter "q" to cancel serialization and "x" to ignore'
+                ),
+                default=default,
+            )
+
+        # If the choice is "auto" (or the same as default) then write to the default
+        if choice == default or choice == "auto":
+            return self.make_valid(os.path.join(directory, default) , choice="auto")
+
+        # If the choice is "quit" then we raise a SerializationError,
+        # which will cancel serialization.
+        if choice in ("q", "quit"):
+            raise FileSystemError(
+                (
+                    f'Attempted to write to "{normalize_path(path)}" twice during serialization.'
+                    "Operation exited by user."
+                )
+            )
+
+        # If the choice is "ignore" then the file is overwritten.
+        if choice in ("x", "ignore", "_ignore"):
+            if choice != '_ignore':
+                log.warning(
+                    f'Overwritten previously stored object at "{normalize_path(path)}".',
+                    "fs",
+                )
+            return path
+        # We reach this option if a custom file name was provided by the user.
+        return self.make_valid(os.path.join(directory, choice))
+
+
     def write(
         self,
         storable,
@@ -277,57 +323,11 @@ class FileSystem:
             SerializationError: If the quit choice was passed
                 and the system tries to write to the same file twice.
         """
-        # Create folder
         path = self.open(path)
-
-        # Register the path in touched if not done so and execute write.
-        _path = self.normalize(path)
-        if _path not in self.touched:
-            self.touched.append(_path)
-            return write(storable, path, context)
-
-        # Get the default directory and choice.
-        directory, default = self.suggest_alternative(path)
-        choice = config.on_retouch if choice is None else choice
-
-        # If the choice is "prompt" then we request input from the user.
-        if choice == "prompt":
-            choice = prompt_user(
-                (
-                    f"Tried to write to same file twice: {path}.\n"
-                    "Specify alternative filename.\n"
-                    '    Enter "q" to cancel serialization and "x" to ignore'
-                ),
-                default=default,
-            )
-
-        # If the choice is "auto" (or the same as default) then write to the default
-        if choice == default or choice == "auto":
-            return self.write(
-                storable, os.path.join(directory, default), context, choice="auto"
-            )
-
-        # If the choice is "quit" then we raise a SerializationError,
-        # which will cancel serialization.
-        if choice in ("q", "quit"):
-            raise FileSystemError(
-                (
-                    f"Attempted to write to {path} twice during serialization."
-                    "Operation exited by user."
-                )
-            )
-
-        # If the choice is "ignore" then the file is overwritten.
-        if choice in ("x", "ignore"):
-            log.warning(
-                f"Overwritten previously stored object at {path} during serialization.",
-                "fs",
-            )
-            return write(storable, path, context)
-        # We reach this option if a custom file name was provided by the user.
-        return self.write(
-            storable, os.path.join(directory, choice), context, choice="prompt"
-        )
+        path = self.make_valid(path, choice=choice)
+        self.touched.append(self.normalize(path))
+        return write(storable, path, context)
+        
 
     def read(self, sto_type, target: str, context: BaseContext = None):
         """Read a file from the specified target with specified type."""

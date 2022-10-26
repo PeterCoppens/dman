@@ -20,6 +20,8 @@ from dman.model.repository import uninterrupted
 from dman.utils import sjson
 from dman.utils.smartdataclasses import idataclass, AUTO
 
+from dman.config import params
+
 try:
     import dman.numeric as numeric
     _numeric_available = True

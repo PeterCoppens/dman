@@ -107,8 +107,12 @@ class Context(BaseContext):
         self.fs = fs
         self.directory = fs.abspath(directory, validate=True)
     
-    def abspath(self, path: str):
+    def abspath(self, path: os.PathLike):
         return self.fs.abspath(os.path.join(self.directory, path), validate=True)
+
+    def normalize(self, path: os.PathLike):
+        """Normalize a path relative to the current directory."""
+        return os.path.relpath(self.abspath(path), start=self.directory)
 
     def _serialize__list(self, ser: list):
         res = []
@@ -135,9 +139,13 @@ class Context(BaseContext):
             res = {SER_TYPE: "_ser__mdict", SER_CONTENT: {"store": res}}
         return res
 
-    def write(self, target: str, storable):
+    def make_valid(self, target: str):
+        path = self.fs.make_valid(self.abspath(target))
+        return self.normalize(path)
+
+    def write(self, target: str, storable, *, choice: str = None):
         try:
-            return self.fs.write(storable, self.abspath(target), self)
+            return self.fs.write(storable, self.abspath(target), self, choice=choice)
         except SerializationError:
             raise
         except Exception:
@@ -237,7 +245,7 @@ class RecordConfig:
     stem: str
 
     @classmethod
-    def from_target(cls, /, *, target: str):
+    def from_target(cls, target: str):
         subdir, name = os.path.split(target)
         return cls.from_name(name=name, subdir=subdir)
 
@@ -425,11 +433,13 @@ class Record:
             elif self.exceptions.write is not None:
                 self.load()  # the previous store failed
             elif is_unloaded(self._content):
-                return  # no load needed
+                return self._content.target # no load needed
 
             # execute store
-            target, local = Record.__parse(self.config, context)
-            self.exceptions.write = local.write(target, self._content)
+            local = context.join(self.config.subdir)
+            target = local.make_valid(self.config.name)
+            self.exceptions.write = local.write(target, self._content, choice='_ignore')
+            return os.path.join(self.config.subdir, target)
         else:
             self.exceptions.write = UnWritable(
                 type=self.sto_type,
@@ -438,14 +448,12 @@ class Record:
             context._process_invalid(
                 "Exception encountered during write.", self.exceptions.write
             )
-
-    @staticmethod
-    def __parse(config: RecordConfig, context: Context):
-        return config.name, context.join(config.subdir)
+            return self.target
 
     def __serialize__(self, context: BaseContext):
         sto_type = self.sto_type
-        self.store(context)
+        target = self.store(context)
+        self._config = RecordConfig.from_target(target)
         res = {
             "target": serialize(self.config, content_only=True),
             "sto_type": sto_type,
@@ -474,8 +482,9 @@ class Record:
 
         # try to load the contents of the record
         if isinstance(context, Context):
-            target, local = Record.__parse(config, context)
-            content = Unloaded(sto_type, target, context.directory, local)
+            content = Unloaded(
+                sto_type, config.name, context.directory, context.join(config.subdir)
+            )
         else:
             exceptions.read = UnReadable(
                 type=sto_type,
