@@ -5,6 +5,7 @@ import os
 
 from typing import Any, Callable, Iterable, Union
 from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field, asdict
+from typing_extensions import dataclass_transform
 from dman.core import log
 
 from dman.utils.smartdataclasses import wrappedclass, wrapfield, is_wrapfield
@@ -183,6 +184,7 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
         init=init, repr=repr, hash=hash, compare=compare, metadata=metadata)
 
 
+@dataclass_transform(field_specifiers=(wrapfield, recordfield, serializefield))
 def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, order=False,
                unsafe_hash=False, frozen=False, storable: bool = False, compact: bool = False, template: Any = None, **kwargs):
     """
@@ -213,7 +215,7 @@ def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, 
 def is_modelclass(cls):
     return getattr(cls, MODELCLASS, False)
 
-
+    
 def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, as_storable, compact, template, **kwargs):
     # convert to dataclass
     res = cls

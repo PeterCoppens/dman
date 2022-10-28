@@ -1,10 +1,16 @@
+from typing_extensions import dataclass_transform
 from dman.core.serializables import serializable, register_serializable
 from dman.core.storables import storable
-from dman.model.modelclasses import recordfield, serializefield
+from dman.model.modelclasses import (
+    recordfield,
+    serializefield,
+    wrapfield,
+)
 from dman.utils import sjson
 from dman.model.record import Context
+import dman.model.modelclasses
 
-from typing import Union
+from typing import Union, Any
 import numpy as np
 
 
@@ -67,7 +73,7 @@ def sarrayfield(
     as_type: type = None,
     compare: bool = False,
     empty_as_none: bool = False,
-    **kwargs
+    **kwargs,
 ):
     def to_sarray(arg):
         if isinstance(arg, (list, tuple)):
@@ -83,7 +89,65 @@ def sarrayfield(
     return serializefield(**kwargs, pre=to_sarray)
 
 
+from dman.model.modelclasses import modelclass as _modelclass
+
+
+@dataclass_transform(
+    field_specifiers=(wrapfield, recordfield, serializefield, sarrayfield, barrayfield)
+)
+def modelclass(
+    cls=None,
+    /,
+    *,
+    name: str = None,
+    init=True,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=False,
+    storable: bool = False,
+    compact: bool = False,
+    template: Any = None,
+    **kwargs,
+):
+    """
+    Convert a class to a modelclass.
+        Returns the same class as was passed in, with dunder methods added based on the fields
+        defined in the class.
+        The class is automatically made ``serializable`` by adding ``__serialize__``
+        and ``__deserialize__``.
+
+        The arguments of the ``dataclass`` decorator are provided and some
+        additional arguments are also available.
+
+    :param bool init: add an ``__init__`` method.
+    :param bool repr: add a ``__repr__`` method.
+    :param bool order: rich comparison dunder methods are added.
+    :param bool unsafe_hash: add a ``__hash__`` method function.
+    :param bool frozen: fields may not be assigned to after instance creation.
+    :param bool storable: make the class storable with a ``__write__`` and ``__read__``.
+    :param bool compact: do not include serializable types during serialization (results in more compact serializations).
+    :param Any template: template for serialization.
+    """
+    return _modelclass(
+        cls,
+        name=name,
+        init=init,
+        repr=repr,
+        eq=eq,
+        order=order,
+        unsafe_hash=unsafe_hash,
+        frozen=frozen,
+        storable=storable,
+        compact=compact,
+        template=template,
+        **kwargs,
+    )
+
+
 from dman.utils.sjson import register_atomic_alias
+
 register_atomic_alias(np.int32, int)
 register_atomic_alias(np.int64, int)
 register_atomic_alias(np.float32, float)
@@ -91,7 +155,7 @@ register_atomic_alias(np.float64, float)
 
 
 register_serializable(
-    '_num__ndarray',
+    "_num__ndarray",
     np.ndarray,
     serialize=lambda ser: ser.view(sarray).__serialize__(),
     deserialize=lambda ser: sarray.__deserialize__(ser).view(np.ndarray),
@@ -103,4 +167,4 @@ if __name__ == "__main__":
 
     ser = dman.save("array", np.eye(10))
     print(dman.sjson.dumps(ser, indent=4))
-    print(dman.load('array'))
+    print(dman.load("array"))
