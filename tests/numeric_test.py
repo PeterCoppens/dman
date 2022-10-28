@@ -13,6 +13,7 @@ def test_container():
     container = Container(np.zeros(1), np.ones(1), np.ones(1), np.ones(1))
     assert isinstance(container.a, sarray)
     assert isinstance(container.a, sarray[int])
+    assert not isinstance(container.a, sarray[float])
     assert isinstance(container.a[0], np.int64)
 
     assert isinstance(container.b, sarray)

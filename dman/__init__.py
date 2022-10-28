@@ -24,9 +24,11 @@ from dman.config import params
 
 try:
     import dman.numeric as numeric
+    from dman.numeric import barray, sarray, carray
     _numeric_available = True
 except ImportError as e:
     _numeric_available = False
+    barray, sarray, carray = None, None, None
 
 try:
     import dman.tui as tui

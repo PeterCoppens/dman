@@ -23,7 +23,7 @@ How to implement a resumable experiment.
 
 import dman
 from dman import tui
-from dman.numeric import barray, barrayfield
+from dman.numeric import barray
 
 import numpy as np
 import numpy.random as npr
@@ -39,7 +39,7 @@ from typing import Tuple
 
 @dman.modelclass
 class Experiment:
-    data: barray = barrayfield(stem="data", default=None)
+    data: barray = dman.recordfield(stem="data", default=None)
     state: Tuple[int] = None
 
 

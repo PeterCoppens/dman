@@ -11,12 +11,7 @@ import numpy as np
 class _typed_array(type):
     __cached__ = dict()
 
-    def __new__(cls, name, bases, dct):
-        res = super().__new__(cls, name, bases, dct)
-        cls.__cached__[(cls, None)] = res
-        return res
-
-    def __getitem__(cls, tp: Type = None):
+    def __getitem__(cls, tp: Type):
         res = _typed_array.__cached__.get((cls, tp), None)
         if res is not None:
             return res

@@ -29,8 +29,8 @@ class Config:
 
 @dman.modelclass(storable=True)
 class Samples:
-    X: dman.numeric.barray = dman.numeric.barrayfield(stem='x-samples', subdir='samples')
-    Y: dman.numeric.barray = dman.numeric.barrayfield(stem='y-samples', subdir='samples')
+    X: dman.barray = dman.recordfield(stem='x-samples', subdir='samples')
+    Y: dman.barray = dman.recordfield(stem='y-samples', subdir='samples')
     
 
 def generate_samples(cfg: Config):

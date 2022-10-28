@@ -31,7 +31,7 @@ How to specify file names during saving.
 # each component in detail.
 
 import dman
-from dman.numeric import barray, barrayfield
+from dman.numeric import barray
 import numpy as np
 from dman import tui
 import shutil, os
@@ -47,7 +47,7 @@ class Container:
     data0: barray = dman.recordfield(stem="data0", subdir="root")
 
     # store in ./data1.npy (and automatically convert to `barray`)
-    data1: barray = barrayfield(stem="data1")
+    data1: barray = dman.recordfield(stem="data1")
 
     # store `smlist` in ./containers/lst.json
     # store contents in ./containers/lst/...
