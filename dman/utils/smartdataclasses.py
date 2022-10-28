@@ -90,6 +90,14 @@ def is_wrapfield(fld: Field):
     return fld.metadata.get(DESCRIPTOR_KEY, None) is not None
 
 
+def get_descriptor(fld: Field):
+    return fld.metadata.get(DESCRIPTOR_KEY, None)
+
+
+def set_descriptor(fld: Field, value):
+    fld.metadata[DESCRIPTOR_KEY] = value
+
+
 @dataclass_transform(field_specifiers=(wrapfield,))
 def wrappedclass(
     cls=None,

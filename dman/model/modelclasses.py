@@ -3,12 +3,12 @@ from collections.abc import MutableSequence
 import copy
 import os
 
-from typing import Any, Callable, Iterable, Union
+from typing import Any, Callable, Iterable, Union, Type
 from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field, asdict
 from typing_extensions import dataclass_transform
 from dman.core import log
 
-from dman.utils.smartdataclasses import wrappedclass, wrapfield, is_wrapfield
+from dman.utils.smartdataclasses import wrappedclass, wrapfield, is_wrapfield, get_descriptor
 from dman.core.storables import is_storable, storable
 from dman.model.record import Record, record, REMOVE, remove
 from dman.core.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE, is_serializable
@@ -184,6 +184,15 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
         init=init, repr=repr, hash=hash, compare=compare, metadata=metadata)
 
 
+__pre_fields = dict()
+def register_preset(tp: Type, pre: Callable[[Any], Any]):
+    __pre_fields[tp] = pre
+
+
+def get_preset(tp: Type):
+    return __pre_fields.get(tp, None)
+
+
 @dataclass_transform(field_specifiers=(wrapfield, recordfield, serializefield))
 def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, order=False,
                unsafe_hash=False, frozen=False, storable: bool = False, compact: bool = False, template: Any = None, **kwargs):
@@ -225,14 +234,23 @@ def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, 
 
     # auto convert fields if necessary
     for f in fields(res):
+        pre = get_preset(f.type)
         if is_wrapfield(f):
-            continue
-        if is_serializable_field(f):
-            ser_field: Field = field(metadata=f.metadata.get('__base', None))
+            if pre is None:
+                continue
+            descr = get_descriptor(f)
+            if isinstance(descr, (RecordField, SerializeField)):
+                if descr.pre is None:
+                    descr.pre = pre                
+        elif is_serializable_field(f):
+            ser_field: Field = serializefield(metadata=f.metadata.get('__base', None), pre=pre)
             f.metadata = ser_field.metadata            
         elif is_storable(f.type):
-            wrapped_field: Field = recordfield(metadata=f.metadata)
+            wrapped_field: Field = recordfield(metadata=f.metadata, pre=pre)
             f.metadata = wrapped_field.metadata
+        elif pre is not None:
+            ser_field: Field = serializefield(metadata=f.metadata.get('__base', None), pre=pre)
+            f.metadata = ser_field.metadata       
 
     # wrap the fields
     res = wrappedclass(res)

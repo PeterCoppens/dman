@@ -1,21 +1,42 @@
-from typing_extensions import dataclass_transform
 from dman.core.serializables import serializable, register_serializable
 from dman.core.storables import storable
-from dman.model.modelclasses import (
-    recordfield,
-    serializefield,
-    wrapfield,
-)
+from dman.model.modelclasses import register_preset
 from dman.utils import sjson
-from dman.model.record import Context
 import dman.model.modelclasses
 
-from typing import Union, Any
+from typing import Type, Union
 import numpy as np
 
 
+class _typed_array(type):
+    __cached__ = dict()
+
+    def __new__(cls, name, bases, dct):
+        res = super().__new__(cls, name, bases, dct)
+        cls.__cached__[(cls, None)] = res
+        return res
+
+    def __getitem__(cls, tp: Type = None):
+        res = _typed_array.__cached__.get((cls, tp), None)
+        if res is not None:
+            return res
+
+        name = f"{cls.__name__}[{tp.__name__}]"
+        res = _typed_array.__new__(
+            _typed_array, name, (cls,), {"__qualname__": name, "__module__": __name__}
+        )
+        register_preset(
+            res,
+            lambda arg: arg.view(res).astype(tp)
+            if isinstance(arg, np.ndarray)
+            else arg,
+        )
+        _typed_array.__cached__[(cls, tp)] = res
+        return res
+
+
 @storable(name="_num__barray")
-class barray(np.ndarray):
+class barray(np.ndarray, metaclass=_typed_array):
     __ext__ = ".npy"
 
     def __write__(self, path):
@@ -30,7 +51,7 @@ class barray(np.ndarray):
 
 
 @serializable(name="_num__sarray")
-class sarray(np.ndarray):
+class sarray(np.ndarray, metaclass=_typed_array):
     def __serialize__(self):
         if self.ndim == 0:
             return sjson.dumps(float(self))
@@ -52,98 +73,27 @@ class sarray(np.ndarray):
 
 
 @serializable(name="_num__carray")
-class carray(sarray):
+class carray(np.ndarray, metaclass=_typed_array):
     def __eq__(self, other):
         return np.array_equal(self, other)
 
+    def __serialize__(self):
+        return self.view(sarray).__serialize__()
 
-def barrayfield(*, as_type: type = None, **kwargs):
-    def to_barray(arg):
-        if isinstance(arg, np.ndarray):
-            arg = arg.view(barray)
-        if as_type is not None:
-            arg = arg.astype(as_type)
-        return arg
-
-    return recordfield(**kwargs, pre=to_barray)
+    @classmethod
+    def __deserialize__(cls, obj: Union[list, str]):
+        return sarray.__deserialize__(obj).view(cls)
 
 
-def sarrayfield(
-    *,
-    as_type: type = None,
-    compare: bool = False,
-    empty_as_none: bool = False,
-    **kwargs,
-):
-    def to_sarray(arg):
-        if isinstance(arg, (list, tuple)):
-            arg = np.array(arg)
-        if isinstance(arg, np.ndarray):
-            arg = arg.view(carray) if compare else arg.view(sarray)
-        if as_type is not None:
-            arg = arg.astype(as_type)
-        if empty_as_none and np.size(arg) == 0:
-            arg = None
-        return arg
-
-    return serializefield(**kwargs, pre=to_sarray)
-
-
-from dman.model.modelclasses import modelclass as _modelclass
-
-
-@dataclass_transform(
-    field_specifiers=(wrapfield, recordfield, serializefield, sarrayfield, barrayfield)
+register_preset(
+    barray, lambda arg: arg.view(barray) if isinstance(arg, np.ndarray) else arg
 )
-def modelclass(
-    cls=None,
-    /,
-    *,
-    name: str = None,
-    init=True,
-    repr=True,
-    eq=True,
-    order=False,
-    unsafe_hash=False,
-    frozen=False,
-    storable: bool = False,
-    compact: bool = False,
-    template: Any = None,
-    **kwargs,
-):
-    """
-    Convert a class to a modelclass.
-        Returns the same class as was passed in, with dunder methods added based on the fields
-        defined in the class.
-        The class is automatically made ``serializable`` by adding ``__serialize__``
-        and ``__deserialize__``.
-
-        The arguments of the ``dataclass`` decorator are provided and some
-        additional arguments are also available.
-
-    :param bool init: add an ``__init__`` method.
-    :param bool repr: add a ``__repr__`` method.
-    :param bool order: rich comparison dunder methods are added.
-    :param bool unsafe_hash: add a ``__hash__`` method function.
-    :param bool frozen: fields may not be assigned to after instance creation.
-    :param bool storable: make the class storable with a ``__write__`` and ``__read__``.
-    :param bool compact: do not include serializable types during serialization (results in more compact serializations).
-    :param Any template: template for serialization.
-    """
-    return _modelclass(
-        cls,
-        name=name,
-        init=init,
-        repr=repr,
-        eq=eq,
-        order=order,
-        unsafe_hash=unsafe_hash,
-        frozen=frozen,
-        storable=storable,
-        compact=compact,
-        template=template,
-        **kwargs,
-    )
+register_preset(
+    carray, lambda arg: arg.view(carray) if isinstance(arg, np.ndarray) else arg
+)
+register_preset(
+    sarray, lambda arg: arg.view(sarray) if isinstance(arg, np.ndarray) else arg
+)
 
 
 from dman.utils.sjson import register_atomic_alias

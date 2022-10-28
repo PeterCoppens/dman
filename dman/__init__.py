@@ -12,7 +12,7 @@ from dman.core.path import mount, get_root_path, AUTO
 from dman.core import log
 
 from dman.model.record import record, remove, Context
-from dman.model.modelclasses import recordfield, mdict, smdict, mlist, smlist, mruns, smruns, serializefield
+from dman.model.modelclasses import recordfield, mdict, smdict, mlist, smlist, mruns, smruns, serializefield, modelclass
 from dman.model.modelclasses import smlist_factory, smdict_factory, smruns_factory, mruns_factory, mdict_factory, mlist_factory
 from dman.model.repository import track, save, load, store
 from dman.model.repository import uninterrupted, context
@@ -25,10 +25,8 @@ from dman.config import params
 try:
     import dman.numeric as numeric
     _numeric_available = True
-    from dman.numeric import modelclass
 except ImportError as e:
     _numeric_available = False
-    from dman.model.modelclasses import modelclass
 
 try:
     import dman.tui as tui
