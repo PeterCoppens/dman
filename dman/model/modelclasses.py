@@ -9,10 +9,13 @@ from dman.core import log
 
 from dman.utils.smartdataclasses import wrappedclass, wrappedfields, wrapfield, AUTO, is_wrapfield
 from dman.core.storables import is_storable, storable
-from dman.model.record import Record, RecordConfig, record, REMOVE, remove, recordconfig
+from dman.model.record import Record, RecordConfig, record, REMOVE, remove, target
 from dman.core.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE, is_serializable
 from dman.core.serializables import BaseContext, serialize, deserialize, serializable
 
+
+os.PathLike
+os.path.split
 
 STO_FIELD = '_record__fields'
 SER_FIELD = '_serial__fields'
@@ -34,6 +37,14 @@ def get_record(self, key: str, default= MISSING):
 
 def set_record(self, key: str, value):
     setattr(self, _record_key(key), value)
+
+
+    
+
+
+# class RecordField:
+#     def __init__(self, cfg: tuple):
+#         self.cfg = cfg
 
 
 class RecordField:
@@ -454,7 +465,7 @@ class _blist(MutableSequence):
 
         if is_storable(value):
             rec: Record = self.store.__getitem__(idx)
-            cfg = recordconfig(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._config.subdir, subdir))
+            cfg = target(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._config.subdir, subdir))
             rec._config = rec._config << cfg
             if preload:
                 rec.preload = preload
@@ -685,7 +696,7 @@ class _bdict(MutableMapping):
         self.__setitem__(key, value)
         if is_storable(value):
             rec: Record = self.store.__getitem__(key)
-            cfg = recordconfig(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._config.subdir, subdir))
+            cfg = target(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._config.subdir, subdir))
             rec._config = rec._config << cfg
             if preload:
                 rec.preload = preload
@@ -784,7 +795,7 @@ class _bruns(_blist):
 
         if is_storable(value):
             rec: Record = self.store.__getitem__(idx)
-            cfg = recordconfig(
+            cfg = target(
                 stem=stem,
                 suffix=suffix, 
                 name=name,

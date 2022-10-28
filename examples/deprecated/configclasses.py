@@ -38,9 +38,9 @@ if __name__ == '__main__':
 
     with TemporaryDirectory() as base:
         ctx = Context(base)
-        target = os.path.join(ctx.directory, 'test.ini')
+        target = os.path.join(ctx.subdir, 'test.ini')
         write(cfg, target, ctx)
-        tui.walk_directory(ctx.directory)
+        tui.walk_directory(ctx.subdir)
 
         res: TestConfig = read(TestConfig, target, ctx)
         print(res.info.a)

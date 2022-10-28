@@ -2,7 +2,7 @@ from typing import Any
 import pytest
 
 
-from dman import serializable, serialize, deserialize, sjson, dataclass, isvalid, register_serializable
+from dman.core.serializables import serializable, serialize, deserialize, sjson, dataclass, isvalid, register_serializable
 from dman.core.serializables import SER_TYPE, SER_CONTENT, ExcUndeserializable, Undeserializable, Unserializable
 
 

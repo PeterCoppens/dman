@@ -32,7 +32,7 @@ if __name__ == '__main__':
         print(dct)
 
         print()
-        tui.walk_directory(ctx.directory)
+        tui.walk_directory(ctx.subdir)
 
     input('\n >>> continue?')
 
@@ -42,18 +42,18 @@ if __name__ == '__main__':
         dct = mdict(a=5, b=TestSto('b'), c=TestSto('c'), d=TestSto('d'), e='hello')
         ser = serialize(dct, ctx)
         print(sjson.dumps(ser, indent=4))
-        tui.walk_directory(ctx.directory)
+        tui.walk_directory(ctx.subdir)
 
         print('==== delete items === ')
         print(dct.pop('d'))
         print(dct.pop('e'))
         ser = serialize(dct, ctx)
         print(sjson.dumps(ser, indent=4))
-        tui.walk_directory(ctx.directory)
+        tui.walk_directory(ctx.subdir)
 
         print('==== delete dictionary === ')
         remove(dct, ctx)
-        tui.walk_directory(ctx.directory)
+        tui.walk_directory(ctx.subdir)
 
     input('\n >>> continue?')
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
         print('remove test.tst ...')
         os.remove(os.path.join(base, 'stamps', 'test.tst'))
-        tui.walk_directory(ctx.directory)
+        tui.walk_directory(ctx.subdir)
 
         dct = deserialize(ser, ctx)
         print('after de-serialization:\n', dct.get('test', None))

@@ -3,7 +3,7 @@ import sys
 import uuid
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any
+from typing import Any, Tuple, Union
 
 from dman.core import log
 from dman.core.serializables import (
@@ -19,8 +19,6 @@ from dman.core.serializables import (
     ExcUnserializable,
     Unserializable,
 )
-
-from dman.utils.smartdataclasses import AUTO, overrideable
 from dman.core.storables import (
     STO_TYPE,
     is_storable,
@@ -29,7 +27,7 @@ from dman.core.storables import (
     FileSystem,
     config
 )
-from dman.core.path import logger_context
+from dman.core.path import target, mount, Target, Mount, AUTO
 
 
 REMOVE = "__remove__"
@@ -98,21 +96,57 @@ class ExcUnReadable(ExcUnserializable):
 class Context(BaseContext):
     def __init__(
         self,
-        directory: os.PathLike,
-        fs: FileSystem = None
+        fs: FileSystem,
+        subdir: os.PathLike = '',
     ):
         super().__init__()
-        if fs is None:
-            fs = FileSystem(directory)
         self.fs = fs
-        self.directory = fs.abspath(directory, validate=True)
+        self.subdir = subdir
     
-    def abspath(self, path: os.PathLike):
-        return self.fs.abspath(os.path.join(self.directory, path), validate=True)
+    @property
+    def directory(self):
+        return self.fs.abspath(self.subdir, validate=False)
+    
+    def __repr__(self):
+        return f'Context({self.directory})'
 
-    def normalize(self, path: os.PathLike):
-        """Normalize a path relative to the current directory."""
-        return os.path.relpath(self.abspath(path), start=self.directory)
+    @classmethod
+    def mount(
+        cls,
+        key: str,
+        *,
+        subdir: os.PathLike = "",
+        cluster: bool = True,
+        generator: str = AUTO,
+        base: os.PathLike = None,
+        gitignore: bool = True,
+    ):
+        """Get a context from a mount point.
+            The path of the file is determined as described below.
+
+                If the files are clustered then the path is ``<base>/<generator>/<subdir>/<key>/<key>.<ext>``
+                If cluster is set to False then the path is ``<base>/<generator>/<subdir>/<key>.<ext>``
+
+                When base is not provided then it is set to .dman if
+                it does not exist an exception is raised.
+
+                When generator is not provided it will automatically be set based on
+                the location of the script relative to the .dman folder
+                (again raising an exception if it is not found). For example
+                if the script is located in ``<project-root>/examples/folder/script.py``
+                and .dman is located in ``<project-root>/.dman``.
+                Then generator is set to cache/examples:folder:script (i.e.
+                the / is replaced by : in the output).
+
+        Args:
+            key (str):  Key for the file.
+            subdir (os.PathLike, optional): Specifies optional subdirectory in generator folder. Defaults to "".
+            cluster (bool, optional): A subfolder ``key`` is automatically created when set to True. Defaults to True.
+            generator (str, optional): Specifies the generator that created the file. Defaults to script label.
+            base (os.PathLike, optional): Specifies the root folder. Defaults to ".dman".
+            gitignore (bool, optional): Specifies whether files added to this mount point should be ignored.
+        """
+        return cls(FileSystem.mount(key, subdir=subdir, cluster=cluster, generator=generator, base=base, gitignore=gitignore))
 
     def _serialize__list(self, ser: list):
         res = []
@@ -139,13 +173,16 @@ class Context(BaseContext):
             res = {SER_TYPE: "_ser__mdict", SER_CONTENT: {"store": res}}
         return res
 
-    def make_valid(self, target: str):
-        path = self.fs.make_valid(self.abspath(target))
-        return self.normalize(path)
+    def absolute(self, target: os.PathLike):
+        if not isinstance(target, Target):
+            target = Target.from_path(target)
+        return target.update(subdir=os.path.join(self.subdir, target.subdir))
 
-    def write(self, target: str, storable, *, choice: str = None):
+    def write(self, target: os.PathLike, storable):
         try:
-            return self.fs.write(storable, self.abspath(target), self, choice=choice)
+            target = Target.from_path(target)
+            local, _target = self.open(target)
+            return target.update(name=_target.name), self.fs.write(storable, local.absolute(_target), local, open=False)
         except SerializationError:
             raise
         except Exception:
@@ -153,19 +190,19 @@ class Context(BaseContext):
                 *sys.exc_info(),
                 type=storable_name(storable),
                 info="Exception encountered while writing.",
-                ignore=4,
+                ignore=0,
             )
             self._process_invalid("An error occurred while writing.", res)
-            return res
+            return target.update(name=_target.name), res
 
-    def read(self, target: str, sto_type):
+    def read(self, target: os.PathLike, sto_type):
         try:
-            path = self.abspath(target)
-            return self.fs.read(sto_type, path, self)
+            local, target = self.open(target, choice='_ignore')
+            return self.fs.read(sto_type, local.absolute(target), local)
         except FileNotFoundError:
             if not isinstance(sto_type, str):
                 sto_type = getattr(sto_type, STO_TYPE, None)
-            res = NoFile(type=sto_type, info=f"Missing File: {path}.")
+            res = NoFile(type=sto_type, info=f"Missing Target: {target}.")
             self._process_invalid("Could not find specified file.", res)
             return res
         except SerializationError:
@@ -176,111 +213,48 @@ class Context(BaseContext):
                 type=storable_name(sto_type),
                 info="Exception encountered while reading.",
                 target=target,
-                ignore=4,
+                ignore=0,
             )
             self._process_invalid("An error occurred while reading.", res)
             return res
 
-    def delete(self, target: str):
-        self.fs.delete(target)
+    def remove(self, obj, target: os.PathLike=None):
+        """Remove object, stored at specified target."""
+        if target is None:
+            local = self
+        else:
+            # Parse the target
+            local, target = self.open(target, choice='ignore')
 
-    def remove(self, obj):
-        original = obj
+            # Remove the file associated with the object
+            local.fs.delete(target)  
+
+        # Remove files created by the object
+        tp = type(obj)
         if is_removable(obj):
-            with log.layer(type(obj).__name__, "remove"):
+            with log.layer(tp.__name__, "remove"):
                 inner_remove = getattr(obj, REMOVE, None)
                 if inner_remove is not None:
-                    inner_remove(self)
+                    inner_remove(local)
                 return
 
         if is_dataclass(obj):
             obj = asdict(obj)
 
         if isinstance(obj, (tuple, list)):
-            with log.layer(type(obj).__name__, "remove"):
+            with log.layer(tp.__name__, "remove"):
                 for x in obj[:]:
-                    self.remove(x)
+                    local.remove(x)
         elif isinstance(obj, dict):
-            with log.layer(type(original).__name__, "remove"):
+            with log.layer(tp.__name__, "remove"):
                 for k in obj.keys():
-                    self.remove(obj[k])
-
-    def join(self, other: str):
-        return self.__class__(other, self.fs)
-
-
-
-class _GenerateContext(Context):
-    def __init__(self, verbose: bool, **kwargs):
-        super().__init__(**kwargs)
-        self._logger_context = logger_context(verbose)
-        self._logger_context.__enter__()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *_):
-        self._logger_context.__exit__(*_)
-
-    def make_child(self, other: os.PathLike):
-        return Context(os.path.join(self.directory, other), parent=self)
-
-
-def context(directory: str = None, *, verbose: bool = None, validate: bool = None):
-    """Create a context factory.
-
-    :param directory (str): if specified a context instance at the directory is provided.
-        Otherwise a factory is returned.
-    :param verbose (int): verbosity level, defaults to the current level
-    :param validate (bool): validate the output, defaults to False
-    """
-    return _GenerateContext(verbose, directory=directory, validate=validate)
-
-
-@serializable(name="__ser_rec_config")
-@overrideable(frozen=True)
-class RecordConfig:
-    subdir: os.PathLike
-    suffix: str
-    stem: str
-
-    @classmethod
-    def from_target(cls, target: str):
-        subdir, name = os.path.split(target)
-        return cls.from_name(name=name, subdir=subdir)
-
-    @classmethod
-    def from_name(cls, /, *, name: str, subdir: os.PathLike = AUTO):
-        if name == AUTO:
-            return cls(subdir=subdir)
-
-        split = name.split(".")
-        if len(split) == 1:
-            split.append("")
-
-        *stem, suffix = split
-        if len(suffix) > 0:
-            suffix = "." + suffix
-        return cls(subdir=subdir, suffix=suffix, stem="".join(stem))
-
-    @property
-    def name(self):
-        if self.stem == AUTO:
-            return AUTO
-        return self.stem + ("" if self.suffix == AUTO else self.suffix)
-
-    @property
-    def target(self):
-        return os.path.normpath(os.path.join(".", self.subdir, self.name))
-
-    def __serialize__(self):
-        log.info(f"target={self.target}", "record")
-        return self.target
-
-    @classmethod
-    def __deserialize__(cls, serialized):
-        log.info(f"target={serialized}", "record")
-        return cls.from_target(target=serialized)
+                    local.remove(obj[k])
+    
+    def open(self, target: os.PathLike, *, choice='ignore') -> Tuple['Context', Target]:
+        target = self.fs.open(self.absolute(target), choice=choice)
+        local = self if target.subdir == '' else self.__class__(
+            fs=self.fs, subdir=target.subdir)
+        return local, Target(name=target.name)
 
 
 def is_unloaded(obj):
@@ -290,8 +264,8 @@ def is_unloaded(obj):
 @dataclass
 class Unloaded:
     type: str
-    target: str
-    base: str
+    target: os.PathLike
+    base: os.PathLike
     context: Context
 
     @property
@@ -342,14 +316,10 @@ class _RecordExceptions:
 @serializable(name="_ser__record")
 class Record:
     def __init__(
-        self, content: Any, config: RecordConfig = None, preload: bool = False
+        self, content: Any, target: Target = None, preload: bool = False
     ):
         self._content = content
-
-        if config is None:
-            config = RecordConfig()
-        self._config = config
-        self._evaluated = False
+        self._target = Target() if target is None else target
 
         self.preload = preload
         self.exceptions = _RecordExceptions()
@@ -364,25 +334,17 @@ class Record:
 
     @property
     def target(self):
-        return self.config.target
-
-    @property
-    def config(self):
-        if self._evaluated:
-            return self._config
-
-        base = RecordConfig(stem=f"{uuid.uuid4()}", subdir=f"{uuid.uuid4()}")
+        if self._target.is_complete():
+            return self._target
+        
+        base = Target(stem=f"{uuid.uuid4()}", subdir=f"{uuid.uuid4()}")
         if is_serializable(self._content) or is_dataclass(self._content):
-            base = base << RecordConfig(suffix=".json")
+            base = base.update(suffix='.json')
         else:
-            base = base << RecordConfig(suffix=config.default_suffix)
-
-        request = RecordConfig(suffix=getattr(self._content, EXTENSION, AUTO))
-
-        self._config: RecordConfig = base << request << self._config
-        self._evaluated = True
-
-        return self._config
+            base = base.update(suffix=config.default_suffix)
+        request = Target(suffix=getattr(self._content, EXTENSION, AUTO))
+        self._target = base.merge(request, self._target)
+        return self._target
 
     @property
     def sto_type(self):
@@ -436,10 +398,8 @@ class Record:
                 return self._content.target # no load needed
 
             # execute store
-            local = context.join(self.config.subdir)
-            target = local.make_valid(self.config.name)
-            self.exceptions.write = local.write(target, self._content, choice='_ignore')
-            return os.path.join(self.config.subdir, target)
+            target, self.exceptions.write = context.write(self.target, self._content)
+            return target
         else:
             self.exceptions.write = UnWritable(
                 type=self.sto_type,
@@ -452,10 +412,10 @@ class Record:
 
     def __serialize__(self, context: BaseContext):
         sto_type = self.sto_type
-        target = self.store(context)
-        self._config = RecordConfig.from_target(target)
+        target: Target = self.store(context)
+        self._target = target
         res = {
-            "target": serialize(self.config, content_only=True),
+            "target": str(target) if target.is_complete() else tuple(target),
             "sto_type": sto_type,
         }
         if self.preload:
@@ -467,9 +427,11 @@ class Record:
 
     @classmethod
     def __deserialize__(cls, serialized: dict, context: BaseContext):
-        config: RecordConfig = deserialize(
-            serialized.get("target", ""), ser_type=RecordConfig
-        )
+        target = serialized.get("target", None)
+        if isinstance(target, str):
+            target = Target.from_path(target)
+        if isinstance(target, list):
+            target = Target(*target)
         sto_type = serialized.get("sto_type")
         preload = serialized.get("preload", False)
 
@@ -481,22 +443,32 @@ class Record:
             exceptions = _RecordExceptions.__deserialize__(exceptions)
 
         # try to load the contents of the record
-        if isinstance(context, Context):
+        if isinstance(context, Context) and isinstance(target, Target):
             content = Unloaded(
-                sto_type, config.name, context.directory, context.join(config.subdir)
+                sto_type, target, context.directory, context
             )
+        elif not isinstance(context, Context):
+            exceptions.read = UnReadable(
+                type=sto_type,
+                info=f"Invalid context passed to Record({sto_type}, target={target}).",
+                target=target,
+            )
+            context._process_invalid(
+                "Exception encountered during read.", exceptions.read
+            )
+            content = Undefined(sto_type)
         else:
             exceptions.read = UnReadable(
                 type=sto_type,
-                info=f"Invalid context passed to Record({sto_type}, target={config.target}).",
-                target=config.target,
+                info=f"Invalid target recovered Record({sto_type}, target={target}).",
+                target=target,
             )
             context._process_invalid(
                 "Exception encountered during read.", exceptions.read
             )
             content = Undefined(sto_type)
 
-        out = cls(content=content, config=config, preload=preload)
+        out = cls(content=content, target=target, preload=preload)
         if preload:
             out.load()
         out.exceptions = exceptions
@@ -504,25 +476,12 @@ class Record:
 
     def __remove__(self, context: BaseContext):
         if isinstance(context, Context):
-            target, local = Record.__parse(self.config, context)
-            content = self.content
-            if isvalid(content):
-                local.remove(content)  # remove contents
-                local.delete(target)  # remove this file
-            else:
-                log.warning(
-                    "Loaded content is invalid. Could not continue removing.", "record"
-                )
-
-
-def recordconfig(
-    *, stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: os.PathLike = ""
-):
-    if name != AUTO and (stem != AUTO or suffix != AUTO):
-        raise ValueError("Either provide a name or suffix + stem.")
-
-    config = RecordConfig.from_name(name=name, subdir=subdir)
-    return config << RecordConfig(stem=stem, suffix=suffix)
+            if isvalid(self.content):
+                return context.remove(self.content, self.target)
+            log.warning(
+                "Loaded content is invalid. Could not continue removing.", "record"
+            )
+        log.warning("Tried removing with invalid context type.", "record")
 
 
 def record(
@@ -553,7 +512,7 @@ def record(
     """
     return Record(
         content,
-        recordconfig(stem=stem, suffix=suffix, name=name, subdir=subdir),
+        Target(stem=stem, suffix=suffix, name=name, subdir=subdir),
         preload,
     )
 
