@@ -4,6 +4,7 @@ import uuid
 
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Tuple
+from contextlib import suppress
 
 from dman.core import log
 from dman.core.serializables import (
@@ -21,12 +22,13 @@ from dman.core.serializables import (
 from dman.core.storables import (
     STO_TYPE,
     is_storable,
+    read,
     storable_type,
     storable_name,
-    FileSystem,
-    config
+    config,
+    write,
 )
-from dman.core.path import Target, AUTO, Mount
+from dman.core.path import Target, AUTO, Mount, mount, UserQuitException
 
 
 REMOVE = "__remove__"
@@ -92,26 +94,30 @@ class ExcUnReadable(ExcUnserializable):
         return cls(res.type, res.info, res.trace, target=target)
 
 
+class StoreError(SerializationError):
+    ...
+
+
 class Context(BaseContext):
     def __init__(
         self,
-        fs: FileSystem,
-        subdir: os.PathLike = '',
+        mnt: Mount,
+        subdir: os.PathLike = "",
     ):
         super().__init__()
-        self.fs = fs
+        self.mnt = mnt
         self.subdir = subdir
-    
+
     @property
     def directory(self):
-        return self.fs.abspath(self.subdir, validate=False)
-    
+        return self.mnt.abspath(self.subdir, validate=False)
+
     def __repr__(self):
-        return f'Context({self.directory})'
-    
+        return f"Context({self.directory})"
+
     @classmethod
     def from_directory(cls, directory: str, gitignore: bool = True):
-        return cls(FileSystem(Mount(directory, gitignore=gitignore)))
+        return cls(Mount(directory, gitignore=gitignore))
 
     @classmethod
     def mount(
@@ -149,7 +155,16 @@ class Context(BaseContext):
             base (os.PathLike, optional): Specifies the root folder. Defaults to ".dman".
             gitignore (bool, optional): Specifies whether files added to this mount point should be ignored.
         """
-        return cls(FileSystem.mount(key, subdir=subdir, cluster=cluster, generator=generator, base=base, gitignore=gitignore))
+        return cls(
+            mount(
+                key,
+                subdir=subdir,
+                cluster=cluster,
+                generator=generator,
+                base=base,
+                gitignore=gitignore,
+            )
+        )
 
     def _serialize__list(self, ser: list):
         res = []
@@ -185,23 +200,29 @@ class Context(BaseContext):
         try:
             target = Target.from_path(target)
             local, _target = self.open(target)
-            return target.update(name=_target.name), self.fs.write(storable, local.absolute(_target), local, open=False)
+            path = self.mnt.abspath(local.absolute(_target))
+            return target.update(name=_target.name), write(
+                storable, path, local
+            )
         except SerializationError:
             raise
+        except UserQuitException as e:
+            raise StoreError(*e.args)
         except Exception:
             res = ExcUnWritable.from_exception(
                 *sys.exc_info(),
                 type=storable_name(storable),
                 info="Exception encountered while writing.",
-                ignore=4,   # TODO verify
+                ignore=4,  # TODO verify
             )
             self._process_invalid("An error occurred while writing.", res)
             return target.update(name=_target.name), res
 
     def read(self, target: os.PathLike, sto_type):
         try:
-            local, target = self.open(target, choice='_ignore')
-            return self.fs.read(sto_type, local.absolute(target), local)
+            local, target = self.open(target, choice="_ignore")
+            path = self.mnt.abspath(local.absolute(target))
+            return read(sto_type, path, local)
         except FileNotFoundError:
             if not isinstance(sto_type, str):
                 sto_type = getattr(sto_type, STO_TYPE, None)
@@ -221,16 +242,23 @@ class Context(BaseContext):
             self._process_invalid("An error occurred while reading.", res)
             return res
 
-    def remove(self, obj, target: os.PathLike=None):
+    def remove(self, obj, target: os.PathLike = None):
         """Remove object, stored at specified target."""
         if target is None:
             local = self
         else:
             # Parse the target
-            local, target = self.open(target, choice='ignore')
+            local, target = self.open(target, choice="ignore")
 
             # Remove the file associated with the object
-            local.fs.delete(target)  
+            with suppress(ValueError):
+                self.mnt.remove(target)
+
+            # Remove file if it exists.
+            path = self.mnt.abspath(target)
+            if os.path.exists(path):
+                log.io(f'Deleting file: "{target}".', "fs")
+                os.remove(path)
 
         # Remove files created by the object
         tp = type(obj)
@@ -253,21 +281,25 @@ class Context(BaseContext):
                 for k in obj.keys():
                     local.remove(obj[k])
     
-    def open(self, target: os.PathLike, *, choice='ignore') -> Tuple['Context', Target]:
-        target = self.fs.open(self.absolute(target), choice=choice)
-        local = self if target.subdir == '' else self.__class__(
-            fs=self.fs, subdir=target.subdir)
-        return local, Target(name=target.name)
-    
+    def join(self, subdir: os.PathLike):
+        if subdir == '':
+            return self
+        return self.__class__(mnt=self.mnt, subdir=subdir)
+        
+
+    def open(self, target: os.PathLike, *, choice="ignore") -> Tuple["Context", Target]:
+        target = self.mnt.open(self.absolute(target), choice=choice)
+        return self.join(target.subdir), Target(name=target.name)
+
     def __enter__(self):
-        self.fs.__enter__()
+        self.mnt.__enter__()
         return self
 
     def __exit__(self, *_):
-        self.fs.__exit__(*_)
-    
+        self.mnt.__exit__(*_)
+
     def close(self):
-        self.fs.close()
+        self.mnt.close()
 
 
 def is_unloaded(obj):
@@ -328,9 +360,7 @@ class _RecordExceptions:
 
 @serializable(name="_ser__record")
 class Record:
-    def __init__(
-        self, content: Any, target: Target = None, preload: bool = False
-    ):
+    def __init__(self, content: Any, target: Target = None, preload: bool = False):
         self._content = content
         self._target = Target() if target is None else target
 
@@ -349,10 +379,10 @@ class Record:
     def target(self):
         if self._target.is_complete():
             return self._target
-        
+
         base = Target(stem=f"{uuid.uuid4()}", subdir=f"{uuid.uuid4()}")
         if is_serializable(self._content) or is_dataclass(self._content):
-            base = base.update(suffix='.json')
+            base = base.update(suffix=".json")
         else:
             base = base.update(suffix=config.default_suffix)
         request = Target(suffix=getattr(self._content, EXTENSION, AUTO))
@@ -408,7 +438,7 @@ class Record:
             elif self.exceptions.write is not None:
                 self.load()  # the previous store failed
             elif is_unloaded(self._content):
-                return self._content.target # no load needed
+                return self._content.target  # no load needed
 
             # execute store
             target, self.exceptions.write = context.write(self.target, self._content)
@@ -457,9 +487,7 @@ class Record:
 
         # try to load the contents of the record
         if isinstance(context, Context) and isinstance(target, Target):
-            content = Unloaded(
-                sto_type, target, context.directory, context
-            )
+            content = Unloaded(sto_type, target, context.directory, context)
         elif not isinstance(context, Context):
             exceptions.read = UnReadable(
                 type=sto_type,

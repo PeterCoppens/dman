@@ -13,7 +13,7 @@ def temporary_context(**kwargs):
     with TemporaryDirectory() as base:
         res = Context.mount('key', base=base, **kwargs)
         yield res
-        res.fs.close()
+        res.close()
 
 
 @storable(name='test')
@@ -64,6 +64,9 @@ def test_auto_config():
         assert(rec.target.name not in encountered_names)
         encountered_names.append(rec.target.name)
         assert_creates_file(rec)
+
+if __name__ == '__main__':
+    test_auto_config()
 
 
 def test_suffix_config():
@@ -154,11 +157,11 @@ def test_move():
     test = Base(value='hello world!')
     rec = record(test, name='temp.txt')
     with temporary_context() as ctx:
-        ctx = Context(ctx.fs, 'first')
+        ctx = ctx.join('first')
         ser = serialize(rec, ctx)
         res: Record = deserialize(ser, ctx)
         
-        ctx = Context(ctx.fs, 'second')
+        ctx = ctx.join('second')
         ser = serialize(res, ctx)
         assert(os.path.exists(os.path.join(ctx.directory, 'temp.txt')))
 
