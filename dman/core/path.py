@@ -1,6 +1,3 @@
-from contextlib import contextmanager, suppress
-from dataclasses import MISSING
-from logging import getLogger
 from pathlib import Path
 import os, sys
 from typing import Iterable
@@ -16,7 +13,7 @@ ROOT_FOLDER = ".dman"
 @configclass
 class Config:
     on_retouch: str = optionfield(
-        ["prompt", "quit", "ignore", "auto"], default="ignore"
+        '["prompt", "quit", "ignore", "auto"]', default="ignore"
     )
 
 
@@ -210,49 +207,13 @@ class UserQuitException(TargetException):
 class Mount(os.PathLike):
     def __init__(
         self,
-        key: str,
-        *,
-        subdir: os.PathLike = "",
-        cluster: bool = True,
-        generator: str = AUTO,
-        base: os.PathLike = None,
+        directory: os.PathLike,
+        cluster: bool = False,
         gitignore: bool = True,
     ):
-        """Get the mount point where a file with the given key is stored by dman.
-            The path of the file is determined as described below.
-
-                If the files are clustered then the path is ``<base>/<generator>/<subdir>/<key>/<key>.<ext>``
-                If cluster is set to False then the path is ``<base>/<generator>/<subdir>/<key>.<ext>``
-
-                When base is not provided then it is set to .dman if
-                it does not exist an exception is raised.
-
-                When generator is not provided it will automatically be set based on
-                the location of the script relative to the .dman folder
-                (again raising an exception if it is not found). For example
-                if the script is located in ``<project-root>/examples/folder/script.py``
-                and .dman is located in ``<project-root>/.dman``.
-                Then generator is set to cache/examples:folder:script (i.e.
-                the / is replaced by : in the output).
-
-        Args:
-            key (str):  Key for the file.
-            subdir (os.PathLike, optional): Specifies optional subdirectory in generator folder. Defaults to "".
-            cluster (bool, optional): A subfolder ``key`` is automatically created when set to True. Defaults to True.
-            generator (str, optional): Specifies the generator that created the file. Defaults to script label.
-            base (os.PathLike, optional): Specifies the root folder. Defaults to ".dman".
-            gitignore (bool, optional): Specifies whether files added to this mount point should be ignored.
-        """
-        base = get_root_path() if base is None else base
-        if generator is None:
-            generator = ""
-        if generator == AUTO:
-            generator = os.path.join("cache", script_label(os.path.abspath(base)))
-        if cluster:
-            subdir = os.path.join(subdir, key)
-        self.base, self.generator, self.subdir = base, generator, subdir
+        """Construct a mount point at the specified directory."""
+        self.directory = directory
         self.cluster = cluster
-
         self.gitignore = gitignore
         self.touched = []
 
@@ -261,7 +222,7 @@ class Mount(os.PathLike):
 
     def __fspath__(self):
         """Return the file system path representation of the object."""
-        return os.path.join(self.base, self.generator, self.subdir)
+        return self.directory
     
     def __hash__(self):
         return os.path.normpath(self).__hash__()
@@ -434,4 +395,12 @@ def mount(
         base (os.PathLike, optional): Specifies the root folder. Defaults to ".dman".
         gitignore (bool, optional): Specifies whether files added to this mount point should be ignored.
     """
-    return Mount(key, subdir=subdir, cluster=cluster, generator=generator, base=base, gitignore=gitignore)
+    base = get_root_path() if base is None else base
+    if generator is None:
+        generator = ""
+    if generator == AUTO:
+        generator = os.path.join("cache", script_label(os.path.abspath(base)))
+    if cluster:
+        subdir = os.path.join(subdir, key)
+    directory = os.path.join(base, generator, subdir)
+    return Mount(directory, cluster=cluster, gitignore=gitignore)

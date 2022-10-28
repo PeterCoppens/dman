@@ -435,3 +435,15 @@ class LogTarget(backend.FileHandler):
     def __init__(self, filename = None):
         super().__init__(filename)
         self.tempdir = None
+
+
+@contextmanager
+def logger_context(level: bool = None):
+    if level is None:
+        yield logger
+        return
+
+    _level = logger.level
+    logger.setLevel({True: INFO, False: WARNING}.get(level, level))
+    yield logger
+    logger.setLevel(_level)

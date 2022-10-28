@@ -37,8 +37,8 @@ from dman import tui
 import shutil, os
 
 # clear current files
-if os.path.exists(dman.get_directory("container")):
-    shutil.rmtree(dman.get_directory("container"))
+if os.path.exists(dman.mount("container")):
+    shutil.rmtree(dman.mount("container"))
 
 # define container model class
 @dman.modelclass
@@ -106,7 +106,7 @@ container.dct.record("custom", np.ones(3).view(barray), stem="data6", subdir="ne
 
 # result .......................................................................
 dman.save("container", container)
-tui.walk_directory(dman.get_directory("container"))
+tui.walk_directory(dman.mount("container"))
 
 # %%
 # Records
@@ -140,12 +140,12 @@ print("target:", rec.target)
 # For example:
 
 # clear current files
-if os.path.exists(dman.get_directory("record")):
-    shutil.rmtree(dman.get_directory("record"))
+if os.path.exists(dman.mount("record")):
+    shutil.rmtree(dman.mount("record"))
 
 # save the record
 dman.save("record", rec)
-tui.walk_directory(dman.get_directory("record"), show_content=True)
+tui.walk_directory(dman.mount("record"), show_content=True)
 
 
 # %%
@@ -182,11 +182,11 @@ print("data0:", lst.store[0])
 # If we now save the whole thing:
 
 # clear current files
-if os.path.exists(dman.get_directory("mlist")):
-    shutil.rmtree(dman.get_directory("mlist"))
+if os.path.exists(dman.mount("mlist")):
+    shutil.rmtree(dman.mount("mlist"))
 
 dman.save("mlist", lst)
-tui.walk_directory(dman.get_directory("mlist"), show_content=True)
+tui.walk_directory(dman.mount("mlist"), show_content=True)
 
 #%%
 # Interesting to note is that all the targets specified by the records
@@ -210,11 +210,11 @@ print(lst.store[0].target)
 lst = dman.smlist([data], subdir="store")
 rec = dman.record(lst, stem="lst", subdir="lst")
 
-if os.path.exists(dman.get_directory("smlist")):
-    shutil.rmtree(dman.get_directory("smlist"))
+if os.path.exists(dman.mount("smlist")):
+    shutil.rmtree(dman.mount("smlist"))
 
 dman.save("smlist", rec)
-tui.walk_directory(dman.get_directory("smlist"), show_content=True)
+tui.walk_directory(dman.mount("smlist"), show_content=True)
 
 # %%
 # This makes sure that nesting containers corresponds with nesting
@@ -238,10 +238,10 @@ print(runs.store[0].target)
 # available for more fine-grained control.
 
 # clear current files
-if os.path.exists(dman.get_directory("mruns")):
-    shutil.rmtree(dman.get_directory("mruns"))
+if os.path.exists(dman.mount("mruns")):
+    shutil.rmtree(dman.mount("mruns"))
 
 runs.record(data, stem="data0", subdir="nested")
 runs.record(data, stem="data1", subdir=os.path.join("..", "run-2"))
 dman.save("mruns", runs)
-tui.walk_directory(dman.get_directory("mruns"), show_content=True)
+tui.walk_directory(dman.mount("mruns"), show_content=True)

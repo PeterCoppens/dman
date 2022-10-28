@@ -42,7 +42,7 @@ home = Address('Kasteelpark Arenberg', 10, 3001, 'Leuven', 'Belgium')
 employee = {'name': 'John Doe', 'home': home}
 
 dman.save('employee', employee)
-tui.walk_directory(dman.get_directory('employee'), show_content=True)
+tui.walk_directory(dman.mount('employee'), show_content=True)
 
 
 # %%
@@ -56,7 +56,7 @@ print(recovered['home'])
 # %%
 # Usually a warning is raised when serialization fails:
 
-with dman.logger_context(level=log.WARNING):
+with dman.log.logger_context(level=log.WARNING):
     dman.serialize(employee)
 
 # %%
@@ -227,7 +227,7 @@ tui.print_serialized(ser)
 # %%
 # And when serializing it with a context we run into another.
 root = TemporaryDirectory()
-ctx = dman.context(root.name)
+ctx = dman.Context.from_directory(root.name)
 ser = dman.serialize(rec, context=ctx)
 tui.print_serialized(ser)
 

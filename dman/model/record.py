@@ -3,13 +3,12 @@ import sys
 import uuid
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Tuple, Union
+from typing import Any, Tuple
 
 from dman.core import log
 from dman.core.serializables import (
     SER_CONTENT,
     SER_TYPE,
-    deserialize,
     is_serializable,
     serializable,
     BaseContext,
@@ -27,7 +26,7 @@ from dman.core.storables import (
     FileSystem,
     config
 )
-from dman.core.path import target, mount, Target, Mount, AUTO
+from dman.core.path import Target, AUTO, Mount
 
 
 REMOVE = "__remove__"
@@ -109,6 +108,10 @@ class Context(BaseContext):
     
     def __repr__(self):
         return f'Context({self.directory})'
+    
+    @classmethod
+    def from_directory(cls, directory: str, gitignore: bool = True):
+        return cls(FileSystem(Mount(directory, gitignore=gitignore)))
 
     @classmethod
     def mount(
@@ -190,7 +193,7 @@ class Context(BaseContext):
                 *sys.exc_info(),
                 type=storable_name(storable),
                 info="Exception encountered while writing.",
-                ignore=0,
+                ignore=4,   # TODO verify
             )
             self._process_invalid("An error occurred while writing.", res)
             return target.update(name=_target.name), res
@@ -213,7 +216,7 @@ class Context(BaseContext):
                 type=storable_name(sto_type),
                 info="Exception encountered while reading.",
                 target=target,
-                ignore=0,
+                ignore=4,  # TODO verify
             )
             self._process_invalid("An error occurred while reading.", res)
             return res
@@ -255,6 +258,16 @@ class Context(BaseContext):
         local = self if target.subdir == '' else self.__class__(
             fs=self.fs, subdir=target.subdir)
         return local, Target(name=target.name)
+    
+    def __enter__(self):
+        self.fs.__enter__()
+        return self
+
+    def __exit__(self, *_):
+        self.fs.__exit__(*_)
+    
+    def close(self):
+        self.fs.close()
 
 
 def is_unloaded(obj):

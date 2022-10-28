@@ -118,7 +118,7 @@ _ = dman.save('result', res)
 
 # %%
 # The resulting file structure looks like:
-dman.tui.walk_directory(dman.get_directory('result'), show_content=True)
+dman.tui.walk_directory(dman.mount('result'), show_content=True)
 
 # %%
 # We can load the experiment and show the result once more

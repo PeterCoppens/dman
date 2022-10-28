@@ -237,7 +237,7 @@ execute(Config(seed=1000))
 # %%
 # Afterwards you will see that ``.dman`` is populated as follows:
 tui.walk_directory(
-    os.path.join(dman.get_directory("experiment"), ".."),
+    os.path.join(dman.mount("experiment"), ".."),
     show_content=True,
     normalize=True,
     show_hidden=True,
@@ -249,7 +249,7 @@ tui.walk_directory(
 # Its content is as follows
 
 # show contents of "experiment.json"
-with open(os.path.join(dman.get_directory("experiment"), "experiment.json"), "r") as f:
+with open(os.path.join(dman.mount("experiment"), "experiment.json"), "r") as f:
     tui.print_json(f.read())
 
 # %%
@@ -265,7 +265,7 @@ with open(os.path.join(dman.get_directory("experiment"), "experiment.json"), "r"
 # show contents of "experiment-0.json"
 with open(
     os.path.join(
-        dman.get_directory("experiment"), "results", "experiment-0", "experiment.json"
+        dman.mount("experiment"), "results", "experiment-0", "experiment.json"
     ),
     "r",
 ) as f:
@@ -327,7 +327,7 @@ _ = dman.save("config", Config(), cluster=False, generator="demo")
 #
 # For reference, the final folder structure is as follows:
 tui.walk_directory(
-    dman.get_directory('config', cluster=False, generator='demo'),
+    dman.mount('config', cluster=False, generator='demo'),
     show_content=False,
     normalize=True,
     show_hidden=True,

@@ -20,15 +20,14 @@ def main():
     # dman.log.basicConfig(level=dman.log.WARNING)
     with dman.track("log", default_factory=default, verbose=False) as content:
         content: Content = content
-        path = dman.get_directory("log")
-        dman.remove(content, context=dman.context(path))
+        dman.remove(content, context=dman.Context.mount('log'))
         logger = dman.log.getLogger(level=dman.log.INFO)
         logger.addHandler(content.log)
         dman.log.info("test")
     dman.log.info("more tests ...")
 
     tui.walk_directory(
-        dman.get_directory(""),
+        dman.mount(""),
         show_content=True,
         console=tui.Console(width=None, theme=dman.log.log_theme),
     )

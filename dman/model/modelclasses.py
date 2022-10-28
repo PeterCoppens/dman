@@ -7,26 +7,25 @@ from typing import Any, Callable, Iterable, Union
 from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field, asdict
 from dman.core import log
 
-from dman.utils.smartdataclasses import wrappedclass, wrappedfields, wrapfield, AUTO, is_wrapfield
+from dman.utils.smartdataclasses import wrappedclass, wrapfield, is_wrapfield
 from dman.core.storables import is_storable, storable
-from dman.model.record import Record, RecordConfig, record, REMOVE, remove, target
+from dman.model.record import Record, record, REMOVE, remove
 from dman.core.serializables import SERIALIZE, DESERIALIZE, NO_SERIALIZE, is_serializable
 from dman.core.serializables import BaseContext, serialize, deserialize, serializable
+from dman.core.path import Target, AUTO
 
 
-os.PathLike
-os.path.split
 
 STO_FIELD = '_record__fields'
 SER_FIELD = '_serial__fields'
-RECORD_FIELD = '__record__'
+RECORD_FIELDS = '__record__'
 MODELCLASS = '__modelclass__'
 RECORD_PRE = '_record_field__'
 
 
 
 def _record_key(key: str):
-    return f'{RECORD_FIELD}{key}'
+    return f'{RECORD_FIELDS}{key}'
 
 def get_record(self, key: str, default= MISSING):
     key = _record_key(key)
@@ -39,65 +38,75 @@ def set_record(self, key: str, value):
     setattr(self, _record_key(key), value)
 
 
-    
-
-
-# class RecordField:
-#     def __init__(self, cfg: tuple):
-#         self.cfg = cfg
-
-
 class RecordField:
-    def __init__(self, stem: str, suffix: str, name: str, subdir: os.PathLike, preload: str, pre: Callable[[Any], Any]):
-        self.stem = stem
-        self.suffix = suffix
-        self.name = name
-        self.subdir = subdir
+    def __init__(self, target: Target, preload: str, pre: Callable[[Any], Any]):
+        self.target = target
         self.preload = preload
         self.pre = pre
 
+    def record(self, owner):
+        return getattr(owner, self.private_name)
+
     def build(self, content):
-        return record(content, stem=self.stem, suffix=self.suffix, name=self.name, subdir=self.subdir, preload=self.preload)
+        return Record(content, self.target, self.preload)
+
+    def __set_name__(self, owner, name):
+        self.owner = owner
+        self.public_name = name
+        self.private_name = f"_{name}"
+        self.record_fields[name] = None
+
+    @property
+    def record_fields(self):
+        res = getattr(self.owner, RECORD_FIELDS, None)
+        if res is None:
+            res = dict()
+            setattr(self.owner, RECORD_FIELDS, res)
+        return res
     
-    def __call__(self, key: str):
-        def _get_record(obj):
-            rec = get_record(obj, key)
+    def __get__(self, obj, objtype=None):
+        rec = getattr(obj, self.private_name)
+        if isinstance(rec, Record):
+            return rec.content
+        return rec
+    
+    def __set__(self, obj, value):
+        if self.pre is not None:
+            value = self.pre(value)
+
+        if is_storable(value):
+            rec = getattr(obj, self.private_name, None)
             if isinstance(rec, Record):
-                return rec.content
-            return rec
-
-        def _set_record(obj, value):
-            if self.pre is not None:
-                value = self.pre(value)
-
-            if is_storable(value):
-                rec = get_record(obj, key, None)
-                if isinstance(rec, Record):
-                    rec.content = value
-                else:
-                    rec = self.build(value)
-                set_record(obj, key, rec)
+                rec.content = value
             else:
-                set_record(obj, key, value)
-        
-        return property(fget=_get_record, fset=_set_record)
-
+                rec = self.build(value)
+                self.record_fields[self.public_name] = rec
+            setattr(obj, self.private_name, rec)
+        else:
+            setattr(obj, self.private_name, value)
+    
+    # TODO add __del__ method
 
 
 class SerializeField:
     def __init__(self, pre: Callable[[Any], Any]):
         self.pre = pre
-    
-    def __call__(self, key: str):
-        def _get_field(obj):
-            return getattr(obj, f'__{key}')
 
-        def _set_field(obj, value):
-            if self.pre is not None:
-                value = self.pre(value)
-            setattr(obj, f'__{key}', value)
-        
-        return property(fget=_get_field, fset=_set_field)
+    def __set_name__(self, owner, name):
+        self.public_name = name
+        self.private_name = f"_{name}"
+    
+    def __get__(self, obj, objtype=None):
+        return getattr(obj, self.private_name)
+    
+    def __set__(self, obj, value):
+        if self.pre is not None:
+            value = self.pre(value)
+        setattr(obj, self.private_name, value)
+
+
+def recordfields(obj):
+    return getattr(obj, RECORD_FIELDS, list())
 
 
 def serializefield(*, default=MISSING, default_factory=MISSING,
@@ -129,8 +138,7 @@ def serializefield(*, default=MISSING, default_factory=MISSING,
             init=init, repr=repr, hash=hash, compare=compare, metadata=_metadata)
     else:
         wrap = SerializeField(pre)
-        return wrapfield(wrap, label=SER_FIELD, 
-            default=default, default_factory=default_factory, 
+        return wrapfield(wrap, default=default, default_factory=default_factory, 
             init=init, repr=repr, hash=hash, compare=compare, metadata=_metadata)
 
 
@@ -170,8 +178,8 @@ def recordfield(*, default=MISSING, default_factory=MISSING,
     :raises ValueError:     if a name and a stem and/or suffix are specified. 
     """
 
-    wrap = RecordField(stem=stem, suffix=suffix, name=name, subdir=subdir, preload=preload, pre=pre)
-    return wrapfield(wrap, label=STO_FIELD, default=default, default_factory=default_factory, 
+    wrap = RecordField(target=Target(stem, suffix, subdir, name=name), preload=preload, pre=pre)
+    return wrapfield(wrap, default=default, default_factory=default_factory, 
         init=init, repr=repr, hash=hash, compare=compare, metadata=metadata)
 
 
@@ -199,14 +207,7 @@ def modelclass(cls=None, /, *, name: str = None, init=True, repr=True, eq=True, 
 
     def wrap(cls):
         return _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, storable, compact, template, **kwargs)
-
-    # See if we're being called as @modelclass or @modelclass().
-    if cls is None:
-        # We're called with parens.
-        return wrap
-
-    # We're called as @modelclass without parens.
-    return wrap(cls)
+    return wrap if cls is None else wrap(cls)
 
 
 def is_modelclass(cls):
@@ -224,7 +225,6 @@ def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, 
     for f in fields(res):
         if is_wrapfield(f):
             continue
-
         if is_serializable_field(f):
             ser_field: Field = field(metadata=f.metadata.get('__base', None))
             f.metadata = ser_field.metadata            
@@ -261,18 +261,14 @@ def _process__modelclass(cls, name, init, repr, eq, order, unsafe_hash, frozen, 
     return result
 
 
-def recordfields(obj):
-    return wrappedfields(obj, label=STO_FIELD)
-
-
 def _remove__modelclass(self, context: BaseContext = None):
     if context is None: context = BaseContext()
+    _rfields = recordfields(self)
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             log.info(f'removing field: "{f.name}"', 'modelclass')
-            if f.name in recordfields(self):
-                value = getattr(self, _record_key(f.name))
-                remove(value, context)
+            if f.name in _rfields:
+                remove(_rfields[f.name], context)
             else:
                 value = getattr(self, f.name)
                 remove(value, context)
@@ -281,11 +277,11 @@ def _remove__modelclass(self, context: BaseContext = None):
 def _serialize__modelclass(self, context: BaseContext = None):
     res = dict()
     log.info(f'serializing modelclass with fields {[f.name for f in fields(self)]}.', 'modelclass')
+    _rfields = recordfields(self)
     for f in fields(self):
-        record_fields = recordfields(self)
         if f.name not in getattr(self, NO_SERIALIZE, []):
-            if f.name in record_fields:
-                value = getattr(self, _record_key(f.name))
+            if f.name in _rfields:
+                value = _rfields[f.name]
             else:
                 value = getattr(self, f.name)
                 
@@ -313,10 +309,11 @@ def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
 def _serialize__modelclass_content_only(self, context: BaseContext = None):
     if context is None: context = BaseContext()
     res = dict()
+    _rfields = recordfields(self)
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
-            if f.name in recordfields(self):
-                value = getattr(self, _record_key(f.name))
+            if f.name in _rfields:
+                value = _rfields[f.name]
             else:
                 value = getattr(self, f.name)
 
@@ -330,6 +327,7 @@ def _serialize__modelclass_content_only(self, context: BaseContext = None):
 @classmethod
 def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseContext):
     processed = dict()
+    _rfields = recordfields(cls)
     for f in fields(cls):
         value = serialized.get(f.name, None)
         if value is None:
@@ -338,7 +336,7 @@ def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseCo
             continue
         
         log.info(f'deserializing field: "{f.name}"', 'modelclass')
-        if f.name in recordfields(cls):
+        if f.name in _rfields:
             processed[f.name] = deserialize(value, context, ser_type=Record)
         else:
             processed[f.name] = deserialize(value, context, ser_type=f.type)
@@ -465,8 +463,8 @@ class _blist(MutableSequence):
 
         if is_storable(value):
             rec: Record = self.store.__getitem__(idx)
-            cfg = target(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._config.subdir, subdir))
-            rec._config = rec._config << cfg
+            cfg = Target(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._target.subdir, subdir))
+            rec._target = rec._target.merge(cfg)
             if preload:
                 rec.preload = preload
 
@@ -563,7 +561,7 @@ class _bdict(MutableMapping):
 
     @property
     def config(self):
-        return RecordConfig(subdir=self.subdir)
+        return Target(subdir=self.subdir)
 
     def __repr__(self):
         dct = {}
@@ -641,16 +639,15 @@ class _bdict(MutableMapping):
         return res
 
     def __make_record__(self, k, v=None):
-        key_config = RecordConfig()
+        key_config = Target()
         if self._store_by_key:
-            key_config = key_config << RecordConfig(stem=k)
+            key_config = key_config.update(stem=k)
         if self._store_subdir:
-            key_config = key_config << RecordConfig(
-                subdir=os.path.join(self.subdir, k))
+            key_config = key_config.update(subdir=os.path.join(self.subdir, k))
 
         if v is None:
             v = dict.__getitem__(k)
-        config = self.config << key_config
+        config = self.config.merge(key_config)
         return Record(v, config, self.preload)
     
     def __remove__(self, context: BaseContext):
@@ -696,8 +693,8 @@ class _bdict(MutableMapping):
         self.__setitem__(key, value)
         if is_storable(value):
             rec: Record = self.store.__getitem__(key)
-            cfg = target(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._config.subdir, subdir))
-            rec._config = rec._config << cfg
+            cfg = Target(stem=stem, suffix=suffix, name=name, subdir=os.path.join(rec._target.subdir, subdir))
+            rec._target = rec._target.merge(cfg)
             if preload:
                 rec.preload = preload
 
@@ -744,19 +741,19 @@ class _bruns(_blist):
         
     @property
     def config(self):
-        return RecordConfig(subdir=self.subdir)
+        return Target(subdir=self.subdir)
 
     def __make_record__(self, itm):
         key = f'{self.stem}-{self.run_count}'
         self.run_count += 1
-        key_config = RecordConfig(stem=key)
+        key_config = Target(stem=key)
         if self.store_subdir:
-            key_config = key_config << RecordConfig(
+            key_config = key_config.update(
                 stem=self.stem,
                 subdir=os.path.join(self.subdir, key)
             )
 
-        config = self.config << key_config
+        config = self.config.merge(key_config)
         return Record(itm, config, self.preload)
 
     def __serialize__(self, context: BaseContext):
@@ -795,13 +792,13 @@ class _bruns(_blist):
 
         if is_storable(value):
             rec: Record = self.store.__getitem__(idx)
-            cfg = target(
+            cfg = Target(
                 stem=stem,
                 suffix=suffix, 
                 name=name,
-                subdir=os.path.join(rec._config.subdir, subdir)
+                subdir=os.path.join(rec._target.subdir, subdir)
             )
-            rec._config = rec._config << cfg
+            rec._target = rec._target.merge(cfg)
             if preload:
                 rec.preload = preload
 

@@ -51,7 +51,7 @@ pd.DataFrame.__ext__ = '.csv'
 dman.save('iris', dman.record(df, stem='iris'))
 df = dman.load('iris').content
 print(df)
-tui.walk_directory(dman.get_directory('iris'), show_content=['.json'])
+tui.walk_directory(dman.mount('iris'), show_content=['.json'])
 
 # %%
 # Alternatively we can define a more complex storage architecture.
@@ -90,4 +90,4 @@ container['iris'] = item
 dman.save('dataframes', container)
 item: DataItem = dman.load('dataframes')['iris']
 print(item.data)
-tui.walk_directory(dman.get_directory('dataframes'), show_content=['.json'])
+tui.walk_directory(dman.mount('dataframes'), show_content=['.json'])

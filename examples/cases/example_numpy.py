@@ -91,7 +91,7 @@ gallery.update({
 
 dman.save('__gallery', gallery, generator='gallery', cluster=False)
 tui.walk_directory(
-    dman.get_directory(key='', generator='gallery', cluster=False), 
+    dman.mount(key='', generator='gallery', cluster=False), 
     show_content=True
 )
 
@@ -196,7 +196,7 @@ class Experiment:
 # We can run one experiment:
 exp = Experiment.generate(Configuration(nb_repeats=5), idx=0)
 dman.save('demo', exp)
-tui.walk_directory(dman.get_directory('demo'), show_content=True)
+tui.walk_directory(dman.mount('demo'), show_content=True)
 
 # %%
 # To store multiple experiments we can use a ``mruns`` object. 
@@ -207,7 +207,7 @@ for i in tui.track(range(len(cfg.nb_samples)), total=len(cfg.nb_samples)):
     runs.append(Experiment.generate(cfg, idx=i, verbose=False))
 
 dman.save('experiment', dman.mdict(store_by_key=True, **{'cfg': cfg, 'experiments': runs}))
-tui.walk_directory(dman.get_directory('experiment'), show_content=True)
+tui.walk_directory(dman.mount('experiment'), show_content=True)
 
 # %%
 # .. warning::

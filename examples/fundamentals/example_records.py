@@ -43,7 +43,7 @@ tui.print_json(dman.sjson.dumps(ser, indent=4))
 
 dir = TemporaryDirectory()
 base = dir.name
-ctx = dman.context(base)
+ctx = dman.Context.from_directory(base)
 rec = dman.record(array)
 ser = dman.serialize(rec, context=ctx)
 tui.print_json(dman.sjson.dumps(ser, indent=4))
