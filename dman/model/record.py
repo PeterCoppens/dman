@@ -247,15 +247,15 @@ class Context(BaseContext):
         if target is None:
             local = self
         else:
+            # Remove the file associated with the object
+            with suppress(ValueError):
+                self.mnt.remove(self.absolute(target))
+
             # Parse the target
             local, target = self.open(target, choice="ignore")
 
-            # Remove the file associated with the object
-            with suppress(ValueError):
-                self.mnt.remove(target)
-
             # Remove file if it exists.
-            path = self.mnt.abspath(target)
+            path = self.mnt.abspath(local.absolute(target))
             if os.path.exists(path):
                 log.io(f'Deleting file: "{target}".', "fs")
                 os.remove(path)

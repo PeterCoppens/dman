@@ -1,8 +1,9 @@
 import copy
 from dman.core.serializables import serialize, deserialize
 from dman.model.modelclasses import modelclass, recordfield, serializefield
+from dman.model.record import Context
 from dman import tui
-from dman import context, tui
+from dman import log
 from tempfile import TemporaryDirectory
 
 from record import TestSto
@@ -62,17 +63,18 @@ if __name__ == '__main__':
 
     print('\n====== model class tests =======\n')
     with TemporaryDirectory() as base:
-        ctx = context(base)
+        ctx = Context.from_directory(base)
         foo = Foo(a=Other('c'), b=TestSto('b'), c=TestSto('c'), d=TestSto('d'), e=TestSto('e'))
         foo.f['test'] = 'hello'
         ser = serialize(foo, ctx)
-        print(sjson.dumps(ser, indent=4))
+        log.info(sjson.dumps(ser, indent=4))
 
         foo: Foo = deserialize(ser, ctx)
         print(foo)
         print(foo.a)
         print(foo.b)
         print(foo.c)
+        
 
         print('=== processing boo ===')
         boo = Boo(a=foo, b=copy.deepcopy(foo))

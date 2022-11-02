@@ -93,8 +93,10 @@ class RecordWrap:
                 rec = self.build(value)
                 self.record_fields[self.public_name] = rec
             setattr(obj, self.private_name, rec)
-        else:
+        elif isinstance(value, Record):
             setattr(obj, self.private_name, value)
+        else:
+            raise TypeError(f'Expected storable type. Got {type(value)}.')
 
     # TODO add __del__ method
 
@@ -433,6 +435,8 @@ def _serialize__modelclass(self, context: BaseContext = None):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             if f.name in _rfields:
                 value = _rfields[f.name]
+                if value is None:
+                    value = getattr(self, f.name)
             else:
                 value = getattr(self, f.name)
 
