@@ -3,7 +3,7 @@ from collections.abc import MutableSequence
 import copy
 import os
 
-from typing import Any, Callable, Iterable, Union, Type
+from typing import Any, Callable, Iterable, TypeVar, Union, Type
 from dataclasses import MISSING, Field, dataclass, fields, is_dataclass, field, asdict
 from typing_extensions import dataclass_transform
 from dman.core import log
@@ -49,7 +49,7 @@ def set_record(self, key: str, value):
     setattr(self, _record_key(key), value)
 
 
-class RecordField:
+class RecordWrap:
     def __init__(self, target: Target, preload: str, pre: Callable[[Any], Any]):
         self.target = target
         self.preload = preload
@@ -99,7 +99,7 @@ class RecordField:
     # TODO add __del__ method
 
 
-class SerializeField:
+class SerializeWrap:
     def __init__(self, pre: Callable[[Any], Any]):
         self.pre = pre
 
@@ -162,7 +162,7 @@ def serializefield(
             metadata=_metadata,
         )
     else:
-        wrap = SerializeField(pre)
+        wrap = SerializeWrap(pre)
         return wrapfield(
             wrap,
             default=default,
@@ -219,7 +219,7 @@ def recordfield(
     :raises ValueError:     if a name and a stem and/or suffix are specified.
     """
 
-    wrap = RecordField(
+    wrap = RecordWrap(
         target=Target(stem, suffix, subdir, name=name), preload=preload, pre=pre
     )
     return wrapfield(
@@ -245,7 +245,10 @@ def get_preset(tp: Type):
     return __pre_fields.get(tp, None)
 
 
-@dataclass_transform(field_specifiers=(wrapfield, recordfield, serializefield))
+_T = TypeVar("_T")
+
+
+@dataclass_transform(field_specifiers=(wrapfield, recordfield, serializefield, field, Field))
 def modelclass(
     cls=None,
     /,
@@ -260,10 +263,11 @@ def modelclass(
     storable: bool = False,
     compact: bool = False,
     store_by_field: bool = False,
-    subdir: str = '',
+    cluster: bool = False,
+    subdir: str = "",
     template: Any = None,
     **kwargs,
-):
+) -> Callable[[Type[_T]], Type[_T]]:
     """
     Convert a class to a modelclass.
         Returns the same class as was passed in, with dunder methods added based on the fields
@@ -281,7 +285,9 @@ def modelclass(
     :param bool frozen: fields may not be assigned to after instance creation.
     :param bool storable: make the class storable with a ``__write__`` and ``__read__``.
     :param bool compact: do not include serializable types during serialization (results in more compact serializations).
-    :param bool store_by_name: the stem of storables is determined by the name of the associated field.
+    :param bool store_by_field: the stem of storables is determined by the name of the associated field.
+    :param bool subdir: store all records in subdirectory.
+    :param bool cluster: store all storables in a directory associated with their field name.
     :param Any template: template for serialization.
     """
 
@@ -298,6 +304,7 @@ def modelclass(
             storable,
             compact,
             store_by_field,
+            cluster,
             subdir,
             template,
             **kwargs,
@@ -321,7 +328,8 @@ def _process__modelclass(
     frozen,
     as_storable,
     compact,
-    store_by_name,
+    store_by_field,
+    cluster,
     subdir,
     template,
     **kwargs,
@@ -346,7 +354,7 @@ def _process__modelclass(
             if pre is None:
                 continue
             descr = get_descriptor(f)
-            if isinstance(descr, (RecordField, SerializeField)):
+            if isinstance(descr, (RecordWrap, SerializeWrap)):
                 if descr.pre is None:
                     descr.pre = pre
         elif is_serializable_field(f):
@@ -356,7 +364,10 @@ def _process__modelclass(
             f.metadata = ser_field.metadata
         elif is_storable(f.type):
             wrapped_field: Field = recordfield(
-                metadata=f.metadata, pre=pre, stem=f.name if store_by_name else AUTO, subdir=subdir
+                metadata=f.metadata,
+                pre=pre,
+                stem=f.name if store_by_field else AUTO,
+                subdir=os.path.join(subdir, f.name) if cluster else subdir,
             )
             f.metadata = wrapped_field.metadata
         elif pre is not None:

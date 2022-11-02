@@ -226,7 +226,6 @@ class Experiment:
             )
         return res
 
-
 # %%
 # We can run one experiment:
 exp = Experiment.generate(Configuration(nb_repeats=5), idx=0)

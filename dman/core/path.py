@@ -20,7 +20,8 @@ class Config:
 config = Config()
 
 
-AUTO = "__merge_auto"
+class _Auto: ...
+AUTO = _Auto()
 
 
 class RootError(RuntimeError):
@@ -99,9 +100,9 @@ class Target(os.PathLike):
         Raises:
             ValueError: Both name and suffix or stem were provided.
         """
-        if name != AUTO and (stem != AUTO or suffix != AUTO):
+        if name is not AUTO and (stem is not AUTO or suffix is not AUTO):
             raise ValueError("Either provide a name or suffix + stem.")
-        if name != AUTO:
+        if name is not AUTO:
             stem, suffix = os.path.splitext(name)
         self.subdir, self.stem, self.suffix = subdir, stem, suffix
 
@@ -146,7 +147,7 @@ class Target(os.PathLike):
     def merge(self, *args):
         if len(args) == 0:
             return self
-        t = tuple(v if _v == AUTO else _v for v, _v in zip(self, args[0]))
+        t = tuple(v if _v is AUTO else _v for v, _v in zip(self, args[0]))
         return Target.from_tuple(t).merge(*args[1:])
 
     def update(
@@ -398,7 +399,7 @@ def mount(
     base = get_root_path() if base is None else base
     if generator is None:
         generator = ""
-    if generator == AUTO:
+    if generator is AUTO:
         generator = os.path.join("cache", script_label(os.path.abspath(base)))
     if cluster:
         subdir = os.path.join(subdir, key)

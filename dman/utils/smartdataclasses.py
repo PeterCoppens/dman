@@ -1,6 +1,6 @@
 from dataclasses import asdict, dataclass, field, Field, MISSING, is_dataclass, fields
 import copy
-from typing import Any, Callable, Union, Type, List
+from typing import Any, Callable, TypeVar, Type, List
 from typing_extensions import dataclass_transform
 from dman.utils import sjson
 
@@ -10,11 +10,11 @@ DESCRIPTOR_KEY = "__descriptor"
 DESCRIPTOR = Any
 CONFIGFIELD = "_configclass"
 
+_T = TypeVar("_T")
 
-@dataclass_transform()
+@dataclass_transform(field_specifiers=(Field, field))
 def idataclass(
     cls=None,
-    /,
     *,
     init=True,
     repr=True,
@@ -22,7 +22,7 @@ def idataclass(
     order=False,
     unsafe_hash=False,
     frozen=False,
-):
+) -> Callable[[Type[_T]], Type[_T]]:
     """
     Convert a class to an iterable dataclass.
         Returns the same class as was passed in, with dunder methods added based on the fields
@@ -37,7 +37,6 @@ def idataclass(
     :param bool unsafe_hash: add a ``__hash__`` method function.
     :param bool frozen: fields may not be assigned to after instance creation.
     """
-
     def wrap(cls):
         res = dataclass(
             cls,
@@ -98,7 +97,7 @@ def set_descriptor(fld: Field, value):
     fld.metadata[DESCRIPTOR_KEY] = value
 
 
-@dataclass_transform(field_specifiers=(wrapfield,))
+@dataclass_transform(field_specifiers=(wrapfield, field, Field))
 def wrappedclass(
     cls=None,
     /,
@@ -109,7 +108,7 @@ def wrappedclass(
     order=False,
     unsafe_hash=False,
     frozen=False,
-):
+) -> Callable[[Type[_T]], Type[_T]]:
     def wrap(cls):
         # convert to dataclass
         res = cls
@@ -188,8 +187,8 @@ def optionfield(
     )
 
 
-@dataclass_transform(field_specifiers=(wrapfield, optionfield, OptionField))
-def configclass(cls=None, /, *, atomic: bool = True, force_defaults: bool = True):
+@dataclass_transform(field_specifiers=(wrapfield, optionfield, field, OptionField, Field))
+def configclass(cls=None, /, *, atomic: bool = True, force_defaults: bool = True) -> Callable[[Type[_T]], Type[_T]]:
     """Convert a class to a configclass."""
 
     def wrap(cls):
