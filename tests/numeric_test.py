@@ -1,5 +1,5 @@
 from dman.numeric import sarray, barray, carray, np
-from dman.model.modelclasses import modelclass, recordfields
+from dman.model.modelclasses import modelclass, record_fields
 
 
 def test_container():
@@ -27,7 +27,7 @@ def test_container():
     assert isinstance(container.d, barray)
     assert isinstance(container.d, barray[int])
     assert isinstance(container.d[0], np.int64)
-    assert 'd' in recordfields(Container)
+    assert 'd' in record_fields(container)
 
     lst = ['a', 'b']
     assert lst[container.a[0]] == 'a'

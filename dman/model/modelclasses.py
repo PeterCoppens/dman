@@ -15,12 +15,11 @@ from dman.utils.smartdataclasses import (
     get_descriptor,
 )
 from dman.core.storables import is_storable, storable
-from dman.model.record import Record, record, REMOVE, remove
+from dman.model.record import Record, record, REMOVE, remove, is_removable
 from dman.core.serializables import (
     SERIALIZE,
     DESERIALIZE,
-    NO_SERIALIZE,
-    is_serializable,
+    NO_SERIALIZE
 )
 from dman.core.serializables import BaseContext, serialize, deserialize, serializable
 from dman.core.path import Target, AUTO
@@ -29,6 +28,7 @@ from dman.core.path import Target, AUTO
 STO_FIELD = "_record__fields"
 SER_FIELD = "_serial__fields"
 RECORD_FIELDS = "__record__"
+UNUSED_FIELDS = "__unused__"
 MODELCLASS = "__modelclass__"
 RECORD_PRE = "_record_field__"
 
@@ -61,19 +61,9 @@ class RecordWrap:
     def build(self, content):
         return Record(content, self.target, self.preload)
 
-    def __set_name__(self, owner, name):
-        self.owner = owner
+    def __set_name__(self, _, name):
         self.public_name = name
         self.private_name = f"_{name}"
-        self.record_fields[name] = None
-
-    @property
-    def record_fields(self):
-        res = getattr(self.owner, RECORD_FIELDS, None)
-        if res is None:
-            res = dict()
-            setattr(self.owner, RECORD_FIELDS, res)
-        return res
 
     def __get__(self, obj, objtype=None):
         rec = getattr(obj, self.private_name)
@@ -86,17 +76,28 @@ class RecordWrap:
             value = self.pre(value)
 
         if is_storable(value):
+            # change content of existing record
             rec = getattr(obj, self.private_name, None)
             if isinstance(rec, Record):
+                # store old content for removal if needed
+                if is_removable(rec.content):
+                    unused_fields(obj).append(rec.content)
+
+                # update content
                 rec.content = value
-            else:
-                rec = self.build(value)
-                self.record_fields[self.public_name] = rec
+                return
+            
+            # create new record
+            rec = self.build(value)
+            record_fields(obj)[self.public_name] = rec
             setattr(obj, self.private_name, rec)
-        elif isinstance(value, Record):
-            setattr(obj, self.private_name, value)
         else:
-            raise TypeError(f'Expected storable type. Got {type(value)}.')
+            rec = record_fields(obj).get(self.public_name, None)
+            if rec is not None:
+                # store old record for removal
+                unused_fields(obj).append(rec)
+            setattr(obj, self.private_name, value)
+            record_fields(obj)[self.public_name] = value
 
     # TODO add __del__ method
 
@@ -118,8 +119,20 @@ class SerializeWrap:
         setattr(obj, self.private_name, value)
 
 
-def recordfields(obj):
-    return getattr(obj, RECORD_FIELDS, list())
+def record_fields(obj) -> dict:
+    res = getattr(obj, RECORD_FIELDS, None)
+    if res is None:
+        res = dict()
+        setattr(obj, RECORD_FIELDS, res)
+    return res
+
+
+def unused_fields(obj) -> list:
+    res = getattr(obj, UNUSED_FIELDS, None)
+    if res is None:
+        res = []
+        setattr(obj, UNUSED_FIELDS, res)
+    return res
 
 
 def serializefield(
@@ -193,7 +206,7 @@ def recordfield(
     stem: str = AUTO,
     suffix: str = AUTO,
     name: str = AUTO,
-    subdir: os.PathLike = "",
+    subdir: os.PathLike = AUTO,
     preload: str = False,
     pre: Callable[[Any], Any] = None,
 ) -> Field:
@@ -353,12 +366,15 @@ def _process__modelclass(
     for f in fields(res):
         pre = get_preset(f.type)
         if is_wrapfield(f):
-            if pre is None:
-                continue
             descr = get_descriptor(f)
             if isinstance(descr, (RecordWrap, SerializeWrap)):
                 if descr.pre is None:
                     descr.pre = pre
+            if isinstance(descr, RecordWrap):
+                if store_by_field and descr.target.stem is AUTO:
+                    descr.target.stem = f.name
+                if descr.target.subdir is AUTO:
+                    descr.target.subdir = os.path.join(subdir, f.name) if cluster else subdir
         elif is_serializable_field(f):
             ser_field: Field = serializefield(
                 metadata=f.metadata.get("__base", None), pre=pre
@@ -413,7 +429,11 @@ def _process__modelclass(
 def _remove__modelclass(self, context: BaseContext = None):
     if context is None:
         context = BaseContext()
-    _rfields = recordfields(self)
+
+    for v in unused_fields(self):
+        remove(v, context)
+
+    _rfields = record_fields(self)
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             log.info(f'removing field: "{f.name}"', "modelclass")
@@ -430,7 +450,13 @@ def _serialize__modelclass(self, context: BaseContext = None):
         f"serializing modelclass with fields {[f.name for f in fields(self)]}.",
         "modelclass",
     )
-    _rfields = recordfields(self)
+
+    # remove unused fields           
+    for v in unused_fields(self):
+        remove(v, context)
+
+    # serialize used fields
+    _rfields = record_fields(self)
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             if f.name in _rfields:
@@ -470,8 +496,14 @@ def _deserialize__modelclass(cls, serialized: dict, context: BaseContext):
 def _serialize__modelclass_content_only(self, context: BaseContext = None):
     if context is None:
         context = BaseContext()
+
+    # remove unused fields           
+    for v in unused_fields(self):
+        remove(v, context)
+
+    # serialize the rest
     res = dict()
-    _rfields = recordfields(self)
+    _rfields = record_fields(self)
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
             if f.name in _rfields:
@@ -489,7 +521,7 @@ def _serialize__modelclass_content_only(self, context: BaseContext = None):
 @classmethod
 def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseContext):
     processed = dict()
-    _rfields = recordfields(cls)
+    _rfields = record_fields(cls)
     for f in fields(cls):
         value = serialized.get(f.name, None)
         if value is None:
@@ -675,7 +707,7 @@ class _blist(MutableSequence):
     def __setitem__(self, key, value):
         if key < self.__len__():
             itm = self.store.__getitem__(key)
-            if is_model(itm):
+            if is_removable(itm):
                 self.unused.append(itm)
 
         if is_storable(value):
@@ -689,7 +721,7 @@ class _blist(MutableSequence):
 
     def __delitem__(self, key):
         itm = self.store.pop(key)
-        if is_model(itm):
+        if is_removable(itm):
             self.unused.append(itm)
 
     def __iter__(self):
@@ -878,7 +910,7 @@ class _bdict(MutableMapping):
 
     def __setitem__(self, key, value):
         itm = self.store.pop(key, None)
-        if is_model(itm):
+        if is_removable(itm):
             self.unused.append(itm)
 
         if is_storable(value):
@@ -925,7 +957,7 @@ class _bdict(MutableMapping):
 
     def __delitem__(self, key):
         itm = self.store.pop(key)
-        if is_model(itm):
+        if is_removable(itm):
             self.unused.append(itm)
 
     def __iter__(self):

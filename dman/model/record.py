@@ -255,10 +255,13 @@ class Context(BaseContext):
             local, target = self.open(target, choice="ignore")
 
             # Remove file if it exists.
-            path = self.mnt.abspath(local.absolute(target))
-            if os.path.exists(path):
-                log.io(f'Deleting file: "{target}".', "fs")
-                os.remove(path)
+            if self.mnt.contains(self.mnt.abspath(local.absolute(target))):
+                path = self.mnt.abspath(local.absolute(target))
+                if os.path.exists(path):
+                    log.io(f'Deleting file: "{target}".', "context")
+                    os.remove(path)
+            else:
+                log.warning(f'Tried to remove file outside of mount point: "{target}".', "context")
 
         # Remove files created by the object
         tp = type(obj)
