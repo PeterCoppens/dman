@@ -41,7 +41,6 @@ jobs:
             !/tmp/staging/.git
 
       - name: Commit and push documention
-        if: ${{ github.ref == 'refs/heads/main' }}
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
