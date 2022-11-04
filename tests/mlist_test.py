@@ -16,7 +16,7 @@ class Item:
             return False
         return self.value == other.value
 
-@storable
+@storable(name='__mlist_storable')
 class Storable(Item):
     def __write__(self, path: str):
         with open(path, 'w') as f:
@@ -28,7 +28,7 @@ class Storable(Item):
             return cls(f.read())
 
 
-@serializable
+@serializable(name='__mlist_serializable')
 class Serializable(Item):
     def __serialize__(self):
         return self.value

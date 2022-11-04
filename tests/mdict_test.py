@@ -16,7 +16,8 @@ class Item:
             return False
         return self.value == other.value
 
-@storable
+
+@storable(name='__mdict_storable')
 class Storable(Item):
     def __write__(self, path: str):
         with open(path, 'w') as f:
@@ -28,7 +29,8 @@ class Storable(Item):
             return cls(f.read())
 
 
-@serializable
+
+@serializable(name='__mdict_serializable')
 class Serializable(Item):
     def __serialize__(self):
         return self.value
@@ -38,7 +40,7 @@ class Serializable(Item):
         return cls(sto)
     
 
-def test_basic():
+def test_basic_mdict():
     ref = {'k1': 'a', 'k2': Storable(), 'k3': Serializable()}
     dct = mdict.from_dict(ref)
 
@@ -71,7 +73,7 @@ def test_basic():
     config.auto_clean = True
 
 
-def test_replace():
+def test_replace_mdict():
     ref = {'k': Storable()}
     lst = mdict.from_dict(ref)
 
