@@ -2,7 +2,7 @@
 Toolbox for experimental data management in Python.
 """
 
-__version__ = '0.0.0'
+__version__ = '1.0'
 
 from dman.core.serializables import serializable, serialize, deserialize, BaseContext
 from dman.core.serializables import ser_type2str, ser_str2type, register_serializable
