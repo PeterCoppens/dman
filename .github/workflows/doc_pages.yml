@@ -1,20 +1,19 @@
-name: doc_pages
+name: Documentation Pages
 
 on:
   push:
+    branches:
+      - main
 
 jobs:
-  build_docs_job:
-  name: Build Documentation
+  documentation:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
- 
     steps:
       - uses: actions/checkout@v2
 
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.9.7'
+          python-version: '3.10'
 
       - name: Install Python Dependencies
         run: |
