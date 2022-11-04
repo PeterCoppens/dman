@@ -127,7 +127,6 @@ def test_advanced():
     with temporary_context() as ctx:
         base = Base(File("a"), File("b"), File("c"))
         ser = dman.serialize(base, ctx)
-        dman.tui.walk_directory(ctx.directory)
         assert os.path.exists(os.path.join(ctx.directory, "test", "c.json"))
         assert len(os.listdir(ctx.directory)) == 2
         ser = sjson.loads(sjson.dumps(ser))
@@ -138,7 +137,6 @@ def test_advanced():
 
         dman.remove(dser, ctx)
         ctx.close()  # clean directories
-        dman.tui.walk_directory(ctx.directory)
         assert len(os.listdir(ctx.directory)) == 0
 
     @modelclass
@@ -149,14 +147,12 @@ def test_advanced():
         base = Base(File("a"), File("b"), File("c"))
         nested = Nested(base)
         ser = dman.serialize(nested, ctx)
-        dman.tui.walk_directory(ctx.directory)
         assert os.path.exists(os.path.join(ctx.directory, "subdir", "test", "c.json"))
         assert len(os.listdir(os.path.join(ctx.directory, "subdir"))) == 3
         ser = sjson.loads(sjson.dumps(ser))
         dser = dman.deserialize(ser, ctx)
 
         dman.remove(dser, ctx)
-        dman.tui.walk_directory(ctx.directory)
         ctx.close()  # clean directories
         assert len(os.listdir(ctx.directory)) == 0
 test_advanced()
