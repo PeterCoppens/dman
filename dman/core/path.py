@@ -1,3 +1,4 @@
+from contextlib import contextmanager, suppress
 from pathlib import Path
 import os, sys
 from typing import Iterable
@@ -205,6 +206,11 @@ class UserQuitException(TargetException):
     ...
 
 
+class MountException(TargetException):
+    ...
+
+
+
 class Mount(os.PathLike):
     def __init__(
         self,
@@ -248,9 +254,9 @@ class Mount(os.PathLike):
 
         # Check if absolute path is contained within the controlled directory.
         if validate and not self.contains(path):
-            raise ValueError(
+            raise MountException(
                 (
-                    f'Tried to process path "{self}". The specified'
+                    f'Tried to access path "{self}". The specified'
                     f'"{path}" is not contained within this mount point.'
                 )
             )
@@ -321,11 +327,8 @@ class Mount(os.PathLike):
             return target
         # We reach this option if a custom file name was provided by the user.
         return self.register(target.update(name=choice), choice="prompt")
-    
-    def remove(self, target: os.PathLike):
-        self.touched.remove(self.normalize(target))
 
-    def open(self, target: os.PathLike, *, validate: bool = True, choice: str = None):
+    def prepare(self, target: os.PathLike, *, validate: bool = True, choice: str = None):
         """Prepare directory to write to target path."""
         # Normalize the path relative to this mount point.
         target = self.normalize(target, validate=validate)
@@ -354,6 +357,25 @@ class Mount(os.PathLike):
             gitignore(directory, (name,))
         else:
             gitignore(self, ignored)
+    
+    @contextmanager
+    def open(self, path: os.PathLike, *args, **kwargs):
+        self.prepare(path, validate=True)
+        f = open(self.abspath(path), *args, **kwargs)
+        yield f
+        f.close()
+    
+    def untrack(self, target: os.PathLike, *, validate: bool = False):
+        with suppress(ValueError):
+            self.touched.remove(self.normalize(target, validate=validate))
+
+    def remove(self, target: os.PathLike, *, validate: bool = True):
+        self.untrack(target, validate=validate)
+        path = self.abspath(target)
+        if os.path.isdir(path) and len(os.listdir(path)) == 0:
+            os.rmdir(path)
+        elif os.path.exists(path):
+            os.remove(path)
 
     def __enter__(self):
         return self

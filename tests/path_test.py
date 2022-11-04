@@ -5,7 +5,7 @@ from io import StringIO
 from tempfile import TemporaryDirectory
 from pathlib import Path
 
-from dman.core.path import mount, target, TargetException, script_label
+from dman.core.path import mount, target, TargetException, script_label, MountException
 
 
 @contextmanager
@@ -21,7 +21,7 @@ def temporary_mount(*paths, **kwargs):
     with TemporaryDirectory() as base:
         res = mount('key', base=base, **kwargs)
         for p in paths:
-            res.open(p)
+            res.prepare(p)
         yield res
 
 
@@ -59,54 +59,54 @@ def test_mount():
         assert mnt == ref
 
 
-def test_open():
+def test_prepare():
     with temporary_mount('test.npy') as mnt:
         with mock_input("test-manual.npy"):
-            t = mnt.open('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt')
         assert t == 'test-manual.npy'
         with mock_input("test-manual.npy\ntest-second.npy"):
-            t = mnt.open('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt')
         assert t == 'test-second.npy'
         
     with temporary_mount('test.npy') as mnt:
         with mock_input("auto"):
-            t = mnt.open('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt')
         assert t == 'test0.npy'
         with mock_input("\n"):
-            t = mnt.open('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt')
         assert t == 'test1.npy'
         with mock_input("auto"):
-            t = mnt.open('test1.npy', choice='prompt')
+            t = mnt.prepare('test1.npy', choice='prompt')
         assert t == 'test2.npy'
         
     with temporary_mount('test.npy') as mnt:
         with mock_input("x"):
-            t = mnt.open('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt')
         assert t == 'test.npy'
         
     with temporary_mount('test.npy') as mnt:
         try:
             with mock_input("q"):
-                t = mnt.open('test.npy', choice='prompt')
+                t = mnt.prepare('test.npy', choice='prompt')
             assert False
         except TargetException:
             assert True
         
     with temporary_mount('test.npy') as mnt:
-        t = mnt.open('test.npy', choice='auto')
+        t = mnt.prepare('test.npy', choice='auto')
         assert t == 'test0.npy'
-        t = mnt.open('test.npy', choice='auto')
+        t = mnt.prepare('test.npy', choice='auto')
         assert t == 'test1.npy'
-        t = mnt.open('test1.npy', choice='auto')
+        t = mnt.prepare('test1.npy', choice='auto')
         assert t == 'test2.npy'
         
     with temporary_mount('test.npy') as mnt:
-        t = mnt.open('test.npy', choice='ignore')
+        t = mnt.prepare('test.npy', choice='ignore')
         assert t == 'test.npy'
         
     with temporary_mount('test.npy') as mnt:
         try:
-            t = mnt.open('test.npy', choice='quit')
+            t = mnt.prepare('test.npy', choice='quit')
             assert False
         except TargetException:
             assert True
@@ -138,10 +138,10 @@ def test_gitignore():
 
 def test_prune():
     with temporary_mount(cluster=True) as mnt:
-        t1 = mnt.open(target(name='test.npy', subdir='dir1'))
-        mnt.open(target(name='test.npy', subdir='dir2'))
-        mnt.open(target(name='test.npy', subdir=os.path.join('dir3', 'dir4')))
-        t2 = mnt.open(target(name='test.npy', subdir=os.path.join('dir3', 'dir5')))
+        t1 = mnt.prepare(target(name='test.npy', subdir='dir1'))
+        mnt.prepare(target(name='test.npy', subdir='dir2'))
+        mnt.prepare(target(name='test.npy', subdir=os.path.join('dir3', 'dir4')))
+        t2 = mnt.prepare(target(name='test.npy', subdir=os.path.join('dir3', 'dir5')))
         Path(os.path.join(mnt, t1)).touch()
         Path(os.path.join(mnt, t2)).touch()
         mnt.close()
@@ -149,3 +149,36 @@ def test_prune():
         assert set(os.listdir(os.path.join(mnt, 'dir1'))) == {'test.npy',}
         assert set(os.listdir(os.path.join(mnt, 'dir3',))) == {'dir5',}
         assert set(os.listdir(os.path.join(mnt, 'dir3', 'dir5'))) == {'test.npy',}
+
+
+def test_file_access():
+    # correct usage
+    with temporary_mount(cluster=True) as mnt:
+        with mnt.open('test.txt', 'w') as f:
+            f.write('test')
+        assert os.path.exists(os.path.join(mnt, 'test.txt'))
+        mnt.remove('test.txt')
+        assert not os.path.exists(os.path.join(mnt, 'test.txt'))
+
+    # try to write outside of mount point
+    with temporary_mount(cluster=True) as mnt:
+        try:
+            with mnt.open('/test.txt', 'w') as f:
+                f.write('test')
+            assert False
+        except MountException:
+            assert True
+
+    # some more removing
+    with temporary_mount(cluster=True) as mnt:
+        os.makedirs(mnt)
+        Path(os.path.join(mnt, 'test.txt')).touch()
+        assert os.path.exists(os.path.join(mnt, 'test.txt'))
+        mnt.remove('test.txt')
+        assert not os.path.exists(os.path.join(mnt, 'test.txt'))
+        try:
+            mnt.remove('/test.txt')
+            assert False
+        except MountException:
+            assert True
+        

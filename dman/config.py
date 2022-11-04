@@ -1,12 +1,18 @@
 from dataclasses import dataclass
 from dman.core import serializables
 from dman.core import storables
+from dman.model import modelclasses
 from dman.utils.smartdataclasses import configclass
 
 @configclass
-@dataclass
 class Config:
-    serialize: serializables.Config = serializables.config
-    store: storables.Config = storables.config
+    serialize: serializables.Config = None
+    store: storables.Config = None
+    model: modelclasses.Config = None
 
-params = Config()
+
+params = Config(
+    serializables.config, 
+    storables.config, 
+    modelclasses.config
+)

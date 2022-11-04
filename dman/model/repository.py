@@ -200,7 +200,7 @@ def save(
         gitignore=gitignore,
     ) as ctx:
         with log.layer(key, "saving", prefix="key"):
-            _, target = ctx.open(Target(stem=key, suffix='.json'))
+            _, target = ctx.prepare(Target(stem=key, suffix='.json'))
             path = os.path.join(ctx.directory, target)
             log.emphasize(
                 f'saving {type(obj).__name__} with key "{key}" to "{normalize_path(path)}".',

@@ -30,7 +30,6 @@ __custom_storable = dict()
 
 
 @configclass
-@dataclass
 class Config:
     on_retouch: str = optionfield(
         ["prompt", "quit", "ignore", "auto"], default="ignore"

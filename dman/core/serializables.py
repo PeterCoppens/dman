@@ -27,7 +27,6 @@ __custom_serializable = dict()
 
 
 @configclass
-@dataclass
 class Config:
     validate: bool = False
 config = Config()

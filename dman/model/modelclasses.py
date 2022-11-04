@@ -13,6 +13,7 @@ from dman.utils.smartdataclasses import (
     wrapfield,
     is_wrapfield,
     get_descriptor,
+    configclass
 )
 from dman.core.storables import is_storable, storable
 from dman.model.record import Record, record, REMOVE, remove, is_removable
@@ -31,6 +32,12 @@ RECORD_FIELDS = "__record__"
 UNUSED_FIELDS = "__unused__"
 MODELCLASS = "__modelclass__"
 RECORD_PRE = "_record_field__"
+
+
+@configclass
+class Config:
+    auto_clean: bool = True
+config = Config()
 
 
 def _record_key(key: str):
@@ -80,7 +87,7 @@ class RecordWrap:
             rec = getattr(obj, self.private_name, None)
             if isinstance(rec, Record):
                 # store old content for removal if needed
-                if is_removable(rec.content):
+                if config.auto_clean and is_removable(rec.content):
                     unused_fields(obj).append(rec.content)
 
                 # update content
@@ -93,7 +100,7 @@ class RecordWrap:
             setattr(obj, self.private_name, rec)
         else:
             rec = record_fields(obj).get(self.public_name, None)
-            if rec is not None:
+            if config.auto_clean and rec is not None:
                 # store old record for removal
                 unused_fields(obj).append(rec)
             setattr(obj, self.private_name, value)
@@ -430,8 +437,9 @@ def _remove__modelclass(self, context: BaseContext = None):
     if context is None:
         context = BaseContext()
 
-    for v in unused_fields(self):
-        remove(v, context)
+    if config.auto_clean:
+        for v in unused_fields(self):
+            remove(v, context)
 
     _rfields = record_fields(self)
     for f in fields(self):
@@ -451,9 +459,10 @@ def _serialize__modelclass(self, context: BaseContext = None):
         "modelclass",
     )
 
-    # remove unused fields           
-    for v in unused_fields(self):
-        remove(v, context)
+    # remove unused fields   
+    if config.auto_clean:        
+        for v in unused_fields(self):
+            remove(v, context)
 
     # serialize used fields
     _rfields = record_fields(self)
@@ -497,9 +506,10 @@ def _serialize__modelclass_content_only(self, context: BaseContext = None):
     if context is None:
         context = BaseContext()
 
-    # remove unused fields           
-    for v in unused_fields(self):
-        remove(v, context)
+    # remove unused fields 
+    if config.auto_clean:         
+        for v in unused_fields(self):
+            remove(v, context)
 
     # serialize the rest
     res = dict()
@@ -552,7 +562,6 @@ class _blist(MutableSequence):
         iterable: Iterable = None,
         subdir: os.PathLike = "",
         preload: bool = False,
-        auto_clean: bool = False,
     ):
         """
         Create an instance of this model list.
@@ -560,11 +569,9 @@ class _blist(MutableSequence):
         :param iterable: Initial content of the list.
         :param str subdir: Specify the default sub-subdirectory for storables.
         :param bool preload: Specify whether storables should be preloaded.
-        :param bool auto_clean: Automatically remove records with dangling pointers on serialization.
         """
         self.subdir = subdir
         self.preload = preload
-        self.auto_clean = auto_clean
 
         if iterable is None:
             iterable = list()
@@ -583,6 +590,11 @@ class _blist(MutableSequence):
             lst.append(res)
 
         return list.__repr__(lst)
+    
+    def __eq__(self, other):
+        if isinstance(other, _blist):
+            other = list(other)
+        return list(self) == other
 
     def __make_record__(self, itm):
         return record(itm, subdir=self.subdir, preload=self.preload)
@@ -595,10 +607,8 @@ class _blist(MutableSequence):
             res["subdir"] = self.subdir
         if self.preload:
             res["preload"] = self.preload
-        if self.auto_clean:
-            res["auto_clean"] = self.auto_clean
 
-        if len(self.unused) > 0:
+        if config.auto_clean and len(self.unused) > 0:
             log.info(f"removing unused items ...", f"{type(self).__name__}")
             for itm in self.unused:
                 remove(itm, context)
@@ -611,14 +621,14 @@ class _blist(MutableSequence):
                 f"{type(self).__name__}",
             )
             if isinstance(itm, Record):
-                if not self.auto_clean or itm.exists():
+                if not config.auto_clean or itm.exists():
                     lst.append(serialize(itm, context))
                 else:
                     self.unused.append(itm)
             else:
                 lst.append(serialize(itm, context))
 
-        if self.auto_clean and len(self.unused) > 0:
+        if config.auto_clean and len(self.unused) > 0:
             log.info(f"clean dangling pointers ...", f"{type(self).__name__}")
             for itm in self.unused:
                 remove(itm, context)
@@ -630,10 +640,9 @@ class _blist(MutableSequence):
     def __deserialize__(cls, serialized: dict, context: BaseContext):
         subdir = serialized.get("subdir", "")
         preload = serialized.get("preload", False)
-        auto_clean = serialized.get("auto_clean", False)
 
         lst = serialized.get("store", list())
-        res = cls(subdir=subdir, preload=preload, auto_clean=auto_clean)
+        res = cls(subdir=subdir, preload=preload)
 
         log.info(f"deserializing list ...", f"{cls.__name__}")
         for i, itm in enumerate(lst):
@@ -707,7 +716,12 @@ class _blist(MutableSequence):
     def __setitem__(self, key, value):
         if key < self.__len__():
             itm = self.store.__getitem__(key)
-            if is_removable(itm):
+            if isinstance(itm, Record) and is_storable(value):
+                if config.auto_clean and is_removable(itm.content):
+                    self.unused.append(itm.content)
+                itm.content = value
+                value = itm
+            elif config.auto_clean and is_removable(itm):
                 self.unused.append(itm)
 
         if is_storable(value):
@@ -721,7 +735,7 @@ class _blist(MutableSequence):
 
     def __delitem__(self, key):
         itm = self.store.pop(key)
-        if is_removable(itm):
+        if config.auto_clean and is_removable(itm):
             self.unused.append(itm)
 
     def __iter__(self):
@@ -749,9 +763,7 @@ class _bdict(MutableMapping):
         subdir: os.PathLike = "",
         preload: bool = False,
         store_by_key: bool = False,
-        store_subdir: bool = False,
-        auto_clean: bool = False,
-        **kwargs,
+        store_subdir: bool = False
     ):
         """
         Create an instance of this model dictionary.
@@ -760,19 +772,15 @@ class _bdict(MutableMapping):
         :param bool preload: Specify whether storables should be preloaded.
         :param bool store_by_key: Sets the stem to the key in the dictionary.
         :param bool store_subdir: Stores files in dedicated subdir based on key.
-        :param bool auto_clean: Automatically remove records with dangling pointers on serialization.
         :param kwargs: Initial content of the dict.
         """
         self.subdir = subdir
         self.preload = preload
-        self.auto_clean = auto_clean
 
         self._store_by_key = store_by_key
         self._store_subdir = store_subdir
 
         self.store = dict()
-        self.update(kwargs)
-
         self.unused = list()
 
     @classmethod
@@ -785,16 +793,15 @@ class _bdict(MutableMapping):
         preload: bool = False,
         store_by_key: bool = False,
         store_subdir: bool = False,
-        auto_clean: bool = False,
     ):
-        return cls.__init__(
+        res = cls(
             subdir=subdir,
             preload=preload,
             store_by_key=store_by_key,
-            store_subdir=store_subdir,
-            auto_clean=auto_clean,
-            **content,
+            store_subdir=store_subdir
         )
+        res.update(content)
+        return res
 
     def store_by_key(self, subdir: bool = False):
         self._store_by_key = True
@@ -813,6 +820,11 @@ class _bdict(MutableMapping):
             dct[k] = res
 
         return dict.__repr__(dct)
+    
+    def __eq__(self, other):
+        if isinstance(other, _bdict):
+            other = dict(**other)
+        return dict(**self) == other
 
     def __serialize__(self, context: BaseContext):
         dct = dict()
@@ -826,8 +838,6 @@ class _bdict(MutableMapping):
             res["store_by_key"] = self._store_by_key
         if self._store_subdir:
             res["store_subdir"] = self._store_subdir
-        if self.auto_clean:
-            res["auto_clean"] = self.auto_clean
 
         if len(self.unused) > 0:
             log.info(f"removing unused items ...", f"{type(self).__name__}")
@@ -842,14 +852,14 @@ class _bdict(MutableMapping):
                 f"{type(self).__name__}",
             )
             if isinstance(itm, Record):
-                if not self.auto_clean or itm.exists():
+                if not config.auto_clean or itm.exists():
                     dct[k] = serialize(itm, context)
                 else:
                     self.unused.append(itm)
             else:
                 dct[k] = serialize(itm, context)
 
-        if self.auto_clean and len(self.unused) > 0:
+        if config.auto_clean and len(self.unused) > 0:
             log.info(f"clean dangling pointers ...", f"{type(self).__name__}")
             for itm in self.unused:
                 remove(itm, context)
@@ -865,8 +875,7 @@ class _bdict(MutableMapping):
             subdir=serialized.get("subdir", ""),
             preload=serialized.get("preload", False),
             store_by_key=serialized.get("store_by_key", False),
-            store_subdir=serialized.get("store_subdir", False),
-            auto_clean=serialized.get("auto_clean", False),
+            store_subdir=serialized.get("store_subdir", False)
         )
 
         log.info(f"deserializing dict ...", f"{cls.__name__}")
@@ -910,9 +919,13 @@ class _bdict(MutableMapping):
 
     def __setitem__(self, key, value):
         itm = self.store.pop(key, None)
-        if is_removable(itm):
+        if isinstance(itm, Record) and is_storable(value):
+            if config.auto_clean and is_removable(itm.content):
+                self.unused.append(itm.content)
+            itm.content = value
+            value = itm  
+        elif config.auto_clean and is_removable(itm):
             self.unused.append(itm)
-
         if is_storable(value):
             value = self.__make_record__(key, value)
         self.store.__setitem__(key, value)
@@ -957,7 +970,7 @@ class _bdict(MutableMapping):
 
     def __delitem__(self, key):
         itm = self.store.pop(key)
-        if is_removable(itm):
+        if config.auto_clean and is_removable(itm):
             self.unused.append(itm)
 
     def __iter__(self):
@@ -986,7 +999,6 @@ class _bruns(_blist):
         subdir: os.PathLike = "",
         preload: bool = False,
         store_subdir: bool = True,
-        auto_clean: bool = False,
     ):
         """
         Create an instance of this labeled model list.
@@ -996,14 +1008,13 @@ class _bruns(_blist):
         :param str subdir: Specify the default sub-subdirectory for storables.
         :param bool preload: Specify whether storables should be preloaded.
         :param bool store_subdir: Specify whether each item should be stored in a separate directory.
-        :param bool auto_clean: Automatically remove records with dangling pointers on serialization.
         """
         self.stem = stem
         self.run_count = 0
         self.store_subdir = store_subdir
 
         super().__init__(
-            iterable=iterable, subdir=subdir, preload=preload, auto_clean=auto_clean
+            iterable=iterable, subdir=subdir, preload=preload
         )
 
     @property

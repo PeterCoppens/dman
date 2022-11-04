@@ -28,7 +28,7 @@ from dman.core.storables import (
     config,
     write,
 )
-from dman.core.path import Target, AUTO, Mount, mount, UserQuitException
+from dman.core.path import Target, AUTO, Mount, mount, UserQuitException, MountException
 
 
 REMOVE = "__remove__"
@@ -199,7 +199,7 @@ class Context(BaseContext):
     def write(self, target: os.PathLike, storable):
         try:
             target = Target.from_path(target)
-            local, _target = self.open(target)
+            local, _target = self.prepare(target)
             path = self.mnt.abspath(local.absolute(_target))
             return target.update(name=_target.name), write(
                 storable, path, local
@@ -220,7 +220,7 @@ class Context(BaseContext):
 
     def read(self, target: os.PathLike, sto_type):
         try:
-            local, target = self.open(target, choice="_ignore")
+            local, target = self.prepare(target, choice="_ignore")
             path = self.mnt.abspath(local.absolute(target))
             return read(sto_type, path, local)
         except FileNotFoundError:
@@ -247,21 +247,17 @@ class Context(BaseContext):
         if target is None:
             local = self
         else:
-            # Remove the file associated with the object
-            with suppress(ValueError):
-                self.mnt.remove(self.absolute(target))
-
-            # Parse the target
-            local, target = self.open(target, choice="ignore")
+            # Get target with respect to mount point
+            target = self.absolute(target)
 
             # Remove file if it exists.
-            if self.mnt.contains(self.mnt.abspath(local.absolute(target))):
-                path = self.mnt.abspath(local.absolute(target))
-                if os.path.exists(path):
-                    log.io(f'Deleting file: "{target}".', "context")
-                    os.remove(path)
-            else:
+            try:
+                self.mnt.remove(target)
+            except MountException:
                 log.warning(f'Tried to remove file outside of mount point: "{target}".', "context")
+                
+            # Localize the target
+            local, target = self.join(target.subdir), Target(name=target.name)
 
         # Remove files created by the object
         tp = type(obj)
@@ -289,9 +285,8 @@ class Context(BaseContext):
             return self
         return self.__class__(mnt=self.mnt, subdir=subdir)
         
-
-    def open(self, target: os.PathLike, *, choice="ignore") -> Tuple["Context", Target]:
-        target = self.mnt.open(self.absolute(target), choice=choice)
+    def prepare(self, target: os.PathLike, *, choice="ignore") -> Tuple["Context", Target]:
+        target = self.mnt.prepare(self.absolute(target), choice=choice)
         return self.join(target.subdir), Target(name=target.name)
 
     def __enter__(self):
