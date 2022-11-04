@@ -286,7 +286,7 @@ for i in tui.track(range(len(cfg.nb_samples)), total=len(cfg.nb_samples)):
     runs.append(Experiment.generate(cfg, idx=i, verbose=False))
 
 dman.save(
-    "experiment", dman.mdict(store_by_key=True, **{"cfg": cfg, "experiments": runs})
+    "experiment", dman.mdict.from_dict({"cfg": cfg, "experiments": runs}, store_by_key=True)
 )
 tui.walk_directory(dman.mount("experiment"), show_content=True)
 
