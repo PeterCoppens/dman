@@ -1,14 +1,21 @@
 import json
+from typing import Callable, Type
+
+
+def _default(o):
+    convert = __translate_atomic.get(
+        type(o), 
+        lambda o: f"<un-serializable: {type(o).__qualname__}>"
+    )
+    return convert(o)
 
 
 def dumps(obj, *args, **kwargs):
-    def default(o): return f"<un-serializable: {type(o).__qualname__}>"
-    return json.dumps(obj, *args, default=default, **kwargs)
+    return json.dumps(obj, *args, default=_default, **kwargs)
 
 
 def dump(obj, *args, **kwargs):
-    def default(o): return f"<un-serializable: {type(o).__qualname__}>"
-    return json.dump(obj, *args, default=default, **kwargs)
+    return json.dump(obj, *args, default=_default, **kwargs)
 
 
 def load(fp, *, cls=None, object_hook=None, parse_float=None,
@@ -31,10 +38,17 @@ def loads(s, *, cls=None, object_hook=None, parse_float=None,
     )
 
 
-atomic_types = (
+atomic_types = [
     str, int, float, bool, type(None)
-)
+]
+
+__translate_atomic = {}
 
 
 def atomic_type(obj):
-    return isinstance(obj, atomic_types)
+    return isinstance(obj, tuple(atomic_types))
+
+
+def register_atomic_alias(obj: Type, convert: Callable):
+    atomic_types.append(obj)
+    __translate_atomic[obj] = convert

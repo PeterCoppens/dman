@@ -61,7 +61,7 @@ jobs:
       run: python -m pip install --find-links=dist dman
     - name: Test
       run: |
-        python -m pip install pytest
+        python -m pip install pytest numpy
         pytest -rP
 
   release:

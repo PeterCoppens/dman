@@ -31,8 +31,19 @@
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.todo']
+extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.todo',
+    'sphinx_gallery.gen_gallery'
+]
+
+# The following configuration declares the location of the ‘examples’ directory.
+sphinx_gallery_conf = {
+    'examples_dirs': ['../../examples/patterns', '../../examples/fundamentals', '../../examples/cases'],   # path to your example scripts
+    'gallery_dirs': ['gallery/patterns', 'gallery/fundamentals', 'gallery/cases'],  # path to where to save gallery generated output
+    'capture_repr': ('_repr_html_', '__repr__'),
+    'filename_pattern': '/'
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -65,7 +76,7 @@ release = '0.0.0'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

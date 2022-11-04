@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import pytest
-from dman import storable, write, read, serializable
+from dman.core.storables import storable, write, read
+from dman.core.serializables import serializable
 from tempfile import TemporaryDirectory
 import os
 

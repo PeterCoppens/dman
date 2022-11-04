@@ -22,7 +22,7 @@ classifiers = [
     "Topic :: System :: Archiving",
 ]
 requires-python = ">=3.8"
-dependencies = []
+dependencies = ["typing_extensions"]
 [project.optional-dependencies]
 numpy = ["numpy~=1.20"]
 plotting = ["matplotlib~=3.5"]

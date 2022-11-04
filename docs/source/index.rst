@@ -12,20 +12,31 @@ numerical experiments. Data is stored in a human-readable fashion (whenever
 possible).
 
 A good place to start reading for a high-level overview of the module is :ref:`fundamentals`.
-If you just want to get started you can read :ref:`common-use` or check out the 
-[examples](https://github.com/PeterCoppens/dman/tree/main/examples).
+If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_common.py`.
 
 
 .. toctree::
-   :maxdepth: 2
-   :hidden:
+   :caption: Introduction
 
-   usage/common.rst
-   usage/serialization.rst
+   gallery/patterns/example_common.rst
+   usage/glossary.rst
+   .. usage/serialization.rst
    .. usage/errors.rst
    .. api/serializables.rst
 
+.. toctree::
+   :caption: Examples
 
+   gallery/cases/index.rst
+   gallery/patterns/index.rst
+
+.. toctree::
+   :caption: API
+
+   gallery/fundamentals/index.rst
+   .. usage/serialization.rst
+   .. usage/errors.rst
+   .. api/serializables.rst
 
 
 .. Indices and tables

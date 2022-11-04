@@ -2,8 +2,8 @@ from typing import Any
 import pytest
 
 
-from dman import serializable, serialize, deserialize, sjson, dataclass, isvalid
-from dman.persistent.serializables import SER_TYPE, SER_CONTENT, ExcUndeserializable, Undeserializable, Unserializable
+from dman.core.serializables import serializable, serialize, deserialize, sjson, dataclass, isvalid, register_serializable
+from dman.core.serializables import SER_TYPE, SER_CONTENT, ExcUndeserializable, Undeserializable, Unserializable
 
 
 atomics = [
@@ -164,15 +164,20 @@ def test_nested_class(base):
 
 
 def test_fail_serialize_object():
-    class NotRegistred: ...
+    class NotRegistered: ...
 
-    res = serialize(NotRegistred())
+    res = serialize(NotRegistered())
     assert(not isvalid(res))
 
     @serializable
     class InvalidSignature:
         def __serialize__(self, a: str, b: str, c: str):
             print(a, b, c)
+
+        @classmethod
+        def __deserialize__(cls, ser):
+            ...
+
 
     res = serialize(InvalidSignature())
     assert(not isvalid(res))
@@ -181,6 +186,10 @@ def test_fail_serialize_object():
     class ErrorSerialize:
         def __serialize__(self):
             raise Exception('error')
+
+        @classmethod
+        def __deserialize__(cls, ser):
+            ...
     res = serialize(ErrorSerialize())
     assert(not isvalid(res))
 
@@ -230,3 +239,23 @@ def test_fail_deserialize():
     assert(isinstance(res, Base))
 
 
+def test_custom():
+    class Frozen:
+        def __init__(self, data: int):
+            self.data = data
+
+        def __repr__(self):
+            return f'{self.__class__.__name__}(data={self.data})'
+
+    register_serializable(
+        'frozen',
+        Frozen,
+        serialize=lambda frozen: frozen.data,
+        deserialize=lambda data: Frozen(data)
+    )
+
+    frozen = Frozen(data=42)
+    ser = serialize(frozen)
+    res = sjson.dumps(ser, indent=4)
+    dser = deserialize(sjson.loads(res))
+    assert(frozen.data == dser.data)
