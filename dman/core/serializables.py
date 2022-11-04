@@ -95,6 +95,10 @@ def register_serializable(name: str, cls: Type[Any], *, serialize: Callable[[Any
         __custom_serializable[cls] = (name, serialize, deserialize)
 
 
+def serializable_types():
+    return __serializable_types
+
+
 def get_custom_serializable(cls: Type[Any], default=None):
     return __custom_serializable.get(cls, default)
 
