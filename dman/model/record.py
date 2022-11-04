@@ -285,7 +285,7 @@ class Context(BaseContext):
             return self
         return self.__class__(mnt=self.mnt, subdir=subdir)
         
-    def prepare(self, target: os.PathLike, *, choice="ignore") -> Tuple["Context", Target]:
+    def prepare(self, target: os.PathLike, *, choice: str = None) -> Tuple["Context", Target]:
         target = self.mnt.prepare(self.absolute(target), choice=choice)
         return self.join(target.subdir), Target(name=target.name)
 

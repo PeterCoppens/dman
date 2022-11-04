@@ -239,6 +239,18 @@ def test_fail_deserialize():
     assert(isinstance(res, Base))
 
 
+def test_deserialize_expected():
+    @serializable(name='__base')
+    @dataclass
+    class Base:
+        a: str = 'test'
+    
+    ser = serialize(Base('value'), content_only=True)
+    dser = deserialize(ser, ser_type='__base')
+    assert isinstance(dser, Base)
+    assert dser.a == 'value'
+    
+
 def test_custom():
     class Frozen:
         def __init__(self, data: int):

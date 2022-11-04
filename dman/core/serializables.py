@@ -505,7 +505,7 @@ class BaseContext:
             with log.layer(f'list({len(serialized)})', 'deserializing', owner=list):
                 return self._deserialize__list(list, serialized)
 
-        if isinstance(expected, str) and type(serialized) is not str:
+        if isinstance(expected, str):
             ser_type_get = ser_str2type(expected)
             if ser_type_get is None:
                 return Undeserializable(

@@ -12,7 +12,7 @@ numerical experiments. Data is stored in a human-readable fashion (whenever
 possible).
 
 A good place to start reading for a high-level overview of the module is :ref:`fundamentals`.
-If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_common.py`.
+If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_example_common.py`.
 
 
 .. toctree::

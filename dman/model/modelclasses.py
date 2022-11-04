@@ -260,6 +260,16 @@ __pre_fields = dict()
 
 
 def register_preset(tp: Type, pre: Callable[[Any], Any]):
+    """Register a preset method ``pre`` for a type ``tp``. 
+
+        When a field with that type is defined in a modelclass, ``pre`` 
+        is called before setting the field.
+
+    Example:
+        >>> register_preset(barray, lambda arg: 
+        >>>    arg.view(barray) if isinstance(arg, np.ndarray) else arg
+        >>> )
+    """
     __pre_fields[tp] = pre
 
 
@@ -290,27 +300,36 @@ def modelclass(
     template: Any = None,
     **kwargs,
 ) -> Callable[[Type[_T]], Type[_T]]:
-    """
-    Convert a class to a modelclass.
-        Returns the same class as was passed in, with dunder methods added based on the fields
-        defined in the class.
-        The class is automatically made ``serializable`` by adding ``__serialize__``
-        and ``__deserialize__``.
+    """Convert a class to a modelclass.
+
+        Returns the same class as was passed in, with dunder methods added based 
+        on the fields defined in the class. The class is automatically made 
+        ``serializable`` by adding ``__serialize__`` and ``__deserialize__``.
+
+        If an attribute ``__no_serialize__`` is added, then the
+        field names listed as string within will not be included 
+        in the serialization.
 
         The arguments of the ``dataclass`` decorator are provided and some
         additional arguments are also available.
 
-    :param bool init: add an ``__init__`` method.
-    :param bool repr: add a ``__repr__`` method.
-    :param bool order: rich comparison dunder methods are added.
-    :param bool unsafe_hash: add a ``__hash__`` method function.
-    :param bool frozen: fields may not be assigned to after instance creation.
-    :param bool storable: make the class storable with a ``__write__`` and ``__read__``.
-    :param bool compact: do not include serializable types during serialization (results in more compact serializations).
-    :param bool store_by_field: the stem of storables is determined by the name of the associated field.
-    :param bool subdir: store all records in subdirectory.
-    :param bool cluster: store all storables in a directory associated with their field name.
-    :param Any template: template for serialization.
+    Args:
+        cls: Class to convert.
+        name (str, optional): Name of the serializable (and storable if required). Defaults to class name.
+
+        init (bool, optional): Add an ``__init__`` method. Defaults to True.
+        repr (bool, optional): Add a ``__repr__`` method. Defaults to True.
+        eq (bool, optional): Add a ``__eq__`` method. Defaults to True.
+        order (bool, optional): Add rich comparison methods. Defaults to False.
+        unsafe_hash (bool, optional): Add a ``__hash__`` method. Defaults to False.
+        frozen (bool, optional): Fields may not be assigned after instance creation. Defaults to False.
+
+        storable (bool, optional): Make the class storable with a ``__write__`` and ``__read__``. Defaults to False.
+        compact (bool, optional): Do not include serializable types during serialization, making the result more compact. Defaults to False.
+        store_by_field (bool, optional): The stem of files is determined by the field name. Defaults to False.
+        cluster (bool, optional): Each file is stored in a subfolder determined by the field name. Defaults to False.
+        subdir (str, optional): Store the files in a common subfolder. Defaults to "".
+        template (Any, optional): Template for serialization. Defaults to None.
     """
 
     def wrap(cls):

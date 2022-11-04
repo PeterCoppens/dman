@@ -16,7 +16,7 @@ from dman.utils import sjson
 from dman.utils.regex import substitute
 from dman.utils.user import prompt_user
 from dman.core import log
-from dman.core.path import TargetException, UserQuitException, get_root_path, normalize_path, mount, target, Mount, Target, AUTO
+from dman.core.path import TargetException, UserQuitException, get_root_path, normalize_path, mount, target, Mount, Target, AUTO, config
 from dman.utils.smartdataclasses import configclass, optionfield
 
 
@@ -27,17 +27,6 @@ LOAD = "__load__"
 
 __storable_types = dict()
 __custom_storable = dict()
-
-
-@configclass
-class Config:
-    on_retouch: str = optionfield(
-        ["prompt", "quit", "ignore", "auto"], default="ignore"
-    )
-    default_suffix: str = '.sto'
-
-
-config = Config()
 
 
 def storable_type(obj):

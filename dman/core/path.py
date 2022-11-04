@@ -16,6 +16,7 @@ class Config:
     on_retouch: str = optionfield(
         '["prompt", "quit", "ignore", "auto"]', default="ignore"
     )
+    default_suffix: str = '.sto'
 
 
 config = Config()

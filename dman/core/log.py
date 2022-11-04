@@ -254,8 +254,8 @@ def config(level=None, filename: str=None, filemode: str = 'a', stream=None, han
                 h.setFormatter(fmt)
             logger.addHandler(h)
         
-        if level is not None:
-            logger.setLevel(level)
+    if level is not None:
+        logger.setLevel(level)
 
                 
                 
