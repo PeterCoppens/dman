@@ -11,6 +11,7 @@ function generate_docs {
     if [ "$1" = "main" ]; then dir="docs"; else dir="$1/docs"; fi
     pushd ../
     pip install .
+    dman init
     sphinx-build -M html docs/source /tmp/sphinx-build
     mkdir -p "$2/$dir"
     rm -rf "$2/$dir"
