@@ -30,7 +30,7 @@ reconstructed: Manual = deserialize(ser)
 
 # content only
 ser = serialize(test, content_only=True)
-reconstructed: Manual = deserialize(ser, ser_type=Manual)
+reconstructed: Manual = deserialize(ser, expected=Manual)
 
 # ------------------------------------------------------------------------------
 # enum definition of serializables

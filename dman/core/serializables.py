@@ -1,3 +1,9 @@
+"""
+Contains utilities for creating serializable types and to serialize and 
+deserialize them into objects that can be encoded through json.
+"""
+
+
 from dataclasses import MISSING, dataclass, fields, is_dataclass, asdict
 import inspect
 import sys
@@ -13,13 +19,13 @@ import textwrap
 from enum import Enum
 
 
-SER_TYPE = '_ser__type'
-SER_CONTENT = '_ser__content'
-SERIALIZE = '__serialize__'
-DESERIALIZE = '__deserialize__'
-NO_SERIALIZE = '__no_serialize__'
-CONVERT = '__convert__'
-DECONVERT = '__de_convert__'
+SER_TYPE = "_ser__type"
+SER_CONTENT = "_ser__content"
+SERIALIZE = "__serialize__"
+DESERIALIZE = "__deserialize__"
+NO_SERIALIZE = "__no_serialize__"
+CONVERT = "__convert__"
+DECONVERT = "__de_convert__"
 
 
 __serializable_types = dict()
@@ -28,41 +34,55 @@ __custom_serializable = dict()
 
 @configclass
 class Config:
+    """Configuration for serializables.
+
+        This class has a global instance that can be accessed as follows:
+
+        >>> dman.core.serializables.config.validate = True
+        >>> dman.params.validate = True  # equivalent
+
+    Args:
+        validate (bool, optional): Cancel serialization when an invalid object is encountered. Defaults to False.
+    """
+
     validate: bool = False
+
+
 config = Config()
 
 
 def compare_type(base: Type, check: Sequence[Type]):
+    """Compare two types, supporting generic types.
+
+    The signature operates similarly to ``isinstance``.
+    """
     if not isinstance(check, Sequence):
         check = (check,)
     if base in check:
         return True
-    base = getattr(base, '__origin__', MISSING)
+    base = getattr(base, "__origin__", MISSING)
     return base is not MISSING and base in check
 
 
 def ser_type2str(obj):
     """
-    Returns the serialize type string of an object or class.
-    """
+    Returns the serialize type string of an object or class."""
     return getattr(obj, SER_TYPE, None)
 
 
 def ser_str2type(ser):
     """
-    Returns the class represented by a serialize type string.
-    """
+    Returns the class represented by a serialize type string."""
     return __serializable_types.get(ser, None)
 
 
 def is_serializable_type_str(ser: str):
+    """Check if a string is the name of a registered serializable type."""
     return ser is not None and ser in __serializable_types
 
 
 def is_serializable(ser):
-    """
-    Check if an object supports serialization
-    """
+    """Check if an object is a serializable type."""
     if is_serializable_type_str(getattr(ser, SER_TYPE, None)):
         return True
     if isinstance(ser, (list, dict, tuple)):
@@ -72,9 +92,11 @@ def is_serializable(ser):
     return type(ser) in __custom_serializable
 
 
-def is_deserializable(serialized: dict):
-    """
-    Check if a dictionary has been produced through serialization.
+def is_deserializable(serialized: Any):
+    """Check if an object has been produced through serialization.
+
+    If the serialized object is a dictionary, then it should include
+    the serializable type string.
     """
     if sjson.atomic_type(serialized) or isinstance(serialized, (list, tuple)):
         return True
@@ -86,9 +108,28 @@ def is_deserializable(serialized: dict):
     return False
 
 
-def register_serializable(name: str, cls: Type[Any], *, serialize: Callable[[Any, Optional['BaseContext']], Any] = None, deserialize: Callable[[Any, Optional['BaseContext']], Any] = None):
-    """
-    Register a class as a serializable type with a given name
+def register_serializable(
+    name: str,
+    cls: Type[Any],
+    serialize: Callable[[Any, Optional["BaseContext"]], Any] = None,
+    deserialize: Callable[[Any, Optional["BaseContext"]], Any] = None,
+):
+    """Register a class as a serializable type with a given name.
+
+        If the serialize and deserialize methods are not provided then the class
+        should have a `__serialize__` and `__deserialize__` method defined.
+        In this case however you should prefer using the :func:``serializable``
+        decorator instead.
+
+    Args:
+        name (str): Name of the serializable
+        cls (Type[Any]): Class to register
+        serialize (Callable[[Any, Optional[BaseContext]], Any], optional): Serialize method. Defaults to None.
+        deserialize (Callable[[Any, Optional[BaseContext]], Any], optional): Deserialize method. Defaults to None.
+
+    Example:
+        >>> class Base: ...
+        >>> register_serializable('base', Base, lambda obj: '<base>', lambda ser: Base())
     """
     __serializable_types[name] = cls
     if serialize is not None and deserialize is not None:
@@ -96,45 +137,96 @@ def register_serializable(name: str, cls: Type[Any], *, serialize: Callable[[Any
 
 
 def serializable_types():
+    """Return the serializable types dictionary."""
     return __serializable_types
 
 
 def get_custom_serializable(cls: Type[Any], default=None):
+    """Get the signature of a custom serializable object."""
     return __custom_serializable.get(cls, default)
 
 
-def serialize(ser, context: 'BaseContext' = None, content_only: bool = False):
-    """
-    Serialize a serializable object.
-        The context can be used for logging / error handling or other more 
-        advanced behavior. 
+def serialize(obj, context: "BaseContext" = None, content_only: bool = False):
+    """Serialize a serializable object.
 
-    :param ser: The object to serialize
-    :param context: The serialization context
-    :param bool content_only: Do not include type information when true
+        The context can be used to store the current directory, logging
+        and custom serialization behavior. Serializable objects are created
+        using :func:`serializable` or alternatively using :func:`register_serializable`.
+
+        By default, any object that can be handled by json is serializable.
+        That is ``str``, ``int``, ``float``, ``None``, ``list``, ``tuple`` and ``dict``.
+
+    Args:
+        obj: The object to serialize
+        context (BaseContext, optional): The serialization context. Defaults to None.
+        content_only (bool, optional): Do not include type information when true.
+            Results in more compact serialization. Defaults to False.
+
+    Example:
+        >>> @serializable
+        >>> @dataclass
+        >>> class Base:
+        >>>     value: str
+        >>> ser = serialize([Base('content'), 'message'])
+        >>> print(sjson.dumps(ser, indent=4))
+        [
+            {
+                "_ser__type": "Base",
+                "_ser__content": {
+                    "value": "content"
+                }
+            },
+            "message"
+        ]
+        >>> ser = serialize(Base('content'), content_only=True)
+        >>> print(sjson.dumps(ser, indent=4))
+        {
+            "value": "content"
+        }
     """
+
     if context is None:
         context = BaseContext()
-    return context.serialize(ser, content_only=content_only)
+    return context.serialize(obj, content_only=content_only)
 
 
-def deserialize(serialized, context: 'BaseContext' = None, ser_type=None):
+def deserialize(serialized, context: "BaseContext" = None, expected=None):
+    """Deserialize an object produced through serialization.
+
+        The context can be used to store the current directory, logging
+        and custom serialization behavior. Deserializable objects are created
+        using :func:`serializable` or alternatively using :func:`register_serializable`.
+
+        By default, any object that can be handled by json is deserializable.
+        That is ``str``, ``int``, ``float``, ``None``, ``list``, ``tuple`` and ``dict``.
+
+    Args:
+        serialized: The object to deserialize.
+        context (BaseContext, optional): _description_. Defaults to None.
+        expected (_type_, optional): Class or string representing the expected type. If set to
+            None the type is received from the dictionary. Defaults to None.
+
+    Example:
+        >>> @serializable(name='_base')
+        >>> @dataclass
+        >>> class Base:
+        >>>     value: str
+        >>> ser = serialize(Base('content'))
+        >>> print(deserialize(ser).value)
+        content
+        >>> ser = serialize(Base('content'), content_only=True)
+        >>> print(deserialize(ser, expected=Base).value)
+        content
+        >>> print(deserialize(ser, expected='_base').value)
+        content
     """
-    Deserialize a dictionary produced through serialization.
-        The context can be used for logging / error handling or other more 
-        advanced behavior. 
 
-    :param ser: The dictionary to deserialize
-    :param context: The serialization context
-    :param ser_type: Class or string representing the expected type. If set to 
-                        None the type is received from the dictionary. 
-    """
     if context is None:
         context = BaseContext()
-    return context.deserialize(serialized, ser_type)
+    return context.deserialize(serialized, expected)
 
 
-def _serialize__dataclass(self, context: 'BaseContext' = None):
+def _serialize__dataclass(self, context: "BaseContext" = None):
     serialized = dict()
     for f in fields(self):
         if f.name not in getattr(self, NO_SERIALIZE, []):
@@ -145,7 +237,7 @@ def _serialize__dataclass(self, context: 'BaseContext' = None):
 
 
 @classmethod
-def _deserialize__dataclass(cls, serialized: dict, context: 'BaseContext'):
+def _deserialize__dataclass(cls, serialized: dict, context: "BaseContext"):
     res = dict()
     for k, v in serialized.items():
         res[k] = deserialize(v, context)
@@ -159,10 +251,10 @@ def _serialize__enum(self):
 
 @classmethod
 def _deserialize__enum(cls, serialized: str):
-    *_, name = serialized.split('.')
+    *_, name = serialized.split(".")
     return cls[name]
 
-    
+
 @classmethod
 def _default__convert(cls, base):
     return cls(**asdict(base))
@@ -170,10 +262,12 @@ def _default__convert(cls, base):
 
 def _serialize__template(template: Any, cls: any):
     convert = getattr(template, CONVERT, None)
-    if convert is None: 
-        if not is_dataclass(cls): 
-            raise ValueError(f'Serializable should either be a dataclass or should have a "{CONVERT}" method specified.')
-        setattr(template, CONVERT, _default__convert) 
+    if convert is None:
+        if not is_dataclass(cls):
+            raise ValueError(
+                f'Serializable should either be a dataclass or should have a "{CONVERT}" method specified.'
+            )
+        setattr(template, CONVERT, _default__convert)
         convert = getattr(template, CONVERT, None)
 
     def __serialize__(self, context: BaseContext = None):
@@ -190,35 +284,42 @@ def _deserialize__template(template: Any):
             convert = getattr(template, DECONVERT, None)
         if convert is None:
             convert = lambda x: x
-        return convert(deserialize(ser, context, ser_type=template))
+        return convert(deserialize(ser, context, expected=template))
+
     return __deserialize__
 
 
 def serializable(cls=None, /, *, name: str = None, template: Any = None):
-    """
-    Returns the same class as was passed in and the class is registered as a 
-    serializable type. 
+    """Make a class serializable.
 
-    Serialization and Deserialization methods are added automatically if cls
-    is a dataclass. Otherwise a ``__serialize__`` or ``__deserialize__``
-    method should be provided for serialization. If these are not provided 
-    serialization will fail.
+        Returns the same class as was passed in and the class is registered as a
+        serializable type. Serialization and Deserialization methods are added
+        automatically if cls is a dataclass or an Enum. Otherwise a
+        ``__serialize__`` and ``__deserialize__`` method should be provided
+        for serialization. If these are not provided serialization will fail.
 
-    :param cls: The class to process.
-    :param str name: The name of the serializable type.
-    :param template: Template class to use during serialization.
+        See :ref:`sphx_glr_gallery_fundamentals_example0_serializables.py` for
+        detailed examples on how to create serializable types.
+
+    Args:
+        cls (Any): The class to process.
+        name (str, optional): The name of the serializable type. Defaults to None.
+        template (Any, optional): Template class to use during serialization. Defaults to None.
     """
+
     def wrap(cls):
         local_name = name
         if local_name is None:
-            local_name = getattr(cls, '__name__')
+            local_name = getattr(cls, "__name__")
         setattr(cls, SER_TYPE, local_name)
         register_serializable(local_name, cls)
 
         if template is not None:
             if not hasattr(cls, CONVERT):
                 if not is_dataclass(template):
-                    raise ValueError(f'Template should be either a dataclass or should have a "{CONVERT}" method defined.')
+                    raise ValueError(
+                        f'Template should be either a dataclass or should have a "{CONVERT}" method defined.'
+                    )
                 if not hasattr(template, DECONVERT):
                     setattr(cls, CONVERT, _default__convert)
             if getattr(cls, SERIALIZE, None) is None:
@@ -237,9 +338,11 @@ def serializable(cls=None, /, *, name: str = None, template: Any = None):
                 setattr(cls, SERIALIZE, _serialize__enum)
             if getattr(cls, DESERIALIZE, None) is None:
                 setattr(cls, DESERIALIZE, _deserialize__enum)
-        
+
         if not hasattr(cls, SERIALIZE) or not hasattr(cls, DESERIALIZE):
-            raise ValueError(f'Class {cls} could not be made serializable. Provide a manual definition of a `__serialize__` and `__deserialize__` method.')
+            raise ValueError(
+                f"Class {cls} could not be made serializable. Provide a manual definition of a `__serialize__` and `__deserialize__` method."
+            )
 
         return cls
 
@@ -250,43 +353,49 @@ def serializable(cls=None, /, *, name: str = None, template: Any = None):
 
     # We're called as @serializable without parens.
     return wrap(cls)
- 
-
-serializable(Frame, name='__frame')
-serializable(Stack, name='__stack')
-serializable(Trace, name='__trace')
 
 
-@serializable(name='__unserializable')
+serializable(Frame, name="__frame")
+serializable(Stack, name="__stack")
+serializable(Trace, name="__trace")
+
+
+@serializable(name="__unserializable")
 class Unserializable(BaseInvalid):
+    """Represents an object that could not be serialized."""
+
     ...
 
 
-@serializable(name = '__exc_unserializable')
+@serializable(name="__exc_unserializable")
 class ExcUnserializable(ExcInvalid):
-    ...
-    
+    """Represents an object that could not be serialized due to an exception."""
 
-@serializable(name='__undeserializable')
+    ...
+
+
+@serializable(name="__undeserializable")
 @dataclass(repr=False)
 class Undeserializable(BaseInvalid):
-    serialized: dict = None
-    expected: str = None
+    """Represents an object that could not be deserialized."""
+
+    serialized: dict = None  #: The serialized object.
+    expected: str = None  #: The expected serializable type of the object.
 
     def format(self):
         yield from super().format()
         if self.serialized:
-            yield '\n\nSerialized\n'
-            yield textwrap.indent(sjson.dumps(self.serialized, indent=4), ' '*0)
+            yield "\n\nSerialized\n"
+            yield textwrap.indent(sjson.dumps(self.serialized, indent=4), " " * 0)
 
     def __serialize__(self):
         res = super().__serialize__()
         if self.serialized is not None:
-            res['serialized'] = self.serialized
+            res["serialized"] = self.serialized
         if self.expected is not None:
-            res['ser_type'] = self.expected
+            res["ser_type"] = self.expected
         return res
-    
+
     @classmethod
     def __deserialize__(cls, serialized: dict):
         res = cls(**deserialize(serialized))
@@ -295,27 +404,28 @@ class Undeserializable(BaseInvalid):
         return res
 
 
-
-@serializable(name='__exc_undeserializable')
+@serializable(name="__exc_undeserializable")
 @dataclass(repr=False)
 class ExcUndeserializable(ExcInvalid):
+    """Represents an object that could not be deserialized due to an exception."""
+
     serialized: dict
     expected: str
 
     def format(self):
         yield from super().format()
         if self.serialized:
-            yield '\n\nSerialized\n'
-            yield textwrap.indent(sjson.dumps(self.serialized, indent=4), ' '*0)
+            yield "\n\nSerialized\n"
+            yield textwrap.indent(sjson.dumps(self.serialized, indent=4), " " * 0)
 
     def __serialize__(self):
         res = super().__serialize__()
         if self.serialized is not None:
-            res['serialized'] = self.serialized
+            res["serialized"] = self.serialized
         if self.expected is not None:
-            res['expected'] = self.expected
+            res["expected"] = self.expected
         return res
-    
+
     @classmethod
     def __deserialize__(cls, serialized: dict, context):
         res = cls(**serialized)
@@ -345,216 +455,287 @@ class ValidationError(SerializationError):
     """
     Validation Error raised when an object could not be validated.
     """
+
     pass
 
 
-def validate(obj, msg: str = 'Could not validate object'):
-    """
-    Check if the object is valid, raise a ValidationError otherwise. 
+def validate(obj, msg: str = "Could not validate object"):
+    """Check if the object is valid, raise a ValidationError otherwise.
 
-    :param obj: The object to validate
-    :param str msg: An optional message set in the Validation Error
-    :raises ValidationError: if the obj is not valid.
+    Args:
+        obj: The object to validate
+        msg (str, optional): An optional message set in the Validation Error.
+            Defaults to 'Could not validate object'.
+
+    Raises:
+        ValidationError: The object is not valid.
     """
+
     if isvalid(obj):
         return
     raise ValidationError(msg, str(obj))
 
 
-def _call_optional_context(method, *args, context=None, exc_type: Type[ExcInvalid] = None, **kwargs):
+def _call_optional_context(
+    method, *args, context=None, exc_type: Type[ExcInvalid] = None, **kwargs
+):
     try:
         sig = inspect.signature(method)
-        if len(sig.parameters) == len(args): 
+        if len(sig.parameters) == len(args):
             return method(*args)
         if len(sig.parameters) == len(args) + 1:
             return method(*args, BaseContext() if context is None else context)
-        raise TypeError(f'Expected method that takes {len(args)} or {len(args)+1} positional arguments but got {len(sig.parameters)}.')
+        raise TypeError(
+            f"Expected method that takes {len(args)} or {len(args)+1} positional arguments but got {len(sig.parameters)}."
+        )
     except SerializationError:
         raise
     except Exception as e:
         if exc_type is None:
             raise e
         return exc_type.from_exception(*sys.exc_info(), **kwargs, ignore=1)
- 
-class BaseContext: 
+
+
+class BaseContext:
     """
     The basic interface for serialization contexts.
-    """    
-    def _process_invalid(self, msg: str, obj: BaseInvalid):
+
+    It is passed hierarchically through the hierarchy of objects that
+    are being serialized and describes how the serialization should be completed.
+    For :class:`dman.model.record.Context` for more information.
+    """
+
+    def process_invalid(self, msg: str, obj: BaseInvalid):
         if isinstance(obj, ExcInvalid):
-            log.logger.warning(msg + '\n' + ''.join(BaseInvalid.format(obj)), 'context', obj.trace, stacklevel=2)
+            log.logger.warning(
+                msg + "\n" + "".join(BaseInvalid.format(obj)),
+                "context",
+                obj.trace,
+                stacklevel=2,
+            )
         else:
-            log.logger.warning(msg + '\n' + str(obj), 'context', stacklevel=2)
+            log.logger.warning(msg + "\n" + str(obj), "context", stacklevel=2)
 
         if config.validate:
-            raise ValidationError(msg + '\n\nDescription:\n' + f'[{log.logger.format_stack()}] ' + str(obj))
+            raise ValidationError(
+                msg
+                + "\n\nDescription:\n"
+                + f"[{log.logger.format_stack()}] "
+                + str(obj)
+            )
 
-    def serialize(self, ser, content_only: bool = False):         
-        if sjson.atomic_type(ser):
-            return ser
+    def serialize(self, obj, content_only: bool = False):
+        """Serialize a serializable object.
 
-        if isinstance(ser, (list, tuple)):
-            with log.layer(f'list({len(ser)})', 'serializing', owner=list):
-                return self._serialize__list(ser)
+            The context can be used to store the current directory, logging
+            and custom serialization behavior. Serializable objects are created
+            using :func:`serializable` or alternatively using :func:`register_serializable`.
 
-        if isinstance(ser, dict):
-            with log.layer(f'dict({len(ser)})', 'serializing', owner=dict):
-                return self._serialize__dict(ser)
+            By default, any object that can be handled by json is serializable.
+            That is ``str``, ``int``, ``float``, ``None``, ``list``, ``tuple`` and ``dict``.
+
+        Args:
+            obj: The object to serialize
+            context (BaseContext, optional): The serialization context. Defaults to None.
+            content_only (bool, optional): Do not include type information when true.
+                Results in more compact serialization. Defaults to False.
+
+        See also: :func:`serialize`.
+        """
+
+        if sjson.atomic_type(obj):
+            return obj
+
+        if isinstance(obj, (list, tuple)):
+            with log.layer(f"list({len(obj)})", "serializing", owner=list):
+                return self.serialize_list(obj)
+
+        if isinstance(obj, dict):
+            with log.layer(f"dict({len(obj)})", "serializing", owner=dict):
+                return self.serialize_dict(obj)
 
         # if isinstance(ser, BaseInvalid):
         #     self._process_invalid('Invalid object encountered during serialization.', ser)
 
-        with log.layer(f'{type(ser).__name__}', 'serializing', owner=ser):
-            ser_type, content = self._serialize__object(ser)
+        with log.layer(f"{type(obj).__name__}", "serializing", owner=obj):
+            ser_type, content = self.serialize_object(obj)
             if isinstance(content, BaseInvalid):
-                self._process_invalid('Serialization resulted in an invalid object.', content)
-                ser_type, content = self._serialize__object(content)
+                self.process_invalid(
+                    "Serialization resulted in an invalid object.", content
+                )
+                ser_type, content = self.serialize_object(content)
 
         if content_only:
             return content
         return {SER_TYPE: ser_type, SER_CONTENT: content}
 
-    def _serialize__object(self, ser):
-        ser_type, ser_method, _ = get_custom_serializable(type(ser), (None, None, None))
+    def serialize_object(self, obj):
+        """Serialize a generic serializable object."""
+        ser_type, ser_method, _ = get_custom_serializable(type(obj), (None, None, None))
         if ser_type is None:
-            ser_type = getattr(ser, SER_TYPE, None)
+            ser_type = getattr(obj, SER_TYPE, None)
             if not is_serializable_type_str(ser_type):
                 return None, Unserializable(
-                    type=type(ser).__name__, 
-                    info=f'Unserializable type: {type(ser).__name__}.'
+                    type=type(obj).__name__,
+                    info=f"Unserializable type: {type(obj).__name__}.",
                 )
-            ser_method = getattr(ser, SERIALIZE, None)
+            ser_method = getattr(obj, SERIALIZE, None)
             return ser_type, _call_optional_context(
-                ser_method, 
-                context=self, 
-                exc_type=ExcUnserializable, 
-                type=type(ser).__name__, 
-                info='Error during serialization:'
+                ser_method,
+                context=self,
+                exc_type=ExcUnserializable,
+                type=type(obj).__name__,
+                info="Error during serialization:",
             )
         else:
             return ser_type, _call_optional_context(
-                ser_method, 
-                ser, 
-                context=self, 
-                exc_type=ExcUnserializable, 
-                type=type(ser).__name__, 
-                info='Error during serialization:'
+                ser_method,
+                obj,
+                context=self,
+                exc_type=ExcUnserializable,
+                type=type(obj).__name__,
+                info="Error during serialization:",
             )
 
-    def _serialize__list(self, ser: list):
-        return [itm if sjson.atomic_type(itm) else self.serialize(itm) for itm in ser]
+    def serialize_list(self, obj: list):
+        """Serialize a list."""
+        return [itm if sjson.atomic_type(itm) else self.serialize(itm) for itm in obj]
 
-    def _serialize__dict(self, ser: dict):
-        return {self.serialize(k): self.serialize(v) for k, v in ser.items()}
-        
-    def _get_type_name(_, ser_type):
-        name = getattr(ser_type, '__name__', None)
+    def serialize_dict(self, obj: dict):
+        """Serialize a dictionary."""
+        return {self.serialize(k): self.serialize(v) for k, v in obj.items()}
+
+    def get_type_name(_, ser_type):
+        """Get the class name of an instance or type."""
+        name = getattr(ser_type, "__name__", None)
         if name is None:
-            name = getattr(ser_type, 'name', str(ser_type))
+            name = getattr(ser_type, "name", str(ser_type))
         return name
-    
+
     def deserialize(self, serialized, ser_type=None):
+        """Deserialize an object produced through serialization.
+
+            The context can be used to store the current directory, logging
+            and custom serialization behavior. Deserializable objects are created
+            using :func:`serializable` or alternatively using :func:`register_serializable`.
+
+            By default, any object that can be handled by json is deserializable.
+            That is ``str``, ``int``, ``float``, ``None``, ``list``, ``tuple`` and ``dict``.
+
+        Args:
+            serialized: The object to deserialize.
+            context (BaseContext, optional): _description_. Defaults to None.
+            expected (_type_, optional): Class or string representing the expected type. If set to
+                None the type is received from the dictionary. Defaults to None.
+
+            See also: :func:`deserialize`.
+        """
         res = self._deserialize_inner(serialized, ser_type)
         if isinstance(res, BaseInvalid):
-            self._process_invalid('An error occurred during deserialization:', res)
+            self.process_invalid("An error occurred during deserialization:", res)
         return res
 
-    def _deserialize_inner(self, serialized, expected=None):            
+    def _deserialize_inner(self, serialized, expected=None):
         if serialized is None:
             return None
 
         if expected is None:
             if isinstance(serialized, (list, tuple)):
-                with log.layer(f'list({len(serialized)})', 'deserializing', owner=list):
-                    return self._deserialize__list(list, serialized)
+                with log.layer(f"list({len(serialized)})", "deserializing", owner=list):
+                    return self.deserialize_list(serialized, list)
 
             if sjson.atomic_type(serialized):
-                return self._deserialize__atomic(type(serialized), serialized)
+                return self.deserialize_atomic(serialized, type(serialized))
 
             if not isinstance(serialized, dict):
                 return Undeserializable(
                     type=expected,
-                    info=f'Unexpected type for serialized: {type(serialized)}. Expected either list, tuple, atomic type or dict.',
-                    serialized=serialized
+                    info=f"Unexpected type for serialized: {type(serialized)}. Expected either list, tuple, atomic type or dict.",
+                    serialized=serialized,
                 )
 
             expected = serialized.get(SER_TYPE, MISSING)
             if expected is MISSING:
-                with log.layer(f'dict({len(serialized)})', 'deserializing', owner=dict):
-                    return self._deserialize__dict(dict, serialized)
+                with log.layer(f"dict({len(serialized)})", "deserializing", owner=dict):
+                    return self.deserialize_dict(serialized, dict)
             else:
                 serialized = serialized.get(SER_CONTENT, {})
                 ser_type_get = ser_str2type(expected)
                 if ser_type_get is None:
                     return Undeserializable(
-                        type=ser_type_get, 
-                        info=f'Unregistered type stored in serialized.', 
+                        type=ser_type_get,
+                        info=f"Unregistered type stored in serialized.",
                         serialized=serialized,
-                        expected=expected
+                        expected=expected,
                     )
 
-                _ser_name = self._get_type_name(ser_type_get)
-                with log.layer(f'{_ser_name}', 'deserializing', owner=ser_type_get):
-                    return self._deserialize__object(serialized, ser_type_get)
+                _ser_name = self.get_type_name(ser_type_get)
+                with log.layer(f"{_ser_name}", "deserializing", owner=ser_type_get):
+                    return self.deserialize_object(serialized, ser_type_get)
 
         if compare_type(expected, dict):
-            with log.layer(f'dict({len(serialized)})', 'deserializing', owner=dict):
-                return self._deserialize__dict(dict, serialized)
+            with log.layer(f"dict({len(serialized)})", "deserializing", owner=dict):
+                return self.deserialize_dict(serialized, dict)
 
         if compare_type(expected, (list, tuple)):
-            with log.layer(f'list({len(serialized)})', 'deserializing', owner=list):
-                return self._deserialize__list(list, serialized)
+            with log.layer(f"list({len(serialized)})", "deserializing", owner=list):
+                return self.deserialize_list(serialized, list)
 
         if isinstance(expected, str):
             ser_type_get = ser_str2type(expected)
             if ser_type_get is None:
                 return Undeserializable(
-                    type=ser_type_get, 
-                    info=f'Unregistered type provided as argument.', 
+                    type=ser_type_get,
+                    info=f"Unregistered type provided as argument.",
                     serialized=serialized,
-                    expected=expected
+                    expected=expected,
                 )
             expected = ser_type_get
 
         if expected in sjson.atomic_types:
-            return self._deserialize__atomic(expected, serialized)
+            return self.deserialize_atomic(serialized, expected)
 
-        _ser_name = self._get_type_name(expected)
-        with log.layer(f'{_ser_name}', 'deserializing', owner=expected):
-            return self._deserialize__object(serialized, expected)
-    
-    def _deserialize__object(self, serialized, expected):
+        _ser_name = self.get_type_name(expected)
+        with log.layer(f"{_ser_name}", "deserializing", owner=expected):
+            return self.deserialize_object(serialized, expected)
+
+    def deserialize_object(self, serialized, expected):
+        """Deserialize an object of an expected type."""
         _, _, ser_method = get_custom_serializable(expected, (None, None, None))
         if ser_method is None:
             ser_method = getattr(expected, DESERIALIZE, None)
         return _call_optional_context(
             ser_method,
             serialized,
-            context=self, 
-            exc_type=ExcUndeserializable, 
-            type=ser_type2str(expected), 
-            info=f'Exception encountered while deserializing {expected}:', 
-            serialized=serialized, 
-            expected=ser_type2str(expected)
+            context=self,
+            exc_type=ExcUndeserializable,
+            type=ser_type2str(expected),
+            info=f"Exception encountered while deserializing {expected}:",
+            serialized=serialized,
+            expected=ser_type2str(expected),
         )
 
-    def _deserialize__atomic(self, cls, serialized):
-        if cls is not type(serialized):
+    def deserialize_atomic(self, serialized, expected):
+        """Deserialize an atomic object of an expected type"""
+        if expected is not type(serialized):
             return Undeserializable(
-                type=cls,
-                info=f'Specified type {cls}, but got {type(serialized)}.',
-                serialized=serialized
+                type=expected,
+                info=f"Specified type {expected}, but got {type(serialized)}.",
+                serialized=serialized,
             )
         return serialized
 
-    def _deserialize__list(self, cls, ser):
-        res = [itm if sjson.atomic_type(itm) else self.deserialize(itm) for itm in ser]
-        if cls is list:
+    def deserialize_list(self, serialized, expected):
+        res = [
+            itm if sjson.atomic_type(itm) else self.deserialize(itm)
+            for itm in serialized
+        ]
+        if expected is list:
             return res
-        return cls(res)
+        return expected(res)
 
-    def _deserialize__dict(self, cls, ser: dict):
-        res = {self.deserialize(k): self.deserialize(v) for k, v in ser.items()}
-        if cls is dict:
+    def deserialize_dict(self, serialized: dict, expected):
+        res = {self.deserialize(k): self.deserialize(v) for k, v in serialized.items()}
+        if expected is dict:
             return res
-        return cls(res)
+        return expected(res)

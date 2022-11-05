@@ -166,7 +166,7 @@ class Context(BaseContext):
             )
         )
 
-    def _serialize__list(self, ser: list):
+    def serialize_list(self, ser: list):
         res = []
         is_model = False
         for itm in ser:
@@ -178,7 +178,7 @@ class Context(BaseContext):
             res = {SER_TYPE: "_ser__mlist", SER_CONTENT: {"store": res}}
         return res
 
-    def _serialize__dict(self, ser: dict):
+    def serialize_dict(self, ser: dict):
         res = {}
         is_model = False
         for k, v in ser.items():
@@ -215,7 +215,7 @@ class Context(BaseContext):
                 info="Exception encountered while writing.",
                 ignore=4,  # TODO verify
             )
-            self._process_invalid("An error occurred while writing.", res)
+            self.process_invalid("An error occurred while writing.", res)
             return target.update(name=_target.name), res
 
     def read(self, target: os.PathLike, sto_type):
@@ -227,7 +227,7 @@ class Context(BaseContext):
             if not isinstance(sto_type, str):
                 sto_type = getattr(sto_type, STO_TYPE, None)
             res = NoFile(type=sto_type, info=f"Missing Target: {target}.")
-            self._process_invalid("Could not find specified file.", res)
+            self.process_invalid("Could not find specified file.", res)
             return res
         except SerializationError:
             raise
@@ -239,7 +239,7 @@ class Context(BaseContext):
                 target=target,
                 ignore=4,  # TODO verify
             )
-            self._process_invalid("An error occurred while reading.", res)
+            self.process_invalid("An error occurred while reading.", res)
             return res
 
     def remove(self, obj, target: os.PathLike = None):
@@ -446,7 +446,7 @@ class Record:
                 type=self.sto_type,
                 info=f"Invalid context passed to Record({self.sto_type}, target={self.target}).",
             )
-            context._process_invalid(
+            context.process_invalid(
                 "Exception encountered during write.", self.exceptions.write
             )
             return self.target
@@ -492,7 +492,7 @@ class Record:
                 info=f"Invalid context passed to Record({sto_type}, target={target}).",
                 target=target,
             )
-            context._process_invalid(
+            context.process_invalid(
                 "Exception encountered during read.", exceptions.read
             )
             content = Undefined(sto_type)
@@ -502,7 +502,7 @@ class Record:
                 info=f"Invalid target recovered Record({sto_type}, target={target}).",
                 target=target,
             )
-            context._process_invalid(
+            context.process_invalid(
                 "Exception encountered during read.", exceptions.read
             )
             content = Undefined(sto_type)

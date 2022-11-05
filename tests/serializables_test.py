@@ -33,7 +33,7 @@ def recreate_compact(arg):
     serialized = serialize(arg, content_only=True)
     serialized = sjson.dumps(serialized)
     serialized = sjson.loads(serialized)
-    return deserialize(serialized, ser_type=type(arg))
+    return deserialize(serialized, expected=type(arg))
 
 
 @pytest.mark.parametrize('arg', atomics)
@@ -213,7 +213,7 @@ def test_fail_deserialize():
         SER_CONTENT: {'a': 'hello'}
     }
     
-    res = deserialize(serialized, ser_type=str)
+    res = deserialize(serialized, expected=str)
     assert(isinstance(res, Undeserializable))
 
     serialized = {
@@ -246,7 +246,7 @@ def test_deserialize_expected():
         a: str = 'test'
     
     ser = serialize(Base('value'), content_only=True)
-    dser = deserialize(ser, ser_type='__base')
+    dser = deserialize(ser, expected='__base')
     assert isinstance(dser, Base)
     assert dser.a == 'value'
     

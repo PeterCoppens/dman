@@ -148,18 +148,21 @@ class Trace:
 
 @dataclass(repr=False)
 class BaseInvalid:
-    type: str
-    info: str
+    """Invalid object encountered by ``dman``."""
+    type: str   #: The name of the type.
+    info: str   #: Description of the problem.
 
     def __repr__(self):
         return f'{self.header} ({self.info})'
 
     def format(self):
+        """Generator producing the description of the invalid object."""
         yield self.header + '\n'
         yield ' '*4 + self.info
     
     @property
     def header(self):
+        """Header of the description."""
         return f'{self.__class__.__name__}: {self.type}'
 
     def __str__(self):
@@ -178,7 +181,8 @@ class BaseInvalid:
 
 @dataclass(repr=False)
 class ExcInvalid(BaseInvalid):
-    trace: Trace
+    """Invalid object created through some exception."""
+    trace: Trace    #: The traceback of the exception.
 
     @classmethod
     def from_exception(
@@ -190,6 +194,14 @@ class ExcInvalid(BaseInvalid):
         ignore: int = 0,
         **kwargs,
     ):
+        """Create an invalid object from an exception.
+
+        Args:
+            exc_type (Type[BaseException]): The type of the exception
+            exc_value (BaseException): The value of the exception
+            exc_tb (TracebackType): The traceback
+            ignore (int, optional): Layers of the traceback that should be omitted. Defaults to 0.
+        """
         trace = Trace.from_exception(exc_type, exc_value, exc_tb, ignore=ignore)
         return cls(**kwargs, trace=trace)
 

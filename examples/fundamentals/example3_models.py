@@ -19,6 +19,8 @@ import dman
 from dman.numeric import sarray, barray
 import numpy as np
 
+dman.log.default_config(level=dman.log.WARNING)
+
 
 @dman.modelclass
 class Container:
@@ -66,7 +68,7 @@ dman.tui.walk_directory(dman.mount("container", base=base), show_content=True)
 #       Note that the old file has been removed automatically, since the record
 #       tracking it has been removed. This avoids cluttering your
 #       ``.dman`` directory with untracked files. We could turn this auto cleaning
-#       behavior of as follows:
+#       behavior off as follows:
 #
 #       .. code-block:: python
 #

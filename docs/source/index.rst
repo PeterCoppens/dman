@@ -19,10 +19,7 @@ If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_exa
    :caption: Introduction
 
    gallery/patterns/example_common.rst
-   usage/glossary.rst
-   .. usage/serialization.rst
-   .. usage/errors.rst
-   .. api/serializables.rst
+   glossary.rst
 
 .. toctree::
    :caption: Examples
@@ -34,9 +31,7 @@ If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_exa
    :caption: API
 
    gallery/fundamentals/index.rst
-   .. usage/serialization.rst
-   .. usage/errors.rst
-   .. api/serializables.rst
+   api/modules.rst
 
 
 .. Indices and tables

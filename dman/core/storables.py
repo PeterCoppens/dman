@@ -132,7 +132,7 @@ def _write__serializable(self, path: os.PathLike, context: BaseContext = None):
 @classmethod
 def _read__serializable(cls, path: os.PathLike, context: BaseContext = None):
     with open(path, "r") as f:
-        return deserialize(sjson.load(f), context, ser_type=cls)
+        return deserialize(sjson.load(f), context, expected=cls)
 
 
 class WriteException(RuntimeError):

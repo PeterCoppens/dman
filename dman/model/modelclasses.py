@@ -560,9 +560,9 @@ def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseCo
 
         log.info(f'deserializing field: "{f.name}"', "modelclass")
         if f.name in _rfields:
-            processed[f.name] = deserialize(value, context, ser_type=Record)
+            processed[f.name] = deserialize(value, context, expected=Record)
         else:
-            processed[f.name] = deserialize(value, context, ser_type=f.type)
+            processed[f.name] = deserialize(value, context, expected=f.type)
 
     return cls(**processed)
 
