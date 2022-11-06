@@ -1,6 +1,11 @@
-from contextlib import suppress
+"""
+Contains utilities for creating storable types and to write and read 
+from disk.
+"""
 
-from dataclasses import asdict, is_dataclass, dataclass
+
+
+from dataclasses import asdict, is_dataclass
 import os
 from typing import Type, Union, Any, Callable, Optional
 
@@ -10,14 +15,8 @@ from dman.core.serializables import (
     deserialize,
     BaseContext,
     _call_optional_context,
-    SerializationError,
 )
 from dman.utils import sjson
-from dman.utils.regex import substitute
-from dman.utils.user import prompt_user
-from dman.core import log
-from dman.core.path import TargetException, UserQuitException, get_root_path, normalize_path, mount, target, Mount, Target, AUTO, config
-from dman.utils.smartdataclasses import configclass, optionfield
 
 
 STO_TYPE = "_sto__type"
@@ -29,22 +28,23 @@ __storable_types = dict()
 __custom_storable = dict()
 
 
-def storable_type(obj):
+def sto_type2str(obj):
+    """Get the storable type string."""
     cls = obj if isinstance(obj, type) else type(obj)
     if cls in __custom_storable:
         return __custom_storable[cls][0]
     return getattr(obj, STO_TYPE, None)
 
 
-def storable_name(obj):
+def get_storable_name(obj):
     return obj if isinstance(obj, str) else getattr(obj, STO_TYPE, None)
 
 
 def is_storable(obj):
-    return storable_type(obj) in __storable_types
+    return sto_type2str(obj) in __storable_types
 
 
-def is_storable_type(type: str):
+def is_storable_type_str(type: str):
     return type in __storable_types
 
 
@@ -63,18 +63,36 @@ def register_storable(
         __custom_storable[cls] = (name, write, read)
 
 
+def storable_types():
+    """Return the storable types dictionary."""
+    return __storable_types
+
+
 def get_custom_storable(cls: Type[Any], default=None):
+    """Get the signature of a custom storable object."""
     return __custom_storable.get(cls, default)
 
 
-def storable(
-    cls=None,
-    /,
-    *,
-    name: str = None,
-    ignore_serializable: bool = None,
-    ignore_dataclass: bool = False,
-):
+def storable(cls=None, /, *, name: str = None):
+    """Make a class storable.
+    
+        Returns the same class as was passed in and the class is registered as a
+        storable type. Write and Read methods are added
+        automatically if cls is a dataclass or a serializable type. 
+        Otherwise a ``__write__`` and ``__read__`` method should be provided for 
+        storing. If these are not provided conversion will fail.
+
+        See :ref:`sphx_glr_gallery_fundamentals_example1_storables.py` for
+        detailed examples on how to create storable types.
+
+    Args:
+        cls: The class to convert.
+        name (str, optional): The name of the storable. Defaults to the name of the class.
+
+    Raises:
+        ValueError: The class could not be made storable. 
+            Provide a ``__write__`` and ``__read__`` method.
+    """
     def wrap(cls):
         local_name = name
         if local_name is None:
@@ -83,14 +101,14 @@ def storable(
         setattr(cls, STO_TYPE, local_name)
         register_storable(local_name, cls)
 
-        if not ignore_serializable and is_serializable(cls):
+        if is_serializable(cls):
             if getattr(cls, WRITE, None) is None:
                 setattr(cls, WRITE, _write__serializable)
 
             if getattr(cls, READ, None) is None:
                 setattr(cls, READ, _read__serializable)
 
-        elif not ignore_dataclass and is_dataclass(cls):
+        elif is_dataclass(cls):
             if getattr(cls, WRITE, None) is None:
                 setattr(cls, WRITE, _write__dataclass)
 
@@ -99,7 +117,7 @@ def storable(
 
         if not hasattr(cls, READ) or not hasattr(cls, WRITE):
             raise ValueError(
-                f"Class {cls} could not be made serializable. Provide a manual definition of a `__write__` and `__read__` method."
+                f"Class {cls} could not be made storable. Provide a manual definition of a `__write__` and `__read__` method."
             )
 
         return cls
@@ -136,14 +154,27 @@ def _read__serializable(cls, path: os.PathLike, context: BaseContext = None):
 
 
 class WriteException(RuntimeError):
+    """Exception raised when a write of a storable fails."""
     ...
 
 
 class ReadException(RuntimeError):
+    """Exception raised when a read of a storable fails."""
     ...
 
 
 def write(storable, path: os.PathLike, context: BaseContext = None):
+    """Write a storable to the specified path.
+
+        See :ref:`sphx_glr_gallery_fundamentals_example1_storables.py`
+        for details on how to use this method. 
+
+    Args:
+        storable: The storable instance to write
+        path (os.PathLike): Target path
+        context (BaseContext, optional): Context to pass to the ``__write__`` method. 
+            Defaults to None.
+    """
     _, inner_write, _ = get_custom_storable(type(storable), (None, None, None))
     if inner_write is None:
         inner_write = getattr(storable, WRITE, None)
@@ -156,6 +187,17 @@ def write(storable, path: os.PathLike, context: BaseContext = None):
 
 
 def read(type: Union[str, Type], path: os.PathLike, context: BaseContext = None, **kwargs):
+    """Read a storable from the specified path.
+
+        See :ref:`sphx_glr_gallery_fundamentals_example1_storables.py`
+        for details on how to use this method. 
+
+    Args:
+        type (Union[str, Type]): The type (string) of the storable
+        path (os.PathLike): The path from which to read
+        context (BaseContext, optional): The context to pass to the ``__read__`` method. 
+            Defaults to None.
+    """
     if isinstance(type, str):
         type = __storable_types.get(type, None)
         if type is None:

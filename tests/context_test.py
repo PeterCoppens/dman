@@ -27,7 +27,7 @@ def test_target_management():
         except UserQuitException:
             assert True
         
-        ctx.remove(None, 'test.txt')
+        ctx.remove('test.txt')
         ctx.prepare('test.txt', choice='quit')
 
         loc, t = ctx.prepare(os.path.join('subdir', 'test.txt'))
@@ -40,7 +40,7 @@ def test_target_management():
         except UserQuitException:
             assert True
         
-        ctx.remove(None, os.path.join('subdir', 'test.txt'))
+        ctx.remove(os.path.join('subdir', 'test.txt'))
         ctx.prepare(os.path.join('subdir', 'test.txt'), choice='quit')
 
     with temporary_context() as ctx:

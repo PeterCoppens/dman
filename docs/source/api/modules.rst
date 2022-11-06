@@ -7,3 +7,4 @@ This section contains the module documentation.
    :caption: Core
 
    serializables.rst
+   storables.rst

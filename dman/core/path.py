@@ -14,7 +14,7 @@ ROOT_FOLDER = ".dman"
 @configclass
 class Config:
     on_retouch: str = optionfield(
-        '["prompt", "quit", "ignore", "auto"]', default="ignore"
+        ["prompt", "quit", "ignore", "auto"], default="ignore"
     )
     default_suffix: str = '.sto'
 

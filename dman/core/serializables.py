@@ -62,6 +62,14 @@ def compare_type(base: Type, check: Sequence[Type]):
         return True
     base = getattr(base, "__origin__", MISSING)
     return base is not MISSING and base in check
+    
+
+def get_type_name(ser_type):
+    """Get the class name of an instance or type."""
+    name = getattr(ser_type, "__name__", None)
+    if name is None:
+        name = getattr(ser_type, "name", str(ser_type))
+    return name
 
 
 def ser_type2str(obj):
@@ -76,11 +84,6 @@ def ser_str2type(ser):
     return __serializable_types.get(ser, None)
 
 
-def is_serializable_type_str(ser: str):
-    """Check if a string is the name of a registered serializable type."""
-    return ser is not None and ser in __serializable_types
-
-
 def is_serializable(ser):
     """Check if an object is a serializable type."""
     if is_serializable_type_str(getattr(ser, SER_TYPE, None)):
@@ -90,6 +93,11 @@ def is_serializable(ser):
     if sjson.atomic_type(ser):
         return True
     return type(ser) in __custom_serializable
+    
+
+def is_serializable_type_str(ser: str):
+    """Check if a string is the name of a registered serializable type."""
+    return ser is not None and ser in __serializable_types
 
 
 def is_deserializable(serialized: Any):
@@ -296,7 +304,7 @@ def serializable(cls=None, /, *, name: str = None, template: Any = None):
         serializable type. Serialization and Deserialization methods are added
         automatically if cls is a dataclass or an Enum. Otherwise a
         ``__serialize__`` and ``__deserialize__`` method should be provided
-        for serialization. If these are not provided serialization will fail.
+        for serialization. If these are not provided conversion will fail.
 
         See :ref:`sphx_glr_gallery_fundamentals_example0_serializables.py` for
         detailed examples on how to create serializable types.
@@ -605,13 +613,6 @@ class BaseContext:
         """Serialize a dictionary."""
         return {self.serialize(k): self.serialize(v) for k, v in obj.items()}
 
-    def get_type_name(_, ser_type):
-        """Get the class name of an instance or type."""
-        name = getattr(ser_type, "__name__", None)
-        if name is None:
-            name = getattr(ser_type, "name", str(ser_type))
-        return name
-
     def deserialize(self, serialized, ser_type=None):
         """Deserialize an object produced through serialization.
 
@@ -669,7 +670,7 @@ class BaseContext:
                         expected=expected,
                     )
 
-                _ser_name = self.get_type_name(ser_type_get)
+                _ser_name = get_type_name(ser_type_get)
                 with log.layer(f"{_ser_name}", "deserializing", owner=ser_type_get):
                     return self.deserialize_object(serialized, ser_type_get)
 
@@ -695,7 +696,7 @@ class BaseContext:
         if expected in sjson.atomic_types:
             return self.deserialize_atomic(serialized, expected)
 
-        _ser_name = self.get_type_name(expected)
+        _ser_name = get_type_name(expected)
         with log.layer(f"{_ser_name}", "deserializing", owner=expected):
             return self.deserialize_object(serialized, expected)
 

@@ -157,8 +157,8 @@ print(dman.sjson.dumps(ser, indent=4))
 #     In almost all cases it will be better to use ``@dman.modelclass``
 #     when converting a ``dataclass`` into a ``serializable``.
 #     This is mostly important when some fields are ``storable``,
-#     in which case they will be handled automatically. 
-#     TODO add reference to example.
+#     in which case they will be handled automatically.  See :ref:`sphx_glr_gallery_fundamentals_example3_models.py`
+#     for an overview of the ``modelclass`` decorator.
 #
 # .. note::
 #
@@ -188,8 +188,8 @@ print(dman.sjson.dumps(ser, indent=4))
 # also be made serializable. In ``dman`` we provide some functionality 
 # that makes this process simpler.
 #
-# Manual Definition
-# ^^^^^^^^^^^^^^^^^^^
+# Registered Definition
+# ^^^^^^^^^^^^^^^^^^^^^^^^
 # 
 # The most flexible way of making a class serializable is by registering it 
 # manually. This is especially useful when the original class definition 

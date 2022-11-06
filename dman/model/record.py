@@ -23,12 +23,19 @@ from dman.core.storables import (
     STO_TYPE,
     is_storable,
     read,
-    storable_type,
-    storable_name,
-    config,
+    sto_type2str,
+    get_storable_name,
     write,
 )
-from dman.core.path import Target, AUTO, Mount, mount, UserQuitException, MountException
+from dman.core.path import (
+    Target,
+    AUTO,
+    Mount,
+    mount,
+    UserQuitException,
+    MountException,
+    config,
+)
 
 
 REMOVE = "__remove__"
@@ -201,9 +208,7 @@ class Context(BaseContext):
             target = Target.from_path(target)
             local, _target = self.prepare(target)
             path = self.mnt.abspath(local.absolute(_target))
-            return target.update(name=_target.name), write(
-                storable, path, local
-            )
+            return target.update(name=_target.name), write(storable, path, local)
         except SerializationError:
             raise
         except UserQuitException as e:
@@ -211,7 +216,7 @@ class Context(BaseContext):
         except Exception:
             res = ExcUnWritable.from_exception(
                 *sys.exc_info(),
-                type=storable_name(storable),
+                type=get_storable_name(storable),
                 info="Exception encountered while writing.",
                 ignore=4,  # TODO verify
             )
@@ -234,7 +239,7 @@ class Context(BaseContext):
         except Exception:
             res = ExcUnReadable.from_exception(
                 *sys.exc_info(),
-                type=storable_name(sto_type),
+                type=get_storable_name(sto_type),
                 info="Exception encountered while reading.",
                 target=target,
                 ignore=4,  # TODO verify
@@ -242,8 +247,8 @@ class Context(BaseContext):
             self.process_invalid("An error occurred while reading.", res)
             return res
 
-    def remove(self, obj, target: os.PathLike = None):
-        """Remove object, stored at specified target."""
+    def remove(self, target: os.PathLike = None, *, obj=None):
+        """Remove object or file, stored at specified target."""
         if target is None:
             local = self
         else:
@@ -254,8 +259,11 @@ class Context(BaseContext):
             try:
                 self.mnt.remove(target)
             except MountException:
-                log.warning(f'Tried to remove file outside of mount point: "{target}".', "context")
-                
+                log.warning(
+                    f'Tried to remove file outside of mount point: "{target}".',
+                    "context",
+                )
+
             # Localize the target
             local, target = self.join(target.subdir), Target(name=target.name)
 
@@ -274,18 +282,23 @@ class Context(BaseContext):
         if isinstance(obj, (tuple, list)):
             with log.layer(tp.__name__, "remove"):
                 for x in obj[:]:
-                    local.remove(x)
+                    local.remove(obj=x)
         elif isinstance(obj, dict):
             with log.layer(tp.__name__, "remove"):
                 for k in obj.keys():
-                    local.remove(obj[k])
-    
+                    local.remove(obj=obj[k])
+
     def join(self, subdir: os.PathLike):
-        if subdir == '':
+        if subdir == "":
             return self
         return self.__class__(mnt=self.mnt, subdir=subdir)
-        
-    def prepare(self, target: os.PathLike, *, choice: str = None) -> Tuple["Context", Target]:
+    
+    def open(self, target: os.PathLike, *args, **kwargs):
+        return self.mnt.open(self.absolute(target), *args, **kwargs)
+
+    def prepare(
+        self, target: os.PathLike, *, choice: str = None
+    ) -> Tuple["Context", Target]:
         target = self.mnt.prepare(self.absolute(target), choice=choice)
         return self.join(target.subdir), Target(name=target.name)
 
@@ -391,7 +404,7 @@ class Record:
     def sto_type(self):
         if is_unloaded(self._content) or is_undefined(self._content):
             return self._content.type
-        return storable_type(self._content)
+        return sto_type2str(self._content)
 
     @property
     def content(self):
@@ -412,7 +425,7 @@ class Record:
             return f"Record(None, target={self.target}{preload_str})"
         if is_unloaded(content) or is_undefined(content):
             return f"Record({content}, target={self.target}{preload_str})"
-        return f"Record({storable_type(content)}, target={self.target}{preload_str})"
+        return f"Record({sto_type2str(content)}, target={self.target}{preload_str})"
 
     def load(self):
         if not is_unloaded(self._content):
@@ -516,7 +529,7 @@ class Record:
     def __remove__(self, context: BaseContext):
         if isinstance(context, Context):
             if isvalid(self.content):
-                return context.remove(self.content, self.target)
+                return context.remove(obj=self.content, target=self.target)
             log.warning(
                 "Loaded content is invalid. Could not continue removing.", "record"
             )
@@ -559,4 +572,4 @@ def record(
 def remove(obj, context: Context = None):
     if not isinstance(context, Context):
         return
-    context.remove(obj)
+    context.remove(obj=obj)
