@@ -8,7 +8,7 @@ from dman.core.serializables import serializable, serialize, deserialize, BaseCo
 from dman.core.serializables import ser_type2str, ser_str2type, register_serializable
 from dman.core.serializables import isvalid, ValidationError, SerializationError
 from dman.core.storables import storable, write, read, register_storable
-from dman.core.path import mount, get_root_path, AUTO
+from dman.core.path import mount, target, get_root_path, AUTO
 from dman.core import log
 
 from dman.model.record import record, remove, Context

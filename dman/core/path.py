@@ -30,9 +30,9 @@ class RootError(RuntimeError):
     ...
 
 
-def get_root_path(create: bool = False):
+def get_root_path(create: bool = False, *, cwd: os.PathLike = None):
     root_path = None
-    cwd = Path.cwd()
+    cwd = Path.cwd() if cwd is None else Path(cwd)
 
     current_path = cwd
     while root_path is None:
@@ -57,7 +57,7 @@ def get_root_path(create: bool = False):
 def script_label(base: os.PathLike = None):
     if base is None:
         base = get_root_path()
-        base = Path(base).parent
+    base = Path(base).parent
     try:
         script = sys.argv[0]
         if len(script) == 0:
@@ -172,13 +172,17 @@ def target(stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: str =
     return Target(stem, suffix, subdir, name)
 
 
-def gitignore(directory: os.PathLike, ignored: Iterable):
+def gitignore(directory: os.PathLike, ignored: Iterable, *, check: Iterable):
     """Add ignored files to gitignore in provided directory."""
     path = os.path.join(directory, ".gitignore")
     original = {}
     if os.path.exists(path):
         with open(path, "r") as f:
             original = set(f.read().splitlines())
+            original = set((
+                p for p in original 
+                if p in check and os.path.exists(os.path.join(directory, p)) 
+            ))
     ignored = set(ignored).union(original)
     ignored.add('.gitignore')
     with open(path, "w") as f:
@@ -224,6 +228,7 @@ class Mount(os.PathLike):
         self.cluster = cluster
         self.gitignore = gitignore
         self.touched = []
+        self.removed = []
 
     def __repr__(self):
         return self.__fspath__()
@@ -355,20 +360,22 @@ class Mount(os.PathLike):
             return
         if self.cluster:
             directory, name = os.path.split(self)
-            gitignore(directory, (name,))
+            gitignore(directory, (name,), check=self.removed)
         else:
-            gitignore(self, ignored)
+            gitignore(self, ignored, check=self.removed)
     
     @contextmanager
     def open(self, path: os.PathLike, *args, **kwargs):
-        self.prepare(path, validate=True)
+        path = self.prepare(path, validate=True)
         f = open(self.abspath(path), *args, **kwargs)
         yield f
         f.close()
     
     def untrack(self, target: os.PathLike, *, validate: bool = False):
         with suppress(ValueError):
-            self.touched.remove(self.normalize(target, validate=validate))
+            path = self.normalize(target, validate=validate)
+            self.touched.remove(path)
+            self.removed.append(path)
 
     def remove(self, target: os.PathLike, *, validate: bool = True):
         self.untrack(target, validate=validate)

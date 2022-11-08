@@ -161,8 +161,8 @@ def walk_file(path: pathlib.Path):
         content = f.read()
         if path.suffix == ".json":
             return Panel(JSON(content), box=box.HORIZONTALS)
-        if path.suffix == ".py":
-            return Panel(Syntax(content), "python")
+        # if path.suffix == ".py":
+        #     return Panel(Syntax(content), "python")
         return Panel(Text(content), box=box.HORIZONTALS)
 
 
