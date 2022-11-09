@@ -181,7 +181,7 @@ def gitignore(directory: os.PathLike, ignored: Iterable, *, check: Iterable):
             original = set(f.read().splitlines())
             original = set((
                 p for p in original 
-                if p in check and os.path.exists(os.path.join(directory, p)) 
+                if p not in check or os.path.exists(os.path.join(directory, p))
             ))
     ignored = set(ignored).union(original)
     ignored.add('.gitignore')

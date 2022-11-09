@@ -133,6 +133,7 @@ def test_gitignore():
         mnt.close()
         with open(os.path.join(os.path.dirname(mnt), '.gitignore'), 'r') as f:
             ignored = f.read().splitlines()
+        print(set(ignored))
         assert set(ignored) == {'.gitignore', 'test.npy', 'some', 'other'}
 
 

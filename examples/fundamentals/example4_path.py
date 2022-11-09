@@ -159,7 +159,7 @@ with mnt.open('howto.txt', 'w') as f:
 #
 #       dman.params.store.on_retouch = 'prompt'
 # 
-# And the default behavior can be recovered using:
+# The default behavior can be recovered using:
 #
 # .. code-block:: python
 #
