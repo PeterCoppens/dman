@@ -1,6 +1,6 @@
 import rich
 
-from typing import Sequence, Tuple
+from typing import Dict, Iterable, Sequence, Tuple
 import os
 import pathlib
 
@@ -43,111 +43,122 @@ def print_json(json: str):
     print(JSON(json))
 
 
-class TaskStack:
+class StackGenerator:
     def __init__(self, state: Tuple[int] = None):
-        self.progress = Progress()
-        self.total = 1
-        self.state = state if state is None else list(state)
-        self.registered = []
-        self.running = False
-        self.tasks = []
-        self.lookup = []
-
-    def register(self, description: str, steps: int, default_content: dict = None):
-        if default_content is None:
-            default_content = dict()
-        self.registered.insert(0, (description, steps, self.total, default_content))
-        self.total *= steps
-
-        idx = len(self.lookup)
-        self.lookup = [l + 1 for l in self.lookup]
-        self.lookup.append(0)
-        return idx
-
-    def __enter__(self):
-        self.progress.__enter__()
-
-        # create all tasks
-        for d, s, t, c in self.registered:
-            task = self.progress.add_task(str.format(d, **c), total=t * s)
-            self.tasks.append(task)
-
-        # assign the state
-        if self.state is None:
-            self.state = [
-                0,
-            ] * len(self.tasks)
-        else:
-            cumulative_work = 0
-            for i in reversed(range(len(self.tasks))):
-                w = self.registered[i][2]
-                cumulative_work += w * self.state[i]
-                self.progress.update(self.tasks[i], completed=cumulative_work)
-
-        self.running = True
-        return self
-
-    def __exit__(self, *_):
-        self.progress.stop()
-        self.tasks = []
-        self.running = False
-
-    def __iter__(self):
-        entered = False
-        if not self.running:
-            self.__enter__()
-            entered = True
-
-        stack = []
-        for (_, steps, _, _), s in zip(self.registered, self.state):
-            stack.append(iter(range(s, steps)))
-
-        active = 0
-        while len(stack) > 0:
-            # iterate active stack
-            self.state[active] = next(stack[active], None)
-
-            # reset stack layer if we reached the end and decrement active
-            if self.state[active] is None:
-                if active == 0:
-                    # finish
-                    for t in self.tasks[1:]:
-                        self.progress.remove_task(t)
-                    self.progress.update(self.tasks[0], advance=1)
-                    if entered:
-                        self.__exit__()
-                    break
-
-                self.state[active] = 0
-                t = self.tasks[active]
-                _, steps, _, _ = self.registered[active]
-                stack[active] = iter(range(0, steps))
-                self.progress.update(t, completed=0)
-                active -= 1  # iterate previous layer
-
-            # we iterated on the tail of the stack so yield
-            elif active == len(stack) - 1:
-                yield self.state
-                for t in self.tasks:
-                    self.progress.update(t, advance=1)
-
-            # climb the stack
-            else:
-                active += 1
+        self.progress = None
+        self.state = [] if state is None else list(state)
+        self.registered: Dict[StackLayer, int] = dict()
 
     def print(self, msg: str):
         self.progress.print(msg)
 
-    def update(self, task: int, description: str = None, **kwargs):
-        t = self.lookup[task]
-
+    def __call__(
+        self,
+        it: Iterable,
+        *,
+        total: int = None,
+        keep: bool = None,
+        description: str = None,
+        post: str = '...',
+        show_state: bool = True,
+        log: dict = None,
+    ):
+        if keep is None:
+            keep = len(self.registered) == 0
+        if total is None and hasattr(it, "__len__"):
+            total = len(it)
+        if log is None:
+            log = dict()
+        logstr = ''
+        for k in log:
+            logstr += (str(k) + '={' + str(k) +'}, ')
+        if len(logstr) > 0:
+            logstr = ' | ' + logstr[:-2] + ' | ' 
         if description is None:
-            d, _, _, default = self.registered[t]
-            fields = dict.copy(default)
-            fields.update(kwargs)
-            description = str.format(d, **fields)
+            description = f'Iterating "{it.__class__.__name__}"'
+        if total and show_state:
+            description = description + ' [{state}/{total}]'
+            log.update({'state': 1, 'total': total})
+        description += logstr + post
 
-        self.progress.update(self.tasks[t], description=description)
+        state = 0 if len(self.state) == 0 else self.state.pop(0)
+        layer = StackLayer(it, self, state, keep, description, log)
+        layer.update(total=total)
+        self.registered[layer] = self.add_task(layer.description, total=total)
+        return layer
+
+    def range(self, *args, description: str = None, **kwargs):
+        if description is None: description = 'Range'
+        it = range(*args)
+        return self.__call__(it, description=description, **kwargs)
+
+    def add_task(self, name, total: int = None):
+        if self.progress is None:
+            return None
+        return self.progress.add_task(name, total=total)
+
+    def remove_task(self, task: "StackLayer"):
+        if self.progress is None:
+            return
+        self.progress.remove_task(self.registered[task])
+
+    def update(self, task: "StackLayer", completed: int, description: str = None):
+        if self.progress is None:
+            return
+        self.progress.update(self.registered[task], completed=completed, description=description)
+
+    def __enter__(self):
+        self.progress = Progress()
+        self.progress.__enter__()
+        return self
+
+    def __exit__(self, *_):
+        self.progress.stop()
+        self.progress = None
+        for r in self.registered:
+            r.progress = None
+
+
+class StackLayer:
+    def __init__(
+        self,
+        it: Iterable,
+        parent: StackGenerator,
+        state: int = 0,
+        keep: bool = False,
+        description: str = None,
+        log: dict = None
+    ):        
+        self._description = description
+        self.log = dict() if log is None else log
+        self.parent = parent
+        self.skip = state
+        self.keep = keep
+        self.state = 0
+        self.it = it
+
+    @property
+    def description(self):
+        return str.format(self._description, **self.log)
+
+    def __iter__(self):
+        for x in self.it:
+            if self.state >= self.skip:
+                yield x
+            self.state += 1
+            self.update(state=self.state+1)
+            self.parent.update(self, completed=self.state, description=self.description)
+        if not self.keep:
+            self.parent.remove_task(self)
+    
+    def update(self, **kwargs):
+        for k, v in kwargs.items():
+            if k in self.log:
+                self.log[k] = v
+
+
+def stack(state: Tuple[int] = None):
+    return StackGenerator(state)
 
 
 def walk_file(path: pathlib.Path):
