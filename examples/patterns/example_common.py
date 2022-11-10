@@ -38,8 +38,9 @@ This example illustrates basic usage of ``dman``.
 
 # clear any old data
 import dman
-import shutil
-shutil.rmtree(dman.mount())
+import shutil, os
+if os.path.isdir(dman.mount()):
+    shutil.rmtree(dman.mount())
 
 config = {'mode': 'automatic', 'size': 5}
 data = [i**2 for i in range(config['size'])]
