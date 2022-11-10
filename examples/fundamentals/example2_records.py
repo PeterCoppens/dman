@@ -6,6 +6,9 @@ We show how to use ``records`` to serialize storables.
 """
 
 # %%
+# Basic usage
+# -------------------------
+
 # We will be using ``barray`` for this example so you should have ``numpy`` 
 # installed.
 
@@ -133,4 +136,52 @@ tdir.cleanup()   # clean temporary directory
 # .. warning::
 #     Be careful specifying the ``stem`` of a file. It often makes sense
 #     to omit it and leave the selection up to the ``record``. That way you
-#     will not accidentally re-use existing files. TODO reference to guide?
+#     will not accidentally re-use existing files. When a file is re-used,
+#     ``dman`` can automatically handle this when configured to do so
+#     or, by default, it gives a warning.
+#     See :ref:`sphx_glr_gallery_fundamentals_example4_path.py` for details.
+
+
+# %% 
+# Contexts
+# -----------------------
+# Sometimes storable objects can create more than one file. The types
+# provided by ``dman`` that do so are referred to as ``models``.
+# See :ref:`sphx_glr_gallery_fundamentals_example3_models.py` for examples.
+# 
+# The files created by these models should also be stored somewhere. 
+# Their path is determined relative to the root storable. This process is 
+# handled by the context. As we will illustrate below:
+
+@dman.storable
+class Feedback:
+    def __write__(self, path: str, context):
+        print(context)
+    @classmethod
+    def __read__(cls, path: str):
+        return cls()
+
+_ = dman.serialize(dman.record(Feedback(), subdir='folder'), context=ctx)
+
+# %%
+# As you can see the context received in the ``__write__`` method 
+# now keeps track of the subfolder. Hence any further serializations happen
+# relative to it. 
+#
+# We can keep going:
+
+@dman.storable
+class SubSerialize:
+    def __write__(self, path: str, context):
+        dman.serialize(dman.record(Feedback(), subdir='folder2'), context=context)
+    @classmethod
+    def __read__(cls, path: str):
+        return cls()
+
+_ = dman.serialize(dman.record(SubSerialize(), subdir='folder'), context=ctx)
+
+
+# %%
+# This is used inside of model types to determine the file paths. 
+# We will not go into much more detail here and instead refer 
+# to :ref:`sphx_glr_gallery_fundamentals_example3_models.py`.
