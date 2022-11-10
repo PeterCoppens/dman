@@ -187,8 +187,12 @@ def save(
         base (os.PathLike, optional): Specifies the root folder. Defaults to ".dman".
         gitignore (bool, optional): Specifies whether files added to this mount point should be ignored.
     """
+
     if not is_serializable(obj):
-        raise ValueError("Can only save serializable objects.")
+        if is_storable(obj):
+            obj = record(obj)
+        else:
+            raise ValueError("Can only save serializable objects.")
 
     with context(
         key,

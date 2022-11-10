@@ -471,7 +471,7 @@ class Mount(os.PathLike):
 
 
 def mount(
-    key: str,
+    key: str = '',
     *,
     subdir: os.PathLike = "",
     cluster: bool = True,
@@ -500,7 +500,7 @@ def mount(
             detailed examples on how to create and use mount points.
 
     Args:
-        key (str):  Key for the file.
+        key (str, optional):  Key for the file. Default ``''``, so the generator folder is returned.
         subdir (os.PathLike, optional): Specifies optional subdirectory in generator folder. Defaults to "".
         cluster (bool, optional): A subfolder ``key`` is automatically created when set to True. Defaults to True.
         generator (str, optional): Specifies the generator that created the file. Defaults to script label.

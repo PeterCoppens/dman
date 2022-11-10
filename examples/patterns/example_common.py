@@ -2,7 +2,7 @@
 Getting Started
 ========================
 
-Basic use case of ``dman``.
+This example illustrates basic usage of ``dman``.
 """
 
 
@@ -10,325 +10,196 @@ Basic use case of ``dman``.
 # Overview
 # ---------------------------
 #
-# We provide an example here of how one could approach. This example will show you
+# The ``dman`` packages allows for convenient data storing and loading.
+# The focus is on human readability, hence ``dman`` is mostly a file 
+# hierarchy manager. It does allow storing some types to files by default,
+# but for others you have to define yourself how files are read from and written 
+# to disk. More details are provided in other example. For the full 
+# overview of introducing new types into ``dman`` see 
+# :ref:`sphx_glr_gallery_fundamentals_example1_storables.py` and
+# :ref:`sphx_glr_gallery_fundamentals_example0_serializables.py`. In all
+# likelihood however you will not need to do so too often. Especially
+# if your data is represented in terms of ``numpy`` arrays. 
+# We will be using those in this example. 
 #
-# * How to integrate ``numpy`` arrays into the framework.
-# * How to setup an experiment modelclass.
-# * How to save and load from cache.
+# This example starts with some basic ``python`` types and how to store them 
+# to disk. We then show how ``dman`` extends on these types, allowing 
+# for specifying file paths. Finally we show how ``modelclasses``,
+# the ``dman`` extension of a ``dataclass`` can be used.
+#
+# To run this example you will require ``numpy`` and ``rich``.
 
 # %%
-# Setting up
-# ------------------------
+# Basic types
+# ----------------------------
 #
-# To setup the example we will need to following imports:
+# You can store most basic ``python`` types. Specifically those 
+# that can be handled by ``json``. 
 
+# clear any old data
 import dman
-from dman import tui
+import shutil
+shutil.rmtree(dman.mount())
+
+config = {'mode': 'automatic', 'size': 5}
+data = [i**2 for i in range(config['size'])]
+
+dman.save('result', {'config': config, 'data': data})
+
+# %%
+# If you receive an error about ``.dman`` not existing. This means you 
+# have to create one by executing ``dman init`` in your terminal or creating 
+# a ``.dman`` folder manually in your project root. 
+# Files will, by default, be stored in this folder:
+
+dman.tui.walk_directory(dman.mount(), show_content=True)
+
+# %%
+# By default ``dman`` can also handle ``numpy`` arrays.
+
 import numpy as np
-import os
-
-
-# %%
-# The first step is to describe how arrays are stored. We do so by
-# creating a ``storable`` type.
-
-
-@dman.storable(name="_num__barray")
-class barray(np.ndarray):
-    __ext__ = ".npy"
-
-    def __write__(self, path):
-        with open(path, "wb") as f:
-            np.save(f, self)
-
-    @classmethod
-    def __read__(cls, path):
-        with open(path, "rb") as f:
-            res: np.ndarray = np.load(f)
-            return res.view(cls)
-
+dman.save('result', {'config': config, 'data': np.arange(config['size'])**2})
+dman.tui.walk_directory(dman.mount(), show_content=True)
 
 # %%
-# We specify three components. First ``__ext__`` specifies the suffix added
-# to the created files. The ``__write__`` defines how to store the content
-# at a specified path and similarly ``__read__`` defines how to read
-# the content from a file.
+# We mentioned that ``dman`` is a file hierarchy manager.
+# Already some convenience is provided since we didn't need to specify a path
+# for our data. This path has been determined automatically by :func:`dman.mount`
+# internally based on the name of the script. Of course if you want 
+# to read the file from a different script this can be inconvenient. 
+# So you can specify the generator yourself. 
+
+dman.save('result', 'content', generator='example_common')
+dman.tui.walk_directory(dman.mount(generator='example_common'), show_content=True)
+
+# %%
+# The signature of :func:`dman.mount` is similar to that of :func:`dman.save`,
+# :func:`dman.load` and :func:`dman.track`. Hence if you want to know 
+# where your files go, you can always use it. 
 #
-# It will be inconvenient to always call ``data.view(barray)`` to convert
-# data to the storable type. To make this more convenient we can
-# create a wrapper around ``recordfield``:
-
-
-def barrayfield(**kwargs):
-    def to_sarray(arg):
-        if isinstance(arg, np.ndarray):
-            return arg.view(barray)
-        return arg
-
-    return dman.recordfield(**kwargs, pre=to_sarray)
-
+# We can also load files of course:
+print(dman.load('result', generator='example_common'))
 
 # %%
-# The callable provided through the ``pre`` argument is called whenever
-# a field is set in a ``modelclass``.
-#
-# .. note::
-#
-#     Both ``barray`` and ``barrayfield`` are implemented in ``dman.numeric``.
-#     We provide the details here since they are a good example on how
-#     to implement a ``storable`` type.
+# If the ``generator`` is not specified then loading only works 
+# when executed in the same script as the one where ``save`` was called 
+# with the default ``generator``. 
+
+print(dman.load('result'))
 
 # %%
-# Next we want to define the experiment configuration. To do so
-# we use a ``modelclass`` which acts similarly to a ``dataclass``,
-# but it is automatically serializable.
+# Finally we can do both at the same time
 
+dman.save('updated', {'original': 0})
+with dman.track('updated', default_factory=dict) as data:
+    data['value'] = 42
+dman.tui.walk_directory(dman.mount('updated'), show_content=True)
 
-@dman.modelclass(name="config")
+# %%
+# Creating a File Hierarchy
+# ----------------------------
+#
+# Beyond just automatically determining a ``mount`` point to save files 
+# to, ``dman`` also allows creating a file hierarchy within this folder. 
+#
+# To do so we need to use model types. Let's start with the model version 
+# of dictionaries and of lists. We will also use ``barray``,
+# which is the first ``storable`` type. It can be written and read from disk.
+# The second storable is ``smdict``, which is simply a dictionary 
+# that will be stored to a separate file. 
+
+from dman.numeric import barray
+config = dman.smdict.from_dict(config)
+data = (np.arange(config['size'])**2).view(barray)
+
+files = dman.mdict(store_by_key=True)
+files.update(config=config, data=data)
+
+dman.save('files', files)
+dman.tui.walk_directory(dman.mount('files'), show_content=True)
+
+# %%
+# Now three files have been created
+#
+# - ``files.json`` contains meta-data, describing the content of the other files.
+# - ``config.json`` is what became of our ``config`` object.
+# - ``data.npy`` stores the contents of ``data``.
+#
+# Let us consider a more interesting example, using :class:`dman.mruns`. This object 
+# acts like a list, but creates file names for storables automatically. 
+with dman.track('runs', default_factory=dman.mruns_factory(store_subdir=False)) as runs:
+    runs: dman.mruns = runs     # for type hinting
+    runs.clear()                # remove all previous runs
+    for i in range(3):
+        runs.append(np.random.uniform(size=i).view(barray))
+    
+dman.tui.walk_directory(dman.mount('runs'), show_content=True)
+
+# %%
+# If you don't care about file names, ``dman`` can generate them automatically:
+
+with dman.track('auto', default_factory=list) as lst:
+    lst.clear()
+    lst.extend([np.random.uniform(size=i).view(barray) for i in range(3)])
+dman.tui.walk_directory(dman.mount('auto'), show_content=True)
+
+# %%
+# .. warning::
+#   
+#       Both specifying file names and having them be automatically generated 
+#       have advantages and disadvantages. When specifying the file names 
+#       you risk overwriting existing data, however ``dman`` 
+#       will give a warning by default. See :ref:`sphx_glr_gallery_fundamentals_example4_path.py`
+#       for more info. Importantly if you want ``dman`` to prompt you for a new 
+#       filename whenever it risks overwriting an existing file use:
+#
+#       .. code-block:: python
+#
+#           dman.params.store.on_retouch = 'prompt'
+#
+#       When not specifying file names, files will likely not be removed. 
+#       Instead ``dman`` keeps creating new files (unless if you use ``track`` correctly
+#       as illustrated above).
+
+# %%
+# Modelclasses
+# ---------------------
+#
+# We finally briefly illustrate the usage of ``modelclass``. 
+from dman.numeric import sarray
+
+@dman.modelclass(compact=True, storable=True)
 class Config:
-    seed: int = 1234
-    size: int = 20
-    nsample: int = 1000
-    nrepeats: int = 2
+    description: str
+    size: int
 
+@dman.modelclass(storable=True, store_by_field=True)
+class Data:
+    values: sarray[int]
+    output: barray = None
 
-# %%
-# We will want to do multiple runs of some test in this example, so next
-# lets specify the run type.
-
-
-@dman.modelclass(name="run", storable=True)
-class Run:
-    """
-    Run class
-        Stores simulation data.
-    """
-
-    config: Config
-    data: barray = barrayfield(default=None)
-    output: barray = barrayfield(default=None)
-
+cfg = Config('Experiment generating numbers', 25)
+data = Data(np.logspace(0, 3, cfg.size))
+data.output = np.random.uniform(size=cfg.size)
 
 # %%
-# Simple enough. We specify that the ``modelclass``
-# can be stored to a file using ``storable=True``. Doing so
-# helps with performance, since loading from files is only done
-# when needed.
-#
-# The run contains two fields: ``data`` and ``output``. Note
-# that these are specified using a ``barrayfield`` (which wrapped ``recordfield``).
-# This has all options from the ``field`` method. We use this method since
-# the ``barray`` fields should be stored to a file. The ``recordfield`` makes this
-# clear and enables specifying things like the filename (using ``stem='<name>'``),
-# subdirectory (using ``subdir='<subdir>'``), etc.
-# We leave these unspecified in this case and leave filename selection to
-# the ``dman`` framework.
-
-# %%
-# We will store our data in an instance of ``mruns``, which acts like
-# a list. File names are determined automatically based on the specified stem.
-#
-# For example we can specify to store items at ``results/sim-#``
-# with ``#`` replaced by the number of the run.
-#
-# .. code-block:: python
-#
-#     content = mruns(stem='sim', subdir='results')
-#
-# .. warning::
-#
-#     To avoid unnecessary overhead caused by having to move files around,
-#     the index used in the file name is not the index in the list. Instead
-#     it is based on a counter that keeps track of the number of runs added.
-#     This matches the index until items are deleted or inserted.
-
-
-# %%
-# Running the experiment
-# ----------------------------------
-# We implement a method to run the experiment given some configuration:
-
-
-def execute(cfg: Config):
-    """
-    Run a simulation based on the provided configuration.
-    """
-    # load the experiments from disk
-    with dman.track(
-        "experiment",
-        default_factory=dman.mruns_factory(stem="experiment", subdir="results"),
-    ) as content:
-
-        # for type hinting (this is good practice in ``dman`` since it also
-        # makes sure you imported the type you want to load).
-        content: dman.mruns = content
-
-        # if the config was run before we don't need to run again
-        if len(content) > 0 and any((run.config == cfg for run in content)):
-            return
-
-        # generate data
-        rng = np.random.default_rng(cfg.seed)
-        data = rng.random(size=(cfg.size, cfg.nsample))
-        transform = rng.standard_normal(size=(100, data.shape[0]))
-        output = transform @ data
-        content.append(Run(cfg, data, output))
-
-
-# %%
-# We provide an overview of the above code segment:
-#
-# 1. The ``track`` command
-#     It specifies a file key, based on which an object will be loaded.
-#     If the file does not exist, it will be created based on ``default_factory``.
-#     Similarly to ``load`` it specifies a file key and a default value that is used when the object can
-#     not be loaded from the file key. Once the context exists, the file is saved automatically.
-#
-# 2. The ``mruns_factory`` method
-#      Returns a method with no arguments that returns ``mruns(stem='experiment', subdir='results')`` when called.
-#
-# 3. Note that we specify the loaded type.
-#     The interpreter can not know in advance what the loaded type will be, so we specify
-#     it manually. This is good practice since it makes refactoring more convenient. It also avoids
-#     issues caused by loading stored objects when the class definition is not imported.
-#
-# 4. We check if the config is new.
-#     To avoid re-running experiments unnecessarily we go through the list of
-#     experiments and check whether the config was already executed. Note that
-#     no data arrays are loaded from disk when doing so because of the deferred
-#     loading supported by default through the ``record`` system.
-#
-# .. warning::
-#
-#     Before running the script execute ``dman init`` in the root folder
-#     of your project. Files will be stored in the ``.dman`` folder created there.
-
-
-# %%
-# We begin by clearing any existing runs
-with dman.track(
-    "experiment",
-    default_factory=dman.mruns_factory(stem="experiment", subdir="results"),
-) as content:
-    content: dman.mruns = content
-    content.clear()
-
-# %%
-# Alternatively if you wish to remove only the most recent run you can use:
-#
-# .. code-block:: python
-#
-#     with dman.track(
-#         'experiment',
-#         default_factory=mruns_factory(stem='experiment', subdir='results')
-#     ) as content:
-#         content: mruns = content
-#         content.pop()
-#
-# The files are only removed once the ``track`` context exits.
-
-
-# %%
-# We next execute three experiments as follows:
-execute(Config(seed=1000))
-execute(Config(seed=1024))
-execute(Config(seed=1000))
-
-# %%
-# Afterwards you will see that ``.dman`` is populated as follows:
-tui.walk_directory(
-    os.path.join(dman.mount("experiment"), ".."),
-    show_content=True,
-    normalize=True,
-    show_hidden=True,
+# The ``modelclass`` automatically converts the numpy arrays to the 
+# specified types:
+print(
+    f'{type(data.values)=}', 
+    f'{type(data.values[0])=}', 
+    f'{type(data.output)=}',
+    sep='\n'
 )
 
 # %%
-# Note that the ``experiment`` folder is ignored
-# The root file is ``experiment.json`` (as specified by the key in ``track``).
-# Its content is as follows
-
-# show contents of "experiment.json"
-with open(os.path.join(dman.mount("experiment"), "experiment.json"), "r") as f:
-    tui.print_json(f.read())
-
-# %%
-# The results are not recorded here directly. Instead we have a
-# ``_ser__record`` that specifies the location of the json files
-# relative to the file ``experiment.json``.
-#
-# We can see the options passed to ``mruns_factory``.
-# Moreover, all of the run keys are there, but their content
-# defers to another file through a ``_ser__record`` field.
-# Specifically ``'results/experiment-#/experiment.json'``.
-
-# show contents of "experiment-0.json"
-with open(
-    os.path.join(
-        dman.mount("experiment"), "results", "experiment-0", "experiment.json"
-    ),
-    "r",
-) as f:
-    tui.print_json(f.read())
-
-# %%
-#  You see that the ``experiment-#.json`` files contain
-# info about the files containing the ``barray`` types. These file names
-# are specified automatically using ``uuid4`` to guarantee uniqueness.
-
-# %%
-# The Configuration File
-# ------------------------------
-#
-# Since the configuration is serializable we can also save and load it to disk.
-#
-# We can create a configuration file using the ``save``
-# command.
-
-_ = dman.save("config", Config(), cluster=False)
-
-# %%
-# We add the ``cluster=False`` since the Configuration only needs a single file. So no dedicated subfolder (i.e. cluster) should be created.
-#
-# You should see a ``config.json`` file appear in your ``.dman`` folder.
-# You can re-run the code above, after tweaking some values. The experiment
-# behavior changes.
-#
-# We can load it from disk using
-
-cfg: Config = dman.load("config", cluster=False)
-tui.print(cfg)
-
-# %%
-# It is important that ``cluster=False`` is added here as well. Note that internally
-# the ``track`` command uses both ``load`` and ``save``.
-
-
-# %%
-# Specifying Storage Folder
-# -------------------------------
-#
-# In the above experiment, the files were stored in
-# a folder called ``cache/examples:common``. The folder name
-# was created based on the script path relative to the folder in which
-# ``.dman`` is contained. Specifically the script was located in ``examples/common.py``.
-#
-# The automatic folder name generation is implemented to avoid potential overlap
-# between different scripts. Of course, this also means that using
-# ``track('experiment')`` in two different scripts will save/load from different
-# files. If you want to use files in different scripts you can do so by specifying
-# a ``generator`` as follows
-
-_ = dman.save("config", Config(), cluster=False, generator="demo")
-
-# %%
-# Doing this, will save/load files from the folder ``.dman/demo`` no matter
-# what script the command is executed from. Other options are listed in :ref:`fundamentals`
-#
-# For reference, the final folder structure is as follows:
-tui.walk_directory(
-    dman.mount('config', cluster=False, generator='demo'),
-    show_content=False,
-    normalize=True,
-    show_hidden=True,
+# We can now save the result
+dman.save(
+    'model', 
+    dman.mdict.from_dict({'cfg': cfg, 'data': data}, store_by_key=True)
 )
+dman.tui.walk_directory(dman.mount('model'), show_content=True)
+
+# %%
+# More information on how to use ``modelclass`` can be found in 
+# :ref:`sphx_glr_gallery_fundamentals_example3_models.py`.

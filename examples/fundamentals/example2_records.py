@@ -185,3 +185,7 @@ _ = dman.serialize(dman.record(SubSerialize(), subdir='folder'), context=ctx)
 # This is used inside of model types to determine the file paths. 
 # We will not go into much more detail here and instead refer 
 # to :ref:`sphx_glr_gallery_fundamentals_example3_models.py`.
+#
+# Whenever you create additional files you should also add a ``__remove__``
+# method. See the end of :ref:`sphx_glr_gallery_fundamentals_example1_storables.py`
+# for more details on this topic.
