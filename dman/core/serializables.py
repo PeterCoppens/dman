@@ -39,7 +39,7 @@ class Config:
         This class has a global instance that can be accessed as follows:
 
         >>> dman.core.serializables.config.validate = True
-        >>> dman.params.validate = True  # equivalent
+        >>> dman.params.serialize.validate = True  # equivalent
 
     Args:
         validate (bool, optional): Cancel serialization when an invalid object is encountered. Defaults to False.

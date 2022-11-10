@@ -16,18 +16,21 @@ If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_exa
 
 
 .. toctree::
+   :maxdepth: 2
    :caption: Introduction
 
    gallery/patterns/example_common.rst
    glossary.rst
 
 .. toctree::
+   :maxdepth: 2
    :caption: Examples
 
    gallery/cases/index.rst
    gallery/patterns/index.rst
 
 .. toctree::
+   :maxdepth: 2
    :caption: API
 
    gallery/fundamentals/index.rst

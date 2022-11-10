@@ -1,3 +1,8 @@
+"""
+Contains path handling systems used internally by ``dman``.
+"""
+
+
 from contextlib import contextmanager, suppress
 from pathlib import Path
 import os, sys
@@ -13,6 +18,20 @@ ROOT_FOLDER = ".dman"
 
 @configclass
 class Config:
+    """Configuration class for path handling.
+
+        This class has a global instance that can be accessed as follows:
+
+        >>> dman.core.path.config.on_retouch = 'prompt'
+        >>> dman.params.store.on_retouch = 'prompt'  # equivalent
+
+    Args:
+        on_retouch (str, optional): Procedure handling re-used file names. 
+            Options are ``'prompt'``, ``'quit'``, ``'ignore'``, ``'auto'``.
+            Defaults to ``'ignore'``. 
+        default_suffix (str, optional): Default suffix used for files when none is specified.
+            Defaults to ``'.sto'``.
+    """
     on_retouch: str = optionfield(
         ["prompt", "quit", "ignore", "auto"], default="ignore"
     )
@@ -27,6 +46,7 @@ AUTO = _Auto()
 
 
 class RootError(RuntimeError):
+    """Raised when no ``.dman`` directory could be found."""
     ...
 
 
@@ -55,6 +75,10 @@ def get_root_path(create: bool = False, *, cwd: os.PathLike = None):
 
 
 def script_label(base: os.PathLike = None):
+    """Generate a label for the current executing script. 
+
+        Takes the path relative to the folder containing ``.dman`` and 
+        replaces the separators with ``:``."""
     if base is None:
         base = get_root_path()
     base = Path(base).parent
@@ -74,6 +98,8 @@ def script_label(base: os.PathLike = None):
 
 
 def normalize_path(path: str):
+    """Simplify path string relative to folder containing 
+        ``.dman`` to be used for printing."""
     try:
         # root = Path(os.getcwd())
         root = Path(get_root_path()).parent
@@ -85,19 +111,22 @@ def normalize_path(path: str):
 
 
 class TargetException(Exception):
+    """Raised when an invalid target file is encountered."""
     ...
 
 
 class Target(os.PathLike):
+    """Object representing file relative to current folder."""
+
     def __init__(
         self,
         stem: str = AUTO,
         suffix: str = AUTO,
-        subdir: os.PathLike = "",
+        subdir: os.PathLike = '',
         name: str = AUTO,
     ):
         """Get a target path used for relative file definitions.
-            <subdir>/<stem>.<suffix> or <subdir>/<name>
+            ``<subdir>/<stem>.<suffix>`` or ``<subdir>/<name>``
 
         Raises:
             ValueError: Both name and suffix or stem were provided.
@@ -110,15 +139,18 @@ class Target(os.PathLike):
 
     @property
     def name(self):
+        """Name of the file"""
         return self.stem + self.suffix
 
     @classmethod
     def from_path(cls, path: os.PathLike):
+        """Create a target from a relative path."""
         subdir, name = os.path.split(path)
         return cls(subdir=subdir, name=name)
 
     @classmethod
     def from_tuple(cls, t):
+        """Create a target from a tuple (subdir, stem, suffix)."""
         return cls(t[1], t[2], t[0])
 
     def __iter__(self):
@@ -144,9 +176,20 @@ class Target(os.PathLike):
         return self.__hash__() == other.__hash__()
 
     def is_complete(self):
+        """Is the target completely specified."""
         return AUTO not in self
 
     def merge(self, *args):
+        """Merge target with others.
+        
+        Example:
+            >>> Target(name='test.json').merge(Target(suffix='.obj'), Target(subdir='folder'))
+            folder/test.obj
+            >>> Target(name='test.json').merge(Target(subdir='folder'), Target(suffix='.obj'))
+            test.obj
+            >>> Target(name='test.json').merge(Target(subdir='folder'), Target(suffix='.obj', subdir=AUTO))
+            folder/test.obj
+        """
         if len(args) == 0:
             return self
         t = tuple(v if _v is AUTO else _v for v, _v in zip(self, args[0]))
@@ -159,12 +202,15 @@ class Target(os.PathLike):
         subdir: os.PathLike = AUTO,
         name: str = AUTO,
     ):
+        """Update parts of target.
+            See also :func:`merge`.
+        """
         return self.merge(Target(stem, suffix, subdir, name))
 
 
 def target(stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: str = ""):
     """Get a target path used for relative file definitions.
-        <subdir>/<stem>.<suffix> or <subdir>/<name>
+        ``<subdir>/<stem>.<suffix>`` or ``<subdir>/<name>``
 
     Raises:
         ValueError: Both name and suffix or stem were provided.
@@ -172,8 +218,15 @@ def target(stem: str = AUTO, suffix: str = AUTO, name: str = AUTO, subdir: str =
     return Target(stem, suffix, subdir, name)
 
 
-def gitignore(directory: os.PathLike, ignored: Iterable, *, check: Iterable):
-    """Add ignored files to gitignore in provided directory."""
+def gitignore(directory: os.PathLike, ignored: Iterable, *, check: Iterable = None):
+    """Add ignored files to gitignore in provided directory.
+
+    Args:
+        directory (os.PathLike): Directory to add ``.gitignore`` file to.
+        ignored (Iterable): Files to add to current ``.gitignore``.
+        check (Iterable, optional): Check whether these files still exists. If not, don't add them.
+    """
+    if check is None: check = []
     path = os.path.join(directory, ".gitignore")
     original = {}
     if os.path.exists(path):
@@ -208,15 +261,19 @@ def prune_directories(directory: os.PathLike, *, root=True):
 
 
 class UserQuitException(TargetException):
+    """Raised when a file was re-used by a mount point and the quit option was selected."""
     ...
 
 
 class MountException(TargetException):
+    """Raised when a file is accessed outside of a mount point."""
     ...
 
 
 
 class Mount(os.PathLike):
+    """Mount point used as start of file hierarchy."""
+
     def __init__(
         self,
         directory: os.PathLike,
@@ -288,6 +345,16 @@ class Mount(os.PathLike):
         return self.default(target.update(name=f"{base}{target.suffix}"))
 
     def register(self, target: Target, *, choice: str = None):
+        """Register a target in the mount point. 
+        
+            It avoids registering a target multiple times. 
+            The behavior is determined by ``config.on_retouch`` or the value in `choice`.
+
+            - ``'prompt'``: Prompt the user for a different file name.
+            - ``'quit'``: Raise a :class:`UserQuitException`.
+            - ``'ignore'``: Override the existing file.
+            - ``'auto'``: Add an index to the file name to make it unique.
+        """
         # If the target is not registered we can do so and return it.
         if target not in self.touched:
             self.touched.append(target)
@@ -352,6 +419,11 @@ class Mount(os.PathLike):
         return target
 
     def close(self):
+        """Close this mount point. 
+        
+            Empty subdirectories are deleted and a gitignore is created if 
+            requested on creation.
+        """
         prune_directories(self)
         if not self.gitignore:
             return
@@ -366,18 +438,24 @@ class Mount(os.PathLike):
     
     @contextmanager
     def open(self, path: os.PathLike, *args, **kwargs):
+        """Open a file, registered by this mount point.
+        
+            The signature is identical to the standard ``open`` command.
+        """
         path = self.prepare(path, validate=True)
         f = open(self.abspath(path), *args, **kwargs)
         yield f
         f.close()
     
     def untrack(self, target: os.PathLike, *, validate: bool = False):
+        """Untrack a registered file. Afterwards it can be overridden without issues."""
         with suppress(ValueError):
             path = self.normalize(target, validate=validate)
             self.touched.remove(path)
             self.removed.append(path)
 
     def remove(self, target: os.PathLike, *, validate: bool = True):
+        """Delete a file from the mount point and stop tracking it."""
         self.untrack(target, validate=validate)
         path = self.abspath(target)
         if os.path.isdir(path) and len(os.listdir(path)) == 0:
@@ -417,6 +495,9 @@ def mount(
             and .dman is located in ``<project-root>/.dman``.
             Then generator is set to cache/examples:folder:script (i.e.
             the / is replaced by : in the output).
+        
+            See :ref:`sphx_glr_gallery_fundamentals_example4_path.py` for
+            detailed examples on how to create and use mount points.
 
     Args:
         key (str):  Key for the file.

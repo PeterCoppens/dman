@@ -2,9 +2,11 @@ Modules
 ================
 This section contains the module documentation.
 
+Core
+----------------------
 .. toctree::
-   :maxdepth: 2
-   :caption: Core
+   :maxdepth: 1
 
    serializables.rst
    storables.rst
+   path.rst
