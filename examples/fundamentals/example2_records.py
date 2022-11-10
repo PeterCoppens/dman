@@ -27,7 +27,8 @@ tui.print_json(dman.sjson.dumps(ser, indent=4))
 # %%
 # Note how ``dman`` does not throw an error here. This is to make sure that 
 # as much data is serialized as possible. You can turn on validation
-# by using a context. We illustrate such functionality in TODO add reference
+# by setting ``dman.params.serialize.validate=True``. Further details are provided 
+# in :ref:`sphx_glr_gallery_fundamentals_example5_errors.py`
 
 # %%
 # Contexts will also be useful for storing purposes.
@@ -41,8 +42,8 @@ tui.print_json(dman.sjson.dumps(ser, indent=4))
 #
 # The most basic usage is as follows:
 
-dir = TemporaryDirectory()
-base = dir.name
+tdir = TemporaryDirectory()
+base = tdir.name
 ctx = dman.Context.from_directory(base)
 rec = dman.record(array)
 ser = dman.serialize(rec, context=ctx)
@@ -79,7 +80,7 @@ tui.print(rec)
 
 dman.remove(rec, context=ctx)
 tui.walk_directory(base)
-dir.cleanup()   # clean temporary directory
+tdir.cleanup()   # clean temporary directory
 
 # %% 
 # It is possible to be more precise when specifying a ``record``.
@@ -103,6 +104,9 @@ dir.cleanup()   # clean temporary directory
 #   ``name='test.txt', subdir='dir'``                       ``./dir/test.txt``
 #   ``name='test.txt', stem='test', suffix='.txt'``         ``ValueError``
 #   ================================================       =========================
+#
+# More details are provided in :ref:`sphx_glr_gallery_fundamentals_example4_path.py`,
+# where `targets` are introduced.
 #
 #
 # .. note::

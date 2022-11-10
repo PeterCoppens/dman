@@ -10,3 +10,4 @@ Core
    serializables.rst
    storables.rst
    path.rst
+   records.rst

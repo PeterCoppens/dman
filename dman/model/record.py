@@ -1,3 +1,7 @@
+"""
+Defines records, which are used to make ``storable`` objects ``serializable``.
+"""
+
 import os
 import sys
 import uuid
@@ -43,23 +47,28 @@ EXTENSION = "__ext__"
 
 
 def is_removable(obj):
+    """Check if an object is removable."""
     return hasattr(obj, REMOVE)
 
 
 @serializable(name="__no_file")
 class NoFile(Unserializable):
+    """Returned when no file was found in the record target."""
     def __repr__(self):
         return f"NoFile: {self.type}"
 
 
 @serializable(name="__un_writable")
 class UnWritable(Unserializable):
+    """Returned when no data could be written to the record target file."""
     def __repr__(self):
         return f"UnWritable: {self.type}"
 
 
 @serializable(name="__exc_un_writable")
 class ExcUnWritable(ExcUnserializable):
+    """Returned when no data could be written to the 
+        record target file due to an exception."""
     def __repr__(self):
         return f"ExcUnWritable: {self.type}"
 
@@ -67,6 +76,7 @@ class ExcUnWritable(ExcUnserializable):
 @serializable(name="__un_readable")
 @dataclass
 class UnReadable(Unserializable):
+    """Returned when the record target file could not be read."""
     target: str
 
     def __repr__(self):
@@ -87,6 +97,8 @@ class UnReadable(Unserializable):
 @serializable(name="__exc_un_readable")
 @dataclass
 class ExcUnReadable(ExcUnserializable):
+    """Returned when the record target file 
+        could not be read due to an exception."""
     target: str
 
     def __serialize__(self):
@@ -102,21 +114,27 @@ class ExcUnReadable(ExcUnserializable):
 
 
 class StoreError(SerializationError):
+    """Raised when storing failed in such a way that 
+        serialization should be cancelled. Usually caused by 
+        the quit option was passed when a file is overwritten."""    
     ...
 
 
 class Context(BaseContext):
+    """Serialization context that keeps track of the current folder."""
     def __init__(
         self,
         mnt: Mount,
         subdir: os.PathLike = "",
     ):
+        """Initialize a context with a mount point and a subdirectory relative to it."""
         super().__init__()
         self.mnt = mnt
         self.subdir = subdir
 
     @property
     def directory(self):
+        """Absolute directory that the context controls."""
         return self.mnt.abspath(self.subdir, validate=False)
 
     def __repr__(self):
@@ -124,6 +142,7 @@ class Context(BaseContext):
 
     @classmethod
     def from_directory(cls, directory: str, gitignore: bool = True):
+        """Create a context based on a directory."""
         return cls(Mount(directory, gitignore=gitignore))
 
     @classmethod
@@ -138,21 +157,21 @@ class Context(BaseContext):
         gitignore: bool = True,
     ):
         """Get a context from a mount point.
-            The path of the file is determined as described below.
+        The path of the file is determined as described below.
 
-                If the files are clustered then the path is ``<base>/<generator>/<subdir>/<key>/<key>.<ext>``
-                If cluster is set to False then the path is ``<base>/<generator>/<subdir>/<key>.<ext>``
+            If the files are clustered then the path is ``<base>/<generator>/<subdir>/<key>/<key>.<ext>``
+            If cluster is set to False then the path is ``<base>/<generator>/<subdir>/<key>.<ext>``
 
-                When base is not provided then it is set to .dman if
-                it does not exist an exception is raised.
+            When base is not provided then it is set to .dman if
+            it does not exist an exception is raised.
 
-                When generator is not provided it will automatically be set based on
-                the location of the script relative to the .dman folder
-                (again raising an exception if it is not found). For example
-                if the script is located in ``<project-root>/examples/folder/script.py``
-                and .dman is located in ``<project-root>/.dman``.
-                Then generator is set to cache/examples:folder:script (i.e.
-                the / is replaced by : in the output).
+            When generator is not provided it will automatically be set based on
+            the location of the script relative to the .dman folder
+            (again raising an exception if it is not found). For example
+            if the script is located in ``<project-root>/examples/folder/script.py``
+            and .dman is located in ``<project-root>/.dman``.
+            Then generator is set to cache/examples:folder:script (i.e.
+            the / is replaced by : in the output).
 
         Args:
             key (str):  Key for the file.
@@ -174,6 +193,10 @@ class Context(BaseContext):
         )
 
     def serialize_list(self, ser: list):
+        """Serialize a list.
+            Automatically turns the list into an :class:`dman.mlist` if
+            it contains a storable object.
+        """
         res = []
         is_model = False
         for itm in ser:
@@ -186,6 +209,10 @@ class Context(BaseContext):
         return res
 
     def serialize_dict(self, ser: dict):
+        """Serialize a dict.
+            Automatically turns the dict into an :class:`dman.mdict` if
+            it contains a storable object.
+        """
         res = {}
         is_model = False
         for k, v in ser.items():
@@ -199,11 +226,13 @@ class Context(BaseContext):
         return res
 
     def absolute(self, target: os.PathLike):
+        """Get the path of a target relative to the mount point."""
         if not isinstance(target, Target):
             target = Target.from_path(target)
         return target.update(subdir=os.path.join(self.subdir, target.subdir))
 
     def write(self, target: os.PathLike, storable):
+        """Write a storable to a target."""
         try:
             target = Target.from_path(target)
             local, _target = self.prepare(target)
@@ -223,15 +252,16 @@ class Context(BaseContext):
             self.process_invalid("An error occurred while writing.", res)
             return target.update(name=_target.name), res
 
-    def read(self, target: os.PathLike, sto_type):
+    def read(self, target: os.PathLike, expected):
+        """Read a storable of some expected type from a target."""
         try:
             local, target = self.prepare(target, choice="_ignore")
             path = self.mnt.abspath(local.absolute(target))
-            return read(sto_type, path, local)
+            return read(expected, path, local)
         except FileNotFoundError:
-            if not isinstance(sto_type, str):
-                sto_type = getattr(sto_type, STO_TYPE, None)
-            res = NoFile(type=sto_type, info=f"Missing Target: {target}.")
+            if not isinstance(expected, str):
+                expected = getattr(expected, STO_TYPE, None)
+            res = NoFile(type=expected, info=f"Missing Target: {target}.")
             self.process_invalid("Could not find specified file.", res)
             return res
         except SerializationError:
@@ -239,7 +269,7 @@ class Context(BaseContext):
         except Exception:
             res = ExcUnReadable.from_exception(
                 *sys.exc_info(),
-                type=get_storable_name(sto_type),
+                type=get_storable_name(expected),
                 info="Exception encountered while reading.",
                 target=target,
                 ignore=4,  # TODO verify
@@ -289,16 +319,22 @@ class Context(BaseContext):
                     local.remove(obj=obj[k])
 
     def join(self, subdir: os.PathLike):
+        """Create a context relative to this one based on the subdirectory."""
         if subdir == "":
             return self
         return self.__class__(mnt=self.mnt, subdir=subdir)
     
     def open(self, target: os.PathLike, *args, **kwargs):
+        """Open a file, registered by this context.
+        
+            The signature is identical to the standard ``open`` command.
+        """
         return self.mnt.open(self.absolute(target), *args, **kwargs)
 
     def prepare(
         self, target: os.PathLike, *, choice: str = None
     ) -> Tuple["Context", Target]:
+        """Prepare a target for writing a storable to."""
         target = self.mnt.prepare(self.absolute(target), choice=choice)
         return self.join(target.subdir), Target(name=target.name)
 
@@ -310,22 +346,35 @@ class Context(BaseContext):
         self.mnt.__exit__(*_)
 
     def close(self):
+        """Close this context point. 
+        
+            Empty subdirectories are deleted and a gitignore is created if 
+            requested on creation.
+        """
         self.mnt.close()
 
 
 def is_unloaded(obj):
+    """Check if an object is unloaded."""
     return isinstance(obj, Unloaded)
+
+
+def is_undefined(obj):
+    """Check if an object is undefined."""
+    return isinstance(obj, Undefined)
 
 
 @dataclass
 class Unloaded:
-    type: str
-    target: os.PathLike
-    base: os.PathLike
-    context: Context
+    """Unloaded storable object."""
+    type: str               #: Storable type
+    target: os.PathLike     #: Target relative to the context
+    base: os.PathLike       #: The directory of the context
+    context: Context        #: The context used when the record was deserialized.
 
     @property
     def path(self):
+        """Path where the content of this storable is located."""
         return os.path.join(self.base, self.target)
 
     def __load__(self):
@@ -337,14 +386,11 @@ class Unloaded:
 
 @dataclass
 class Undefined:
-    type: str
+    """Undefined storable object."""
+    type: str   #: Storable type
 
     def __repr__(self) -> str:
         return f"ERR[{self.type}]"
-
-
-def is_undefined(obj):
-    return isinstance(obj, Undefined)
 
 
 @serializable(name="_record_exceptions")
@@ -371,7 +417,24 @@ class _RecordExceptions:
 
 @serializable(name="_ser__record")
 class Record:
+    """Wraps a storable in such a way to make it serializable. 
+    
+        Keeps track of the file the storable is written to and 
+        by default only loads the content when it is requested.
+
+        When no target is given a unique file name is determined using 
+        ``uuid4``. The suffix of the file is determined automatically 
+        based on the type.
+    """
+
     def __init__(self, content: Any, target: Target = None, preload: bool = False):
+        """Create a new record
+
+        Args:
+            content (Any): The storable contained within.
+            target (Target, optional): The target to which to write.
+            preload (bool, optional): Load the storable upon deserialization. Defaults to False.
+        """
         self._content = content
         self._target = Target() if target is None else target
 
@@ -379,15 +442,18 @@ class Record:
         self.exceptions = _RecordExceptions()
 
     def exists(self):
+        """Check if the file associated with this record exists."""
         return not isinstance(self.exceptions.read, NoFile)
 
     def isvalid(self, *, load: bool = False):
+        """Check whether the content was loaded successfully."""
         if load:
             self.load()
         return self.exceptions.read is None
 
     @property
     def target(self):
+        """The target path where content is written."""
         if self._target.is_complete():
             return self._target
 
@@ -402,16 +468,19 @@ class Record:
 
     @property
     def sto_type(self):
+        """The storable type string of the content."""
         if is_unloaded(self._content) or is_undefined(self._content):
             return self._content.type
         return sto_type2str(self._content)
 
     @property
     def content(self):
+        """Get the content of this method, loading it if not done before."""
         return self.load()
 
     @content.setter
     def content(self, value: Any):
+        """Assign a storable value to the content of this record."""
         if not is_storable(value):
             raise ValueError("Expected storable type.")
         self._content = value
@@ -428,6 +497,7 @@ class Record:
         return f"Record({sto_type2str(content)}, target={self.target}{preload_str})"
 
     def load(self):
+        """Load the content of this record from the file."""
         if not is_unloaded(self._content):
             return self._content
 
@@ -443,6 +513,7 @@ class Record:
         return self._content
 
     def store(self, context: BaseContext):
+        """Store the content of this record."""
         if isinstance(context, Context):
             if is_unloaded(self._content) and self._content.base != context.directory:
                 self.load()  # the target was moved
@@ -570,6 +641,7 @@ def record(
 
 
 def remove(obj, context: Context = None):
+    """Remove all files created by an object."""
     if not isinstance(context, Context):
         return
     context.remove(obj=obj)
