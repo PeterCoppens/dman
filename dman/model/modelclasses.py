@@ -376,17 +376,15 @@ def _process__modelclass(
     **kwargs,
 ):
     # convert to dataclass
-    res = cls
-    if not is_dataclass(cls):
-        res = dataclass(
-            cls,
-            init=init,
-            repr=repr,
-            eq=eq,
-            order=order,
-            unsafe_hash=unsafe_hash,
-            frozen=frozen,
-        )
+    res = dataclass(
+        cls,
+        init=init,
+        repr=repr,
+        eq=eq,
+        order=order,
+        unsafe_hash=unsafe_hash,
+        frozen=frozen,
+    )
 
     # auto convert fields if necessary
     for f in fields(res):

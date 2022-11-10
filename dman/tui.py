@@ -59,7 +59,7 @@ class StackGenerator:
         total: int = None,
         keep: bool = None,
         description: str = None,
-        post: str = '...',
+        post: str = ' ...',
         show_state: bool = True,
         log: dict = None,
     ):
@@ -73,7 +73,7 @@ class StackGenerator:
         for k in log:
             logstr += (str(k) + '={' + str(k) +'}, ')
         if len(logstr) > 0:
-            logstr = ' | ' + logstr[:-2] + ' | ' 
+            logstr = ' | ' + logstr[:-2] + ' |' 
         if description is None:
             description = f'Iterating "{it.__class__.__name__}"'
         if total and show_state:
@@ -105,18 +105,24 @@ class StackGenerator:
     def update(self, task: "StackLayer", completed: int, description: str = None):
         if self.progress is None:
             return
-        self.progress.update(self.registered[task], completed=completed, description=description)
-
-    def __enter__(self):
+        self.progress.update(self.registered[task], completed=completed, description=description, refresh=True)
+    
+    def start(self):
         self.progress = Progress()
         self.progress.__enter__()
-        return self
 
-    def __exit__(self, *_):
+    def stop(self):
         self.progress.stop()
         self.progress = None
         for r in self.registered:
             r.progress = None
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *_):
+        self.stop()
 
 
 class StackLayer:
@@ -146,7 +152,7 @@ class StackLayer:
             if self.state >= self.skip:
                 yield x
             self.state += 1
-            self.update(state=self.state+1)
+            self.update(state=min(self.log.get('total', 0), self.state+1))
             self.parent.update(self, completed=self.state, description=self.description)
         if not self.keep:
             self.parent.remove_task(self)
