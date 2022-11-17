@@ -3,6 +3,7 @@ import rich
 from typing import Dict, Iterable, Sequence, Tuple
 import os
 import pathlib
+from collections import OrderedDict
 
 from rich.style import Style
 from rich.console import JustifyMethod, Console, Group
@@ -10,7 +11,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.columns import Columns
 from rich import box
-from rich.progress import track, Progress
+from rich.progress import Progress, track
 from rich.live import Live
 from rich.tree import Tree
 from rich.markup import escape
@@ -43,11 +44,38 @@ def print_json(json: str):
     print(JSON(json))
 
 
+
+def progress(it: Iterable, description: str = None, show_state: bool = True, total = None):
+    if total is None and hasattr(it, "__len__"):
+        total = len(it)
+    if description is None:
+        description = f'Iterating "{it.__class__.__name__}"'
+    if total and show_state:
+        description = description + ' [{i}/{t}]'
+        def gen(i, t):
+            return description.format(i=i, t=t)
+    else:
+        total = 100.0
+        def gen(i, t):
+            return description
+        
+    with Progress() as progress:
+        task = progress.add_task(gen(0, total), total=total)
+        for i, o in enumerate(it):
+            progress.update(task, advance=1, description=gen(i+1, total), refresh=True)
+            yield o
+
+
 class StackGenerator:
     def __init__(self, state: Tuple[int] = None):
         self.progress = None
-        self.state = [] if state is None else list(state)
+        self._state = [] if state is None else list(state)
         self.registered: Dict[StackLayer, int] = dict()
+        self.index: Dict[StackLayer, int] = OrderedDict()
+
+    @property
+    def state(self):
+        return list(self.index.values())
 
     def print(self, msg: str):
         self.progress.print(msg)
@@ -81,10 +109,11 @@ class StackGenerator:
             log.update({'state': 1, 'total': total})
         description += logstr + post
 
-        state = 0 if len(self.state) == 0 else self.state.pop(0)
+        state = 0 if len(self._state) == 0 else self._state.pop(0)
         layer = StackLayer(it, self, state, keep, description, log)
         layer.update(total=total)
         self.registered[layer] = self.add_task(layer.description, total=total)
+        self.index[layer] = 0
         return layer
 
     def range(self, *args, description: str = None, **kwargs):
@@ -101,10 +130,12 @@ class StackGenerator:
         if self.progress is None:
             return
         self.progress.remove_task(self.registered[task])
+        del self.index[task]
 
     def update(self, task: "StackLayer", completed: int, description: str = None):
         if self.progress is None:
             return
+        self.index[task] += 1
         self.progress.update(self.registered[task], completed=completed, description=description, refresh=True)
     
     def start(self):

@@ -7,6 +7,7 @@ __version__ = '1.0'
 from dman.core.serializables import serializable, serialize, deserialize, BaseContext
 from dman.core.serializables import ser_type2str, ser_str2type, register_serializable
 from dman.core.serializables import isvalid, ValidationError, SerializationError
+from dman.core.storables import FileTarget
 from dman.core.storables import storable, write, read, register_storable
 from dman.core.path import mount, target, get_root_path, AUTO
 from dman.core import log
@@ -15,7 +16,7 @@ from dman.model.record import record, remove, Context
 from dman.model.modelclasses import recordfield, mdict, smdict, mlist, smlist, mruns, smruns, serializefield, modelclass
 from dman.model.modelclasses import smlist_factory, smdict_factory, smruns_factory, mruns_factory, mdict_factory, mlist_factory
 from dman.model.modelclasses import record_fields, unused_fields, register_preset
-from dman.model.repository import track, save, load, store
+from dman.model.repository import track, save, load, store, clean
 from dman.model.repository import uninterrupted, context
 
 from dman.utils import sjson

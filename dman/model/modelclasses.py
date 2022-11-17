@@ -1046,6 +1046,8 @@ class _bruns(_blist):
             key_config = key_config.update(
                 stem=self.stem, subdir=os.path.join(self.subdir, key)
             )
+        else:
+            key_config = key_config.update(subdir=self.subdir)
 
         config = self.config.merge(key_config)
         return Record(itm, config, self.preload)

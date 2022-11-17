@@ -1,18 +1,22 @@
-from ast import Import
 from dataclasses import MISSING, asdict
 import logging as backend
 from contextlib import contextmanager
-import sys
+import os
+import io as _io
+import shutil
+from tempfile import TemporaryDirectory
 import textwrap
 from tkinter import NONE
 from types import ModuleType
-from typing import List, Mapping, Type
+from typing import List, Type
 import re
+from uuid import uuid4
 from dman.core.errors import Trace
 
 
 LOGGER_NAME = "dman"
 DEFAULT_FORMAT = "%(indent)s%(context)s%(message)s"
+DEFAULT_FORMAT_LEVEL = "%(asctime)s %(levelname)s: %(indent)s%(context)s%(message)s"
 BASE_INDENT = "  "
 CAPITALIZE_LEVELNAME = False
 
@@ -67,8 +71,8 @@ def format_type(obj):
     return type(obj).__name__
 
 
-def default_formatter(fmt: str = DEFAULT_FORMAT, capitalize_levelname: bool = False):
-    return IndentedFormatter(fmt, capitalize_levelname=capitalize_levelname)
+def default_formatter(fmt: str = DEFAULT_FORMAT, datefmt: str = None, capitalize_levelname: bool = False):
+    return IndentedFormatter(fmt, datefmt, capitalize_levelname=capitalize_levelname)
 
 
 try:
@@ -202,7 +206,9 @@ try:
                     
             return super().render(record=record, traceback=traceback, message_renderable=message_renderable)
     
-    def default_handler(stream=None, **kwargs):
+    def default_handler(stream=None, use_rich: bool = True, **kwargs):
+        if not use_rich:
+            return backend.StreamHandler(stream)
         console_style = {'theme': log_theme, 'file': stream}
         console_style.update(kwargs.pop('console_style', {}))
         default = dict(
@@ -227,7 +233,7 @@ def default_config(level: int = None):
     config(level=level)
 
 
-def config(level=None, filename: str=None, filemode: str = 'a', stream=None, handlers: List[backend.Handler] = None, force: bool = False, **kwargs):
+def config(level=None, filename: str=None, filemode: str = 'a', stream=None, format: str = None, datefmt: str = None, handlers: List[backend.Handler] = None, force: bool = False, **kwargs):
     if force:
         for h in logger.handlers[:]:
             logger.removeHandler(h)
@@ -248,7 +254,10 @@ def config(level=None, filename: str=None, filemode: str = 'a', stream=None, han
                 h = default_handler(stream=stream, **kwargs)
             handlers = [h]
 
-        fmt = default_formatter(DEFAULT_FORMAT, capitalize_levelname=CAPITALIZE_LEVELNAME)
+        if format is None:
+            format = DEFAULT_FORMAT if kwargs.get('use_rich', True) else DEFAULT_FORMAT_LEVEL
+            
+        fmt = default_formatter(format, datefmt, capitalize_levelname=CAPITALIZE_LEVELNAME)
         for h in handlers:
             if h.formatter is None:
                 h.setFormatter(fmt)
@@ -257,10 +266,7 @@ def config(level=None, filename: str=None, filemode: str = 'a', stream=None, han
     if level is not None:
         logger.setLevel(level)
 
-                
-                
             
-
 class Logger(backend.Logger):
     def __init__(self, name: str, level=backend.NOTSET, stack: list = None):
         super().__init__(name, level)
@@ -428,14 +434,7 @@ def layer(msg: str, label: str = None, prefix: str = "type", owner: str = None):
     if len(logger.handlers) == 0:
         default_config()
     return logger.layer(msg, label, prefix, owner, stacklevel=2)
-
-
-
-class LogTarget(backend.FileHandler):
-    def __init__(self, filename = None):
-        super().__init__(filename)
-        self.tempdir = None
-
+        
 
 @contextmanager
 def logger_context(level: bool = None):

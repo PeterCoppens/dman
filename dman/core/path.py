@@ -238,8 +238,11 @@ def gitignore(directory: os.PathLike, ignored: Iterable, *, check: Iterable = No
             ))
     ignored = set(ignored).union(original)
     ignored.add('.gitignore')
-    with open(path, "w") as f:
-        f.write("\n".join(sorted(ignored)))
+    if len(ignored) == 1:
+        os.remove(path)
+    else:
+        with open(path, "w") as f:
+            f.write("\n".join(sorted(ignored)))
 
 
 def prune_directories(directory: os.PathLike, *, root=True):

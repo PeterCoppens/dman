@@ -27,6 +27,10 @@ This example illustrates basic usage of ``dman``.
 # for specifying file paths. Finally we show how ``modelclasses``,
 # the ``dman`` extension of a ``dataclass`` can be used.
 #
+# If you want some code that can run out-of-the-box instead of a 
+# detailed introduction to the important components, you can take a look 
+# at the other examples listed under :ref:`sphx_glr_gallery_patterns`.
+#
 # To run this example you will require ``numpy`` and ``rich``.
 
 # %%
@@ -37,8 +41,7 @@ This example illustrates basic usage of ``dman``.
 # that can be handled by ``json``. 
 
 # clear any old data
-import dman
-import shutil, os
+import dman, shutil, os
 if os.path.isdir(dman.mount()):
     shutil.rmtree(dman.mount())
 

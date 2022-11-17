@@ -1,3 +1,5 @@
+.. _sphx_glr_gallery_cases:
+
 Case Studies
 ==============================
 

@@ -8,6 +8,11 @@ from disk.
 from dataclasses import asdict, is_dataclass
 import os
 from typing import Type, Union, Any, Callable, Optional
+import io as _io
+from tempfile import TemporaryDirectory
+import shutil
+from uuid import uuid4
+
 
 from dman.core.serializables import (
     is_serializable,
@@ -209,3 +214,77 @@ def read(type: Union[str, Type], path: os.PathLike, context: BaseContext = None,
     if inner_read is None:
         raise ReadException(f"Could not find __read__ method.")
     return _call_optional_context(inner_read, path, context=context, **kwargs)
+
+
+class MovableIO:
+    def __init__(self, content):
+        self._content = content
+
+    @property
+    def content(self):
+        return self._content
+
+    @content.setter
+    def content(self, value):
+        # flush old content
+        if self._content and hasattr(self._content, 'flush'):
+            self._content.flush()  
+        self._content = value
+
+    def __getattr__(self, __name: str):
+        return getattr(self.content, __name)
+
+
+@storable(name='_storable__stream')
+class FileTarget(MovableIO):
+    def __init__(self, baseFileName: os.PathLike = None, suffix: str = '.txt', mode: str = 'a', encoding=None, errors=None):
+        self.mode = mode
+        self.errors = errors
+        self.encoding = encoding
+        if "b" not in mode:
+            self.encoding = _io.text_encoding(encoding)
+
+        if baseFileName is not None:
+            self.tempdir = None
+            self.baseFilename = baseFileName
+            stream = open(baseFileName, mode, encoding=encoding, errors=errors)
+            _, self.__ext__ = os.path.splitext(baseFileName)
+        else:
+            self.tempdir = TemporaryDirectory()
+            self.baseFilename = os.path.join(self.tempdir.name, f"log-{uuid4()}{suffix}")
+            stream = open(self.baseFilename, mode, encoding=encoding, errors=errors)
+            self.__ext__ = suffix
+
+        super().__init__(stream)
+        
+    def transfer(self, src: str, dst: str):
+        with open(dst, "ab") as wfd:
+            with open(src, "rb") as fd:
+                shutil.copyfileobj(fd, wfd)
+
+    def __write__(self, path: os.PathLike):
+        if os.path.abspath(self.baseFilename) == os.path.abspath(path):
+            return
+
+        self.content = None  # remove current stream
+
+        if os.path.exists(self.baseFilename):
+            if self.tempdir is not None:
+                self.transfer(self.baseFilename, path)
+                os.remove(self.baseFilename)
+            else:
+                self.transfer(self.baseFilename, path)
+
+        self.baseFilename = path
+        self.content = open(self.baseFilename, self.mode, encoding=self.encoding)        
+        
+        if self.tempdir is not None:
+            self.tempdir.cleanup()
+            self.tempdir = None
+
+    @classmethod
+    def __read__(cls, path: os.PathLike):
+        return cls(path)
+
+    def __remove__(self, _):
+        self.__init__()  # switch back to temporary file

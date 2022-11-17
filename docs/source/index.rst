@@ -12,17 +12,21 @@ numerical experiments. Data is stored in a human-readable fashion (whenever
 possible).
 
 A good place to start reading for a high-level overview of the module is :ref:`fundamentals`.
-If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_example_common.py`.
+If you just want to get started you can read :ref:`sphx_glr_gallery_misc_example0_common.py`.
+Alternatively you can use the ready-made design patterns from :ref:`sphx_glr_gallery_patterns`.
+For more advanced examples you can take a look at :ref:`sphx_glr_gallery_cases`.
 
 
 .. toctree::
+   :hidden: 
    :maxdepth: 2
    :caption: Introduction
 
-   gallery/patterns/example_common.rst
+   gallery/misc/example0_common.rst
    glossary.rst
 
 .. toctree::
+   :hidden: 
    :maxdepth: 2
    :caption: Examples
 
@@ -30,6 +34,7 @@ If you just want to get started you can read :ref:`sphx_glr_gallery_patterns_exa
    gallery/patterns/index.rst
 
 .. toctree::
+   :hidden: 
    :maxdepth: 2
    :caption: API
 

@@ -604,7 +604,8 @@ class Record:
             log.warning(
                 "Loaded content is invalid. Could not continue removing.", "record"
             )
-        log.warning("Tried removing with invalid context type.", "record")
+        else:
+            log.warning("Tried removing with invalid context type.", "record")
 
 
 def record(
