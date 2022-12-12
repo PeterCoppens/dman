@@ -15,8 +15,8 @@ from dman.core.errors import Trace
 
 
 LOGGER_NAME = "dman"
-DEFAULT_FORMAT = "%(indent)s%(context)s%(message)s"
-DEFAULT_FORMAT_LEVEL = "%(asctime)s %(levelname)s: %(indent)s%(context)s%(message)s"
+DEFAULT_FORMAT = "%(indent)s%(label)s%(message)s"
+DEFAULT_FORMAT_LEVEL = "%(asctime)s %(levelname)s: %(indent)s%(label)s%(message)s"
 BASE_INDENT = "  "
 CAPITALIZE_LEVELNAME = False
 
@@ -24,7 +24,27 @@ from logging import CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET
 
 
 class IndentedFormatter(backend.Formatter):
-    def __init__(self, fmt=DEFAULT_FORMAT, datefmt=None, style="%", validate=True, capitalize_levelname: bool = False):
+    """Formatter that supports indentation and label specification.
+
+    New formatting options: `indent` and `label`
+    
+    Example:
+
+    >>> fmt = IndentedFormatter(fmt="%(levelname)s: %(indent)s%(label)s%(message)s")
+    >>> logger = Logger('example', level=INFO)
+    >>> h = backend.StreamHandler()
+    >>> h.setFormatter(formatter)
+    >>> log.addHandler(hdlr)
+    >>> with log.layer('value', 'label'):
+    ...     log.info('test')
+    ...     log.info('test', 'label')
+    <label type=value>
+    test
+    [label]: test
+    <end label type=value>
+    """
+
+    def __init__(self, fmt=DEFAULT_FORMAT, datefmt=None, style="%", validate=True, capitalize_levelname: bool = False):        
         super().__init__(fmt, datefmt, style, validate)
         self.capitalize_levelname = capitalize_levelname
     
@@ -43,8 +63,8 @@ class IndentedFormatter(backend.Formatter):
             return fmt
     
     def format(self, record):
-        if not hasattr(record, 'context'):
-            setattr(record, 'context', '')
+        if not hasattr(record, 'label'):
+            setattr(record, 'label', '')
         if not hasattr(record, 'indent'):
             setattr(record, 'indent', '')
         if self.capitalize_levelname:
@@ -62,16 +82,24 @@ class IndentedFormatter(backend.Formatter):
             
         # record.msg = s
         # record.indent = ''
-        # record.context = ''
+        # record.label = ''
         return s
 
 def format_type(obj):
+    """Get string label for type."""
     if isinstance(obj, (ModuleType, Type)):
         return obj.__name__
     return type(obj).__name__
 
 
 def default_formatter(fmt: str = DEFAULT_FORMAT, datefmt: str = None, capitalize_levelname: bool = False):
+    """Return the default ``dman`` formatter.
+
+    Args:
+        fmt (str, optional): Format string.
+        datefmt (str, optional): Date format specification. Defaults to None.
+        capitalize_levelname (bool, optional): Capitalize the log-level name. Defaults to False.
+    """
     return IndentedFormatter(fmt, datefmt, capitalize_levelname=capitalize_levelname)
 
 
@@ -104,7 +132,7 @@ try:
     )
 
     class LoggingHighlighter(RegexHighlighter):
-        """Apply style to anything that looks like an email."""
+        """Apply coloring to ``dman`` log messages. Highlights label, headers, paths and strings."""
 
         base_style = "backend."
         highlights = [
@@ -115,7 +143,7 @@ try:
         ]
 
     class MinimalHighlighter(RegexHighlighter):
-        """Apply style to anything that looks like an email."""
+        """Only highlight label."""
 
         base_style = "backend."
         highlights = [
@@ -123,6 +151,8 @@ try:
         ]
 
     class ColorHighlighter(Highlighter):
+        """Highlights all basic text with specified color, still applying base to get specific colors
+        for other pieces of text."""
         def __init__(self, base_color=None, base=LoggingHighlighter) -> None:
             self.base_color = base_color
             self.base = base
@@ -136,6 +166,13 @@ try:
             return text
 
     def get_highlighter(color: str, minimal: bool):
+        """Get a highlighter.
+
+        Args:
+            color (str): The color of the base text.
+            minimal (bool): When set to False, :class:`LoggingHighlighter` is 
+                applied to the string after setting the base color.
+        """
         return (LoggingHighlighter()
             if color is None
             else ColorHighlighter(
@@ -144,6 +181,7 @@ try:
         )
 
     def trace2rich(trace: Trace):
+        """Convert traceback to internal representation used by rich."""
         stacks = []
         for stack in trace.stacks:
             frames = []
@@ -155,6 +193,7 @@ try:
         return _rich_tb.Trace(stacks) 
     
     class DManHandler(RichHandler):
+        """The default logging handler used by ``dman``."""
         def _traceback_kwargs(self):
             return dict(
                 width=self.tracebacks_width,
@@ -207,6 +246,16 @@ try:
             return super().render(record=record, traceback=traceback, message_renderable=message_renderable)
     
     def default_handler(stream=None, use_rich: bool = True, **kwargs):
+        """Get the default handler used by ``dman``.
+
+        The stream is passed to the handler, which is either a standard :class:`backend.StreamHandler`
+        or a :class:`DManHandler` instance. Any other keyword arguments are passed to the 
+        ``__init__`` method of the handler.
+
+        Additionally the option ``console_style`` can be set to a dictionary. 
+        The keyword arguments contained within are passed to the :class:`rich.console.Console`
+        initializer and the output console is passed to the `DManHandler`. 
+        """
         if not use_rich:
             return backend.StreamHandler(stream)
         console_style = {'theme': log_theme, 'file': stream}
@@ -223,17 +272,59 @@ try:
 
 except ImportError as e:
     def get_highlighter(color: str, minimal: bool):
+        """Get a highlighter when ``rich`` is not available. 
+        In this case the options have no effect.
+        """
         return None
 
     def default_handler(stream=NONE, **kwargs):
+        """Get the default handler when ``rich`` is not available. 
+        In this case the returned handler is a standard stream handler."""
         return backend.StreamHandler(stream)
 
 
 def default_config(level: int = None):
-    config(level=level)
+    """Load the default logger configuration."""
+    config(level=level, force=True)
 
 
-def config(level=None, filename: str=None, filemode: str = 'a', stream=None, format: str = None, datefmt: str = None, handlers: List[backend.Handler] = None, force: bool = False, **kwargs):
+def config(*, level=None, filename: str=None, filemode: str = 'a', stream=None, format: str = None, datefmt: str = None, handlers: List[backend.Handler] = None, force: bool = False, **kwargs):
+    """Configure the ``dman`` logger.
+    
+    This function does nothing if the ``dman`` logger already has handlers configured,
+    unless if the ``force`` keyword argument is set to true.
+
+    The default behavior is to create a :class:`DmanHandler` using 
+    the :func:`default_handler` method. Any keyword arguments not specified below are 
+    passed to that method. 
+
+    Args:
+        level (_type_, optional): Set the logger level to the specified level.
+        filename (str, optional): Specifies that a FileHandler be created, using the specified
+            filename, rather than a StreamHandler.
+        filemode (str, optional): Specifies the mode to open the file, if filename is specified
+            (if filemode is unspecified, it defaults to 'a').
+        stream (optional): Use the specified stream to initialize the StreamHandler. Note
+            that this argument is incompatible with 'filename' - if both
+            are present, 'stream' is ignored.
+        format (str, optional): Use the specified format string for the handler.
+        datefmt (str, optional): Use the specified date/time format.
+        handlers (List[backend.Handler], optional): If specified, this should be 
+            an iterable of already created handlers, which will be added to the 
+            root handler. Any handler in the list which does not have a formatter 
+            assigned will be assigned the formatter created in this function.
+        force (bool, optional): If this keyword is specified as true, any 
+            existing handlers attached to the root logger are removed and closed, 
+            before carrying out the configuration as specified by the other
+            arguments.. Defaults to False.
+
+    Note that you could specify a stream created using open(filename, mode)
+    rather than passing the filename and mode in. However, it should be
+    remembered that StreamHandler does not close its stream (since it may be
+    using sys.stdout or sys.stderr), whereas FileHandler closes its stream
+    when the handler is closed.
+    """
+    backend.basicConfig
     if force:
         for h in logger.handlers[:]:
             logger.removeHandler(h)
@@ -268,6 +359,8 @@ def config(level=None, filename: str=None, filemode: str = 'a', stream=None, for
 
             
 class Logger(backend.Logger):
+    """Logger instance used by ``dman``. Provides some additional logging methods."""
+
     def __init__(self, name: str, level=backend.NOTSET, stack: list = None):
         super().__init__(name, level)
         self.stack = [] if stack is None else stack
@@ -294,16 +387,16 @@ class Logger(backend.Logger):
         enabled = self.isEnabledFor(backend.INFO)
         stack = self.stack
         if enabled or len(stack) == 0:
-            context = "" if label is None else f"[{label}]: "
+            label = "" if label is None else f"[{label}]: "
         else:
             stack = self.format_stack()
-            context = f"[@{stack}" + ("" if label is None else f" | {label}") + "]: "
+            label = f"[@{stack}" + ("" if label is None else f" | {label}") + "]: "
 
         indent = ""
         if enabled and self.indent > 0:
             indent = BASE_INDENT * self.indent + " "
 
-        extra = {"context": context, "indent": indent}
+        extra = {"label": label, "indent": indent}
         if not use_rich_highlighter:
             extra["highlighter"] = get_highlighter(color, minimal)
 
@@ -323,34 +416,88 @@ class Logger(backend.Logger):
         *args,
         **kwargs
     ):
+        """Log an info message.
+
+        Args:
+            msg (str): message
+            label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+            color (str, optional): The color of the text. Defaults to None.
+            use_rich_highlighter (bool, optional): Use rich highlighting. Defaults to False.
+        """
         msg, extra = self.pack(msg, label, color=color, use_rich_highlighter=use_rich_highlighter)
         super().info(msg, extra=extra, *args, **kwargs)
 
     def debug(self, msg: str, label: str = None, *args, **kwargs):
+        """Log a debug message.
+
+        Args:
+            msg (str): message
+            label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+        """
         msg, extra = self.pack(msg, label)
         super().debug(msg, extra=extra, color="backend.debug", *args, **kwargs)
 
     def warning(self, msg: str, label: str = None, exc_info=False, *args, **kwargs):
+        """Log a warning message
+
+        Args:
+            msg (str): message
+            label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+            exc_info (bool, optional): Add exception info. Defaults to False.
+        """
         msg, extra, exc_info = self.pack(msg, label, exc_info, color="backend.warning")
         super().warning(msg, extra=extra, exc_info=exc_info, *args, **kwargs)
 
     def error(self, msg: str, label: str = None, exc_info=False, *args, **kwargs):
+        """Log an error message
+
+        Args:
+            msg (str): message
+            label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+            exc_info (bool, optional): Add exception info. Defaults to False.
+        """
         msg, extra, exc_info = self.pack(msg, label, exc_info, color="backend.error")
         super().error(msg, extra=extra, exc_info=exc_info, *args, **kwargs)
 
     def exception(self, msg: str, label: str = None, exc_info=True, *args, **kwargs):
+        """Log an exception
+
+        Args:
+            msg (str): message
+            label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+            exc_info (bool, optional): Add exception info. Defaults to True.
+        """
         kwargs.update({'stacklevel': kwargs.get('stacklevel', 1)+1})
         self.error(msg, label, exc_info, *args, **kwargs)
 
     def emphasize(self, msg: str, label: str = None, *args, **kwargs):
+        """Log an emphasized info message.
+
+        Args:
+            msg (str): message
+            label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+        """
         kwargs.update({'stacklevel': kwargs.get('stacklevel', 1)+1})
         self.info(msg, label, color="backend.emphasis", *args, **kwargs)
 
     def io(self, msg: str, label: str = None, *args, **kwargs):
+        """Log an info message associated with io.
+
+        Args:
+            msg (str): message
+            label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+        """
         kwargs.update({'stacklevel': kwargs.get('stacklevel', 1)+1})
         self.info(msg, label, color="backend.io", *args, **kwargs)
 
     def header(self, msg: str, label: str, prefix: str = "type", *args, **kwargs):
+        """Log an info header.
+
+        Args:
+            msg (str): message
+            label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+            prefix (str, optional): Prefix added before the message. Defaults to "type".
+        """
         kwargs.update({'stacklevel': kwargs.get('stacklevel', 1)+1})
         if label is not None:
             msg = f"<{label} {prefix}={msg}>"
@@ -360,6 +507,14 @@ class Logger(backend.Logger):
     def layer(
         self, msg: str, label: str = None, prefix: str = "type", owner: str = None, *args, **kwargs
     ):
+        """Enter a layer context, indenting all future log messages.
+
+        Args:
+            msg (str): message
+            label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+            owner (Str, optional): Owner of the layer, which is added to the stack. Defaults to None.
+            prefix (str, optional): Prefix added before the message. Defaults to "type".
+        """
         kwargs.update({'stacklevel': kwargs.get('stacklevel', 1)+1})
         self.header(msg, label, prefix, *args, **kwargs)
         self.stack.append(owner)
@@ -389,48 +544,103 @@ logger.stack = []
 def info(
     msg: str, label: str = None, color: str = None, use_rich_highlighter: bool = False
 ):
+    """Log an info message.
+
+    Args:
+        msg (str): message
+        label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+        color (str, optional): The color of the text. Defaults to None.
+        use_rich_highlighter (bool, optional): Use rich highlighting. Defaults to False.
+    """
     if len(logger.handlers) == 0:
         default_config()
     return logger.info(msg, label, color, use_rich_highlighter, stacklevel=2)
 
 
-def debug(msg: str, label: str = None):
+def debug(msg: str, label: str = None):        
+    """Log a debug message.
+
+    Args:
+        msg (str): message
+        label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+    """
     if len(logger.handlers) == 0:
         default_config()
     return logger.debug(msg, label, stacklevel=2)
 
 
 def warning(msg: str, label: str = None, exc_info=False):
+    """Log a warning message
+
+    Args:
+        msg (str): message
+        label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+        exc_info (bool, optional): Add exception info. Defaults to False.
+    """
     if len(logger.handlers) == 0:
         default_config()
     return logger.warning(msg, label, exc_info, stacklevel=2)
 
 
 def error(msg: str, label: str = None, exc_info=False, stacklevel=1):
+    """Log an error message
+
+    Args:
+        msg (str): message
+        label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+        exc_info (bool, optional): Add exception info. Defaults to False.
+    """
     if len(logger.handlers) == 0:
         default_config()
     return logger.error(msg, label, exc_info, stacklevel=2)
 
 
 def exception(msg: str, label: str = None, exc_info=True):
+    """Log an exception
+
+    Args:
+        msg (str): message
+        label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+        exc_info (bool, optional): Add exception info. Defaults to True.
+    """
     if len(logger.handlers) == 0:
         default_config()
     return logger.exception(msg, label, exc_info, stacklevel=2)
 
 
 def emphasize(msg: str, label: str = None):
+    """Log an emphasized info message.
+
+    Args:
+        msg (str): message
+        label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+    """
     if len(logger.handlers) == 0:
         default_config()
     return logger.emphasize(msg, label, stacklevel=2)
 
 
 def io(msg: str, label: str = None):
+    """Log an info message associated with io.
+
+    Args:
+        msg (str): message
+        label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+    """
     if len(logger.handlers) == 0:
         default_config()
     return logger.io(msg, label, stacklevel=2)
 
 
 def layer(msg: str, label: str = None, prefix: str = "type", owner: str = None):
+    """Enter a layer context, indenting all future log messages.
+
+    Args:
+        msg (str): message
+        label (str, optional): The label added before the message (if specified in format string). Defaults to None.
+        owner (Str, optional): Owner of the layer, which is added to the stack. Defaults to None.
+        prefix (str, optional): Prefix added before the message. Defaults to "type".
+    """
     if len(logger.handlers) == 0:
         default_config()
     return logger.layer(msg, label, prefix, owner, stacklevel=2)
@@ -438,6 +648,13 @@ def layer(msg: str, label: str = None, prefix: str = "type", owner: str = None):
 
 @contextmanager
 def logger_context(level: bool = None):
+    """Enter a logger context with a temporary log level.
+    
+    Example:
+
+    >>> with logger_context(level=INFO):
+    ...     info('test', 'label')
+    """
     if level is None:
         yield logger
         return

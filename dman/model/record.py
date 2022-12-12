@@ -152,7 +152,7 @@ class Context(BaseContext):
         *,
         subdir: os.PathLike = "",
         cluster: bool = True,
-        generator: str = AUTO,
+        generator: str = None,
         base: os.PathLike = None,
         gitignore: bool = True,
     ):

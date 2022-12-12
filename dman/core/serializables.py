@@ -15,6 +15,7 @@ from dman.core import log
 from dman.core.errors import Trace, Stack, Frame, BaseInvalid, ExcInvalid
 from dman.utils.smartdataclasses import configclass
 import textwrap
+from contextlib import suppress
 
 from enum import Enum
 
@@ -86,6 +87,8 @@ def ser_str2type(ser):
 
 def is_serializable(ser):
     """Check if an object is a serializable type."""
+    if _Instance.__convert__(ser) is not None:
+        return True
     if is_serializable_type_str(getattr(ser, SER_TYPE, None)):
         return True
     if isinstance(ser, (list, dict, tuple)):
@@ -152,7 +155,6 @@ def serializable_types():
 def get_custom_serializable(cls: Type[Any], default=None):
     """Get the signature of a custom serializable object."""
     return __custom_serializable.get(cls, default)
-
 
 def serialize(obj, context: "BaseContext" = None, content_only: bool = False):
     """Serialize a serializable object.
@@ -368,6 +370,58 @@ serializable(Stack, name="__stack")
 serializable(Trace, name="__trace")
 
 
+@serializable(name='__instance')
+class _Instance:
+    registered = {}
+    def __init__(self, name: str):
+        if name not in self.__class__.registered:
+            raise ValueError('Created an instance tracker for an unregistered name')
+        self.name = name
+    
+    @classmethod
+    def __convert__(cls, inst: Any):
+        for k, v in cls.registered.items():
+            if v is inst:
+                return cls(k)
+        return None
+
+    def __serialize__(self):
+        return self.name
+    
+    @classmethod
+    def __deserialize__(cls, ser):
+        return cls.registered[ser]
+
+
+def register_instance(inst: Any = None, /, *, name: str = MISSING):
+    """Register instance for serialization
+
+    Args:
+        inst (Any): Instance to serialize. Defaults to None.
+        name (str): Name of instances.
+    
+    Example:
+        >>> @dman.register_instance(name='ell1')
+        >>> def ell1(x, y):
+        >>>     return abs(x) + abs(y)
+
+        >>> dman.register_instance(ell1, name='ell1')
+    """
+    if name is MISSING:
+        raise TypeError("registered_instance() missing 1 required keyword-only argument: 'name'")
+    
+    def wrap(inst):
+        old = _Instance.registered.get(name, None)
+        if old is not None:
+            log.warning(f'Overwrote registered instance with name {name} from {old.__repr__()} to {inst.__repr__()}.')
+        _Instance.registered[name] = inst
+        return inst
+    if inst is None:
+        return wrap
+    return wrap(inst)
+        
+
+
 @serializable(name="__unserializable")
 class Unserializable(BaseInvalid):
     """Represents an object that could not be serialized."""
@@ -550,6 +604,10 @@ class BaseContext:
 
         See also: :func:`serialize`.
         """
+        # check whether the object a registered instance. If so, convert it.
+        inst = _Instance.__convert__(obj)
+        if inst is not None:
+            obj = inst
 
         if sjson.atomic_type(obj):
             return obj
@@ -705,6 +763,12 @@ class BaseContext:
         _, _, ser_method = get_custom_serializable(expected, (None, None, None))
         if ser_method is None:
             ser_method = getattr(expected, DESERIALIZE, None)
+        if ser_method is None:
+            return Undeserializable(
+                get_type_name(expected), 
+                f"Could not recover __deserialize__ method for type '{get_type_name(expected)}'.", 
+                serialized
+            )
         return _call_optional_context(
             ser_method,
             serialized,
@@ -718,6 +782,8 @@ class BaseContext:
 
     def deserialize_atomic(self, serialized, expected):
         """Deserialize an atomic object of an expected type"""
+        with suppress(ValueError):
+            return expected(serialized)
         if expected is not type(serialized):
             return Undeserializable(
                 type=expected,

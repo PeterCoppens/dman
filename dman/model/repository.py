@@ -1,3 +1,8 @@
+"""
+High-level saving and loading functionality for ``dman``.
+"""
+
+
 from contextlib import contextmanager
 from dataclasses import MISSING
 import os
@@ -27,6 +32,7 @@ class _InterruptTracker:
 
 @contextmanager
 def uninterrupted():
+    """Return context that suppresses keyboard interrupts until it exists."""
     tracker = _InterruptTracker()
     original = signal.getsignal(signal.SIGINT)
     signal.signal(signal.SIGINT, tracker.handler)
@@ -44,7 +50,7 @@ def context(
     subdir: os.PathLike = "",
     cluster: bool = True,
     verbose: int = None,
-    generator: str = MISSING,
+    generator: str = None,
     base: os.PathLike = None,
     gitignore: bool = True,
 ):
@@ -79,7 +85,7 @@ def context(
             key,
             subdir=subdir,
             cluster=cluster,
-            generator=AUTO if generator is MISSING else generator,
+            generator=generator,
             base=base,
             gitignore=gitignore,
         )
@@ -95,7 +101,7 @@ def store(
     cluster: bool = False,
     verbose: int = None,
     gitignore: bool = True,
-    generator: str = MISSING,
+    generator: str = None,
     base: os.PathLike = None,
 ):
     """
@@ -161,7 +167,7 @@ def save(
     verbose: int = None,
     validate: bool = None,
     gitignore: bool = True,
-    generator: str = MISSING,
+    generator: str = None,
     base: os.PathLike = None,
 ):
     """
@@ -234,7 +240,7 @@ def load(
     cluster: bool = True,
     verbose: int = None,
     gitignore: bool = True,
-    generator: str = MISSING,
+    generator: str = None,
     base: os.PathLike = None,
 ):
     """
@@ -319,7 +325,7 @@ def clean(
     subdir: os.PathLike = "",
     cluster: bool = True,
     verbose: int = None,
-    generator: str = MISSING,
+    generator: str = None,
     base: os.PathLike = None,
 ):
     """
@@ -450,7 +456,7 @@ def track(
     cluster: bool = True,
     verbose: int = None,
     gitignore: bool = True,
-    generator: str = MISSING,
+    generator: str = None,
     base: os.PathLike = None,
 ):
     """

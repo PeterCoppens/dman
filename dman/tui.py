@@ -111,7 +111,7 @@ class StackGenerator:
 
         state = 0 if len(self._state) == 0 else self._state.pop(0)
         layer = StackLayer(it, self, state, keep, description, log)
-        layer.update(total=total)
+        layer._update(total=total)
         self.registered[layer] = self.add_task(layer.description, total=total)
         self.index[layer] = 0
         return layer
@@ -184,14 +184,17 @@ class StackLayer:
                 yield x
             self.state += 1
             self.update(state=min(self.log.get('total', 0), self.state+1))
-            self.parent.update(self, completed=self.state, description=self.description)
         if not self.keep:
             self.parent.remove_task(self)
     
-    def update(self, **kwargs):
+    def _update(self, **kwargs):
         for k, v in kwargs.items():
             if k in self.log:
                 self.log[k] = v
+
+    def update(self, **kwargs):
+        self._update(**kwargs)
+        self.parent.update(self, completed=self.state, description=self.description)
 
 
 def stack(state: Tuple[int] = None):

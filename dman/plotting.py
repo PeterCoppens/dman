@@ -182,7 +182,7 @@ class PdfFigure:
             for fig in self.fig:
                 pdf.savefig(fig, **self.kwargs)
             pdf.close()
-        elif self.path != path:
+        elif os.path.exists(self.path) and self.path != path:
             shutil.copyfile(self.path, path)
 
         self.path = path

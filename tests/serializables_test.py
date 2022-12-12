@@ -214,7 +214,7 @@ def test_fail_deserialize():
     }
     
     res = deserialize(serialized, expected=str)
-    assert(isinstance(res, Undeserializable))
+    assert(isinstance(res, str))
 
     serialized = {
         SER_TYPE: '__base',

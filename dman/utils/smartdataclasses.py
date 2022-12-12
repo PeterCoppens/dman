@@ -86,7 +86,7 @@ def wrapfield(
 
 
 def is_wrapfield(fld: Field):
-    return fld.metadata.get(DESCRIPTOR_KEY, None) is not None
+    return fld.metadata is not None and fld.metadata.get(DESCRIPTOR_KEY, None) is not None
 
 
 def get_descriptor(fld: Field):

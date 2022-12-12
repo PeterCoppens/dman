@@ -1,3 +1,7 @@
+"""
+Defines Model Types, which are containers for storables.
+"""
+
 from collections.abc import MutableMapping
 from collections.abc import MutableSequence
 import copy
@@ -36,6 +40,16 @@ RECORD_PRE = "_record_field__"
 
 @configclass
 class Config:
+    """Configuration for model types.
+
+        This class has a global instance that can be accessed as follows:
+
+        >>> dman.model.modelclasses.config.auto_clean = True
+        >>> dman.params.model.auto_clean = True  # equivalent
+
+    Args:
+        auto_clean (bool, optional): Automatically clean files associated with items that were removed from the container.
+    """
     auto_clean: bool = True
 config = Config()
 
@@ -44,15 +58,29 @@ def _record_key(key: str):
     return f"{RECORD_FIELDS}{key}"
 
 
-def get_record(self, key: str, default=MISSING):
+def get_record(obj, key: str, default=MISSING):
+    """Get the record for a field in a modelclass.
+
+    Args:
+        obj: The modelclass
+        key (str): Key of the field
+        default (optional): Default value. Defaults to MISSING.
+    """
     key = _record_key(key)
     if default is MISSING:
-        return getattr(self, key)
+        return getattr(obj, key)
     else:
-        return getattr(self, key, default)
+        return getattr(obj, key, default)
 
 
-def set_record(self, key: str, value):
+def set_record(self, key: str, value: Record):
+    """Set the record for a field in a modelclass.
+
+    Args:
+        obj: The modelclass
+        key (str): Key of the field
+        value (record): The value to set.
+    """
     setattr(self, _record_key(key), value)
 
 
@@ -79,7 +107,7 @@ class RecordWrap:
         return rec
 
     def __set__(self, obj, value):
-        if self.pre is not None:
+        if not isinstance(value, Record) and self.pre is not None:
             value = self.pre(value)
 
         if is_storable(value):
@@ -127,6 +155,7 @@ class SerializeWrap:
 
 
 def record_fields(obj) -> dict:
+    """Get all the records associated with storable fields in a modelclass."""
     res = getattr(obj, RECORD_FIELDS, None)
     if res is None:
         res = dict()
@@ -135,6 +164,7 @@ def record_fields(obj) -> dict:
 
 
 def unused_fields(obj) -> list:
+    """Get all the records that are no longer used since they were overwritten."""
     res = getattr(obj, UNUSED_FIELDS, None)
     if res is None:
         res = []
@@ -153,23 +183,20 @@ def serializefield(
     metadata=None,
     pre: Callable[[Any], Any] = None,
 ) -> Field:
-    """
-    Return an object to identify serializable modelclass fields.
+    """Return an object to identify serializable modelclass fields.
         All arguments of the ``field`` method from ``dataclasses`` are provided.
         Moreover, ``record`` specific options are provided
 
-    :param default: is the default value of the field.
-    :param default_factory: is a 0-argument function called to initialize.
-    :param bool init:       Include in the class's __init__().
-    :param bool repr:       Include in the object's repr().
-    :param bool hash:       Include in the object's hash().
-    :param bool compare:    Include in comparison functions.
-    :param metadata:        Additional information.
-
-    :param Callable pre:    Call method on field before setting.
-
-    :raises ValueError: if both default and default_factory are specified.
-    """
+    Args:
+        default (optional): is the default value of the field.
+        default_factory (optional): is a 0-argument function called to initialize.
+        init (bool, optional): Include in the class's __init__(). Defaults to True.
+        repr (bool, optional): Include in the object's repr(). Defaults to True.
+        hash (bool, optional): Include in the object's hash(). Defaults to False.
+        compare (bool, optional): Include in comparison functions. Defaults to True.
+        metadata (_type_, optional): Additional information. Defaults to None.
+        pre (Callable[[Any], Any], optional): Call method on field before setting. Defaults to None.
+    """   
     _metadata = {"__ser_field": True}
     if metadata is not None:
         _metadata["__base"] = metadata
@@ -198,7 +225,8 @@ def serializefield(
 
 
 def is_serializable_field(fld: Field):
-    return fld.metadata.get("__ser_field", False)
+    """Check if a field is explicitly registered as a serializable field."""
+    return fld.metadata is not None and fld.metadata.get("__ser_field", False)
 
 
 def recordfield(
@@ -217,30 +245,26 @@ def recordfield(
     preload: str = False,
     pre: Callable[[Any], Any] = None,
 ) -> Field:
-    """
-    Return an object to identify storable modelclass fields.
+    """Return an object to identify storable modelclass fields.
         All arguments of the ``field`` method from ``dataclasses`` are provided.
         Moreover, ``record`` specific options are provided
 
-    :param default: is the default value of the field.
-    :param default_factory: is a 0-argument function called to initialize.
-    :param bool init:       Include in the class's __init__().
-    :param bool repr:       Include in the object's repr().
-    :param bool hash:       Include in the object's hash().
-    :param bool compare:    Include in comparison functions.
-    :param metadata:        Additional information.
+    Args:
+        default (optional): The default value of the field.. Defaults to MISSING.
+        default_factory (optional): A 0-argument function called to initialize. Defaults to MISSING.
+        init (bool, optional): Include in the class's __init__(). Defaults to True.
+        repr (bool, optional): Include in the object's repr(). Defaults to False.
+        hash (bool, optional): Include in the object's hash(). Defaults to False.
+        compare (bool, optional): Include in comparison functions. Defaults to False.
+        metadata (_type_, optional): Additional information. Defaults to None.
 
-    :param str stem:        The stem of the file.
-    :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
-    :param str name:        The full name of the file.
-    :param str subdir:      The subdirectory in which to store te file.
-    :param bool preload:    When ``True`` the file will be loaded during deserialization.
-    :param Callable pre:    Call method on field before setting.
-
-    :raises ValueError: if both default and default_factory are specified.
-    :raises ValueError:     if a name and a stem and/or suffix are specified.
+        stem (str, optional): The stem of the file. Defaults to AUTO.
+        suffix (str, optional): The suffix or extension of the file (e.g. ``'.json'``). Defaults to AUTO.
+        name (str, optional): The full name of the file. Defaults to AUTO.
+        subdir (os.PathLike, optional): The subdirectory in which to store te file. Defaults to AUTO.
+        preload (str, optional): When ``True`` the file will be loaded during deserialization. Defaults to False.
+        pre (Callable[[Any], Any], optional): Call method on field before setting. Defaults to None.
     """
-
     wrap = RecordWrap(
         target=Target(stem, suffix, subdir, name=name), preload=preload, pre=pre
     )
@@ -355,6 +379,7 @@ def modelclass(
 
 
 def is_modelclass(cls):
+    """Check if a class is a modelclass."""
     return getattr(cls, MODELCLASS, False)
 
 
@@ -566,6 +591,7 @@ def _deserialize__modelclass_content_only(cls, serialized: dict, context: BaseCo
 
 
 def is_model(cls):
+    """Check if the provided class is a model type."""
     return (
         isinstance(cls, (_blist, _bdict, _bruns))
         or is_modelclass(cls)
@@ -574,6 +600,7 @@ def is_model(cls):
 
 
 class _blist(MutableSequence):
+    """Base Type for Model Lists."""
     def __init__(
         self,
         iterable: Iterable = None,
@@ -683,18 +710,16 @@ class _blist(MutableSequence):
         subdir: os.PathLike = "",
         preload: str = False,
     ):
-        """
-        Record a storable into this list.
+        """Record a storable into this list.
 
-        :param value:           The value to store.
-        :param int:             The index at which to store it (if not specified, the value is appended).
-        :param str stem:        The stem of a file.
-        :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
-        :param str name:        The full name of the file.
-        :param str subdir:      The subdirectory in which to store te file.
-        :param bool preload:    When ``True`` the file will be loaded during deserialization.
-
-        :raises ValueError:     if a name and a stem and/or suffix are specified.
+        Args:
+            value: The value to store.
+            idx (int, optional): The index at which to store it (if not specified, the value is appended). Defaults to None.
+            stem (str, optional): The stem of a file. Defaults to AUTO.
+            suffix (str, optional): The suffix or extension of the file (e.g. ``'.json'``). Defaults to AUTO.
+            name (str, optional): The full name of the file. Defaults to AUTO.
+            subdir (os.PathLike, optional): The subdirectory in which to store te file. Defaults to "".
+            preload (str, optional): When ``True`` the file will be loaded during deserialization. Defaults to False.
         """
         if idx is None:
             self.append(value)
@@ -764,16 +789,19 @@ class _blist(MutableSequence):
 
 @serializable(name="_ser__mlist")
 class mlist(_blist):
+    """Serializable Model List."""
     pass
 
 
 @storable(name="_sto__mlist")
 @serializable(name="_ser__smlist")
 class smlist(mlist):
+    """Storable Model List."""
     pass
 
 
 class _bdict(MutableMapping):
+    """Base type for Model Dictionaries"""
     def __init__(
         self,
         *,
@@ -959,18 +987,17 @@ class _bdict(MutableMapping):
         subdir: os.PathLike = "",
         preload: str = False,
     ):
-        """
-        Record a storable into this dict.
+        """Record a storable into this dict.
 
-        :param key: The key at which to store the value.
-        :param value: The value to store.
-        :param str stem:        The stem of a file.
-        :param str suffix:      The suffix or extension of the file (e.g. ``'.json'``).
-        :param str name:        The full name of the file.
-        :param str subdir:      The subdirectory in which to store te file.
-        :param bool preload:    When ``True`` the file will be loaded during deserialization.
-
-        :raises ValueError:     if a name and a stem and/or suffix are specified.
+        Args:
+            key: The key at which to store the value.
+            value: The value to store.
+            idx (int, optional): The index at which to store it (if not specified, the value is appended). Defaults to None.
+            stem (str, optional): The stem of a file. Defaults to AUTO.
+            suffix (str, optional): The suffix or extension of the file (e.g. ``'.json'``). Defaults to AUTO.
+            name (str, optional): The full name of the file. Defaults to AUTO.
+            subdir (os.PathLike, optional): The subdirectory in which to store te file. Defaults to "".
+            preload (str, optional): When ``True`` the file will be loaded during deserialization. Defaults to False.
         """
         self.__setitem__(key, value)
         if is_storable(value):
@@ -999,16 +1026,19 @@ class _bdict(MutableMapping):
 
 @serializable(name="_ser__mdict")
 class mdict(_bdict):
+    """Serializable Model Dictionary."""
     pass
 
 
 @storable(name="_sto__smdict")
 @serializable(name="_ser__smdict")
 class smdict(_bdict):
+    """Storable Model Dictionary."""
     pass
 
 
 class _bruns(_blist):
+    """Base type for Runs."""
     def __init__(
         self,
         iterable: Iterable = None,
@@ -1118,16 +1148,19 @@ class _bruns(_blist):
 
 @serializable(name="_ser__mruns")
 class mruns(_bruns):
+    """Serializable Model Runs."""
     pass
 
 
 @storable(name="_sto__smruns")
 @serializable(name="_ser__smruns")
 class smruns(_bruns):
+    """Storable Model Runs."""
     pass
 
 
 def mlist_factory(subdir: os.PathLike = "", preload: bool = False):
+    """Factory for Model List. Useful in combination with modelclass fields."""
     def factory():
         return mlist(subdir=subdir, preload=preload)
 
@@ -1135,6 +1168,7 @@ def mlist_factory(subdir: os.PathLike = "", preload: bool = False):
 
 
 def smlist_factory(subdir: os.PathLike = "", preload: bool = False):
+    """Factory for Storable Model List. Useful in combination with modelclass fields."""
     def factory():
         return smlist(subdir=subdir, preload=preload)
 
@@ -1147,6 +1181,7 @@ def mdict_factory(
     store_by_key: bool = False,
     store_subdir: bool = False,
 ):
+    """Factory for Model Dict. Useful in combination with modelclass fields."""
     def factory():
         return mdict(
             subdir=subdir,
@@ -1164,6 +1199,7 @@ def smdict_factory(
     store_by_key: bool = False,
     store_subdir: bool = False,
 ):
+    """Factory for Storable Model Dict. Useful in combination with modelclass fields."""
     def factory():
         return smdict(
             subdir=subdir,
@@ -1181,6 +1217,7 @@ def mruns_factory(
     preload: bool = False,
     store_subdir: bool = True,
 ):
+    """Factory for Model Runs. Useful in combination with modelclass fields."""
     def factory():
         return mruns(
             stem=stem, subdir=subdir, preload=preload, store_subdir=store_subdir
@@ -1195,6 +1232,7 @@ def smruns_factory(
     preload: bool = False,
     store_subdir: bool = True,
 ):
+    """Factory for Storable Model Runs. Useful in combination with modelclass fields."""
     def factory():
         return smruns(
             stem=stem, subdir=subdir, preload=preload, store_subdir=store_subdir

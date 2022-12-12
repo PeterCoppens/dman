@@ -223,3 +223,93 @@ class Fragmenter:
 
 dman.save('fragmenter', Fragmenter('stored', 'also stored', 'stored too', 'serialized'), base=base)
 dman.tui.walk_directory(dman.mount('fragmenter', base=base), show_content=True)
+
+
+# %%
+# Model List
+# --------------------------
+#
+# After modelclasses we have some model type equivalents of basic Python types. 
+# The first of which is the model list or :class:`mlist`. These are lists that 
+# can contain storables using records as is the case with modelclasses.
+# They are used automatically by ``dman``. 
+
+a = np.ones(3).view(dman.barray)
+b = np.zeros(3).view(dman.barray)
+c = np.arange(3).view(dman.barray)
+
+lst = [a, b]
+dman.save('lst', lst, base=base)
+dman.tui.walk_directory(dman.mount('lst', base=base), show_content=True)
+
+# %%
+# If we load the list from disk we can see that its type has changed.
+lst: dman.mlist = dman.load('lst', base=base)
+print(type(lst))
+
+# %%
+# The internal records can be accessed as follows:
+for v in lst.store:
+    print(v)
+
+# %%
+# You can directly configure a record using the ``record`` method.
+lst.record(c, stem='c')
+dman.save('lst', lst, base=base)
+dman.tui.walk_directory(dman.mount('lst', base=base))
+
+# %%
+# If you want a storable version of an :class:`mlist` you can use :class:`smlist`.
+# Beyond being storable it acts identical to :class:`mlist` in every way.
+
+# %%
+# Often you want to specify file names for the internal records incrementally.
+# Using the ``record`` method each time is not convenient however. 
+# Hence :class:`mruns` (and :class:`smruns`) are provided, which do so automatically.
+
+runs = dman.mruns([a, b, c], stem='run', store_subdir=False)
+dman.save('runs', runs, base=base)
+dman.tui.walk_directory(dman.mount('runs', base=base))
+
+# %%
+# Here ``store_subdir=False`` specifies that storables should be stored in 
+# the root directory of the ``mruns`` object. Usually if your storables create 
+# more files it is better to set ``store_subdir=True`` instead. Then each
+# storable is stored in its own directory.
+
+
+# %%
+# Model Dictionary
+# ------------------------
+#
+# Similarly to model lists, ``dman`` also provides the model dictionary :class:`mdict` (:class:`smdict`). 
+# On a basic level, file names for storables are generated automatically.
+
+dct = {'a': a, 'b': b}
+dman.save('dct', dct, base=base)
+dman.tui.walk_directory(dman.mount('dct', base=base), show_content=True)
+
+# %%
+# Standard dictionaries are converted to model dictionaries automatically
+# whenever they contain storables.
+dct: dman.mdict = dman.load('dct', base=base)
+print(type(dct))
+
+# %%
+# Similarly to model lists you can access the internal records as follows
+for k, v in dct.store.items():
+    print(k, v)
+
+# %%
+# You can also specify records directly
+dct.record('a', c, stem='c')
+dman.save('dct', dct, base=base)
+dman.tui.walk_directory(dman.mount('dct', base=base))
+
+# %%
+# Model dictionaries come with some additional settings that can aid in 
+# automatically generating suitable stems.
+
+dct = dman.mdict.from_dict({'a': a, 'b': b, 'c': c}, store_by_key=True, store_subdir=True)
+dman.save('dct2', dct, base=base)
+dman.tui.walk_directory(dman.mount('dct2', base=base))

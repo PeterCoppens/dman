@@ -478,7 +478,7 @@ def mount(
     *,
     subdir: os.PathLike = "",
     cluster: bool = True,
-    generator: str = AUTO,
+    generator: str = None,
     base: os.PathLike = None,
     gitignore: bool = True,
 ):
@@ -512,8 +512,6 @@ def mount(
     """
     base = get_root_path() if base is None else base
     if generator is None:
-        generator = ""
-    if generator is AUTO:
         generator = os.path.join("cache", script_label(os.path.abspath(base)))
     if cluster:
         subdir = os.path.join(subdir, key)

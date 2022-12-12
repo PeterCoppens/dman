@@ -377,3 +377,39 @@ class SBase(Base):
         res = cls(other.data)
         res.computation = other.computation
         return res
+
+# %%
+#
+# Serializing Instances
+# --------------------------------
+#
+# In some settings it is useful to serialize instances directly. One common
+# example is methods.
+from math import sqrt
+@dman.register_instance(name='ell1')
+def ell1(x, y):
+    return abs(x) + abs(y)
+@dman.register_instance(name='ell2')
+def ell2(x, y):
+    return sqrt(x**2 + y**2)
+
+# %%
+# When serializing the result looks as follows:
+ser = dman.serialize([ell1, ell2])
+dman.tui.print_serialized(ser)
+
+# %%
+# Deserialization then works as expected.
+dser = dman.deserialize(ser)
+print(dser)
+
+# %%
+# For specific instances we can also call `register_instance` inline. 
+
+class Auto: ...
+AUTO = Auto()
+dman.register_instance(AUTO, name='auto')
+dman.tui.print_serialized(dman.serialize(AUTO))
+
+
+
