@@ -1,0 +1,864 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Model Types &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Mounting and Targets" href="example4_path.html" />
+    <link rel="prev" title="Using Records" href="example2_records.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Fundamentals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="example0_serializables.html">Defining Serializables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example1_storables.html">Defining Storables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example2_records.html">Using Records</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Model Types</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#modelclass">Modelclass</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#model-list">Model List</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#model-dictionary">Model Dictionary</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="example4_path.html">Mounting and Targets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example5_logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example6_errors.html">Error handling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Fundamentals</a> &raquo;</li>
+        
+      <li>Model Types</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/gallery/fundamentals/example3_models.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p>Click <a class="reference internal" href="#sphx-glr-download-gallery-fundamentals-example3-models-py"><span class="std std-ref">here</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="model-types">
+<span id="sphx-glr-gallery-fundamentals-example3-models-py"></span><h1>Model Types<a class="headerlink" href="#model-types" title="Permalink to this heading">¶</a></h1>
+<p>The objects you will use most frequently in <code class="docutils literal notranslate"><span class="pre">dman</span></code> are models.</p>
+<section id="modelclass">
+<h2>Modelclass<a class="headerlink" href="#modelclass" title="Permalink to this heading">¶</a></h2>
+<p>We start with the most flexible model type, the <code class="docutils literal notranslate"><span class="pre">modelclass</span></code>.
+Like all models it extends a classical Python class to handle storables.
+Internally it uses <code class="docutils literal notranslate"><span class="pre">record</span></code> instances to do so. Hence reading up
+on those in <a class="reference internal" href="example2_records.html#sphx-glr-gallery-fundamentals-example2-records-py"><span class="std std-ref">Using Records</span></a>
+could be helpful. Defining a <code class="docutils literal notranslate"><span class="pre">modelclass</span></code> is similar to defining a
+<code class="docutils literal notranslate"><span class="pre">dataclass</span></code>. We will be creating one to store numpy arrays.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dman</span>
+<span class="kn">from</span> <span class="nn">dman.numeric</span> <span class="kn">import</span> <span class="n">sarray</span><span class="p">,</span> <span class="n">barray</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="n">dman</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">default_config</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">dman</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span>
+<span class="k">class</span> <span class="nc">Container</span><span class="p">:</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">points</span><span class="p">:</span> <span class="n">sarray</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">barray</span>
+</pre></div>
+</div>
+<p>We will be working in a temporary directory</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">TemporaryDirectory</span>
+
+<span class="n">base</span> <span class="o">=</span> <span class="n">TemporaryDirectory</span><span class="p">()</span><span class="o">.</span><span class="n">name</span>
+</pre></div>
+</div>
+<p>We can serialize the container like any other serializable type.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">container</span> <span class="o">=</span> <span class="n">Container</span><span class="p">(</span><span class="s2">&quot;experiment&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;container&quot;</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;container&quot;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/container
+┣━━ 📄 7cbb0c83-dc1a-4a63-b2e1-17107209fe1e.npy (160 bytes)
+┗━━ 📄 container.json (444 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;Container&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;label&quot;: &quot;experiment&quot;,
+          &quot;points&quot;: {
+            &quot;_ser__type&quot;: &quot;_num__sarray&quot;,
+            &quot;_ser__content&quot;: &quot;[0, 1, 2, 3, 4]&quot;
+          },
+          &quot;values&quot;: {
+            &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+            &quot;_ser__content&quot;: {
+              &quot;target&quot;: &quot;7cbb0c83-dc1a-4a63-b2e1-17107209fe1e.npy&quot;,
+              &quot;sto_type&quot;: &quot;_num__barray&quot;
+            }
+          }
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>Note that the contents of the container are serialized as if it were a dataclass.
+However the <code class="docutils literal notranslate"><span class="pre">barray</span></code> has been replaced by a record, pointing to a file.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">container</span><span class="p">:</span> <span class="n">Container</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;container&quot;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">record_fields</span><span class="p">(</span><span class="n">container</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+│   &#39;values&#39;: Record(UL[_num__barray], target=7cbb0c83-dc1a-4a63-b2e1-17107209fe1e.npy)
+}
+</pre></div>
+</div>
+<p>This record is not preloaded, so the value of the barray will only be loaded
+when the field is accessed.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">container</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">record_fields</span><span class="p">(</span><span class="n">container</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[0.66948844 0.55365967 0.03692028 0.99875648]
+{
+│   &#39;values&#39;: Record(_num__barray, target=7cbb0c83-dc1a-4a63-b2e1-17107209fe1e.npy)
+}
+</pre></div>
+</div>
+<p>So we know that the modelclass has an internal notion of records.
+We can use this to specify the target of the <code class="docutils literal notranslate"><span class="pre">barray</span></code>.
+The most configurable option is to just set the record manually</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">container</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">),</span> <span class="n">stem</span><span class="o">=</span><span class="s2">&quot;barray&quot;</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;container&quot;</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;container&quot;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/container
+┣━━ 📄 barray.npy (168 bytes)
+┗━━ 📄 container.json (414 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;Container&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;label&quot;: &quot;experiment&quot;,
+          &quot;points&quot;: {
+            &quot;_ser__type&quot;: &quot;_num__sarray&quot;,
+            &quot;_ser__content&quot;: &quot;[0, 1, 2, 3, 4]&quot;
+          },
+          &quot;values&quot;: {
+            &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+            &quot;_ser__content&quot;: {
+              &quot;target&quot;: &quot;barray.npy&quot;,
+              &quot;sto_type&quot;: &quot;_num__barray&quot;
+            }
+          }
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that the old file has been removed automatically, since the record
+tracking it has been removed. This avoids cluttering your
+<code class="docutils literal notranslate"><span class="pre">.dman</span></code> directory with untracked files. We could turn this auto cleaning
+behavior off as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">auto_clean</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</div>
+<p>When specifying the record we had to manually convert a numpy array to
+a <code class="docutils literal notranslate"><span class="pre">barray</span></code>. This happens automatically in the <code class="docutils literal notranslate"><span class="pre">modelclass</span></code>. You can use
+the <code class="docutils literal notranslate"><span class="pre">dman.register_preset</span></code> method to do this for your own types.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">dman.</span></span><span class="sig-name descname"><span class="pre">register_preset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dman/model/modelclasses.html#register_preset"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Register a preset method <code class="docutils literal notranslate"><span class="pre">pre</span></code> for a type <code class="docutils literal notranslate"><span class="pre">tp</span></code>.</p>
+<blockquote>
+<div><p>When a field with that type is defined in a modelclass, <code class="docutils literal notranslate"><span class="pre">pre</span></code>
+is called before setting the field.</p>
+</div></blockquote>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">register_preset</span><span class="p">(</span><span class="n">barray</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">arg</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">arg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">arg</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>It will be useful to access the record configuration in other ways.
+After all, for most instances of the modelclass we likely want the same
+file names. Here the <code class="docutils literal notranslate"><span class="pre">recordfield</span></code> comes in.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span>
+<span class="k">class</span> <span class="nc">Container</span><span class="p">:</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">points</span><span class="p">:</span> <span class="n">sarray</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">barray</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">recordfield</span><span class="p">(</span><span class="n">stem</span><span class="o">=</span><span class="s2">&quot;barray&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We can see that the stem has been adjusted.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">container</span> <span class="o">=</span> <span class="n">Container</span><span class="p">(</span><span class="s2">&quot;experiment&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;container&quot;</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;container&quot;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/container
+┣━━ 📄 barray.npy (160 bytes)
+┗━━ 📄 container.json (414 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;Container&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;label&quot;: &quot;experiment&quot;,
+          &quot;points&quot;: {
+            &quot;_ser__type&quot;: &quot;_num__sarray&quot;,
+            &quot;_ser__content&quot;: &quot;[0, 1, 2, 3, 4]&quot;
+          },
+          &quot;values&quot;: {
+            &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+            &quot;_ser__content&quot;: {
+              &quot;target&quot;: &quot;barray.npy&quot;,
+              &quot;sto_type&quot;: &quot;_num__barray&quot;
+            }
+          }
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>Specifying stems like this comes at a risk however. If we save two instances
+of <code class="docutils literal notranslate"><span class="pre">Container</span></code> to the same folder, the <code class="docutils literal notranslate"><span class="pre">barray.npy</span></code> file will be reused.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">c1</span> <span class="o">=</span> <span class="n">Container</span><span class="p">(</span><span class="s2">&quot;experiment&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">c2</span> <span class="o">=</span> <span class="n">Container</span><span class="p">(</span><span class="s2">&quot;experiment&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;list&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">],</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[01/04/23 10:12:23] WARNING  [@list.Container.Record | fs]:          path.py:399
+                             Overwritten previously stored object at
+                             target &quot;barray.npy&quot;.
+</pre></div>
+</div>
+<p>By default <code class="docutils literal notranslate"><span class="pre">dman</span></code> gives a warning and then overrides the file.
+This implies that you should change your file hierarchy.
+Later we will show how to do so correctly. You can also configure
+<code class="docutils literal notranslate"><span class="pre">dman</span></code> to resolve this issue in other ways.</p>
+<p>One option is to automatically add an index to the file whenever this happens.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">on_retouch</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
+<span class="n">c1</span> <span class="o">=</span> <span class="n">Container</span><span class="p">(</span><span class="s2">&quot;experiment&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">c2</span> <span class="o">=</span> <span class="n">Container</span><span class="p">(</span><span class="s2">&quot;experiment&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">_</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;list&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">],</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;list&quot;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/list
+┣━━ 📄 barray.npy (160 bytes)
+┣━━ 📄 barray0.npy (160 bytes)
+┗━━ 📄 list.json (971 bytes)
+</pre></div>
+</div>
+<dl class="simple">
+<dt>Other options are</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'quit'</span></code>: The serialization process is cancelled.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'prompt'</span></code>: Prompt the user for a file name.</p></li>
+</ul>
+</dd>
+</dl>
+<p>The <code class="docutils literal notranslate"><span class="pre">recordfield</span></code> has all the options of <code class="docutils literal notranslate"><span class="pre">field</span></code> and <code class="docutils literal notranslate"><span class="pre">record</span></code> combined.
+Feel free to experiment with them. We can also configure stems globally.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">store_by_field</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Container</span><span class="p">:</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">points</span><span class="p">:</span> <span class="n">sarray</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">barray</span>
+
+
+<span class="n">container</span> <span class="o">=</span> <span class="n">Container</span><span class="p">(</span><span class="s2">&quot;experiment&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;fields&quot;</span><span class="p">,</span> <span class="n">container</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;fields&quot;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/fields
+┣━━ 📄 fields.json (414 bytes)
+┗━━ 📄 values.npy (160 bytes)
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">modelclass</span></code> decorator has all the options that <code class="docutils literal notranslate"><span class="pre">dataclass</span></code>
+has and some additional ones.</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">dman.</span></span><span class="sig-name descname"><span class="pre">modelclass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unsafe_hash</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frozen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">storable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compact</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_by_field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">_T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">_T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/dman/model/modelclasses.html#modelclass"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><p>Convert a class to a modelclass.</p>
+<blockquote>
+<div><p>Returns the same class as was passed in, with dunder methods added based
+on the fields defined in the class. The class is automatically made
+<code class="docutils literal notranslate"><span class="pre">serializable</span></code> by adding <code class="docutils literal notranslate"><span class="pre">__serialize__</span></code> and <code class="docutils literal notranslate"><span class="pre">__deserialize__</span></code>.</p>
+<p>If an attribute <code class="docutils literal notranslate"><span class="pre">__no_serialize__</span></code> is added, then the
+field names listed as string within will not be included
+in the serialization.</p>
+<p>The arguments of the <code class="docutils literal notranslate"><span class="pre">dataclass</span></code> decorator are provided and some
+additional arguments are also available.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cls</strong> – Class to convert.</p></li>
+<li><p><strong>name</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the serializable (and storable if required). Defaults to class name.</p></li>
+<li><p><strong>init</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add an <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method. Defaults to True.</p></li>
+<li><p><strong>repr</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add a <code class="docutils literal notranslate"><span class="pre">__repr__</span></code> method. Defaults to True.</p></li>
+<li><p><strong>eq</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add a <code class="docutils literal notranslate"><span class="pre">__eq__</span></code> method. Defaults to True.</p></li>
+<li><p><strong>order</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add rich comparison methods. Defaults to False.</p></li>
+<li><p><strong>unsafe_hash</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add a <code class="docutils literal notranslate"><span class="pre">__hash__</span></code> method. Defaults to False.</p></li>
+<li><p><strong>frozen</strong> (<em>bool</em><em>, </em><em>optional</em>) – Fields may not be assigned after instance creation. Defaults to False.</p></li>
+<li><p><strong>storable</strong> (<em>bool</em><em>, </em><em>optional</em>) – Make the class storable with a <code class="docutils literal notranslate"><span class="pre">__write__</span></code> and <code class="docutils literal notranslate"><span class="pre">__read__</span></code>. Defaults to False.</p></li>
+<li><p><strong>compact</strong> (<em>bool</em><em>, </em><em>optional</em>) – Do not include serializable types during serialization, making the result more compact. Defaults to False.</p></li>
+<li><p><strong>store_by_field</strong> (<em>bool</em><em>, </em><em>optional</em>) – The stem of files is determined by the field name. Defaults to False.</p></li>
+<li><p><strong>cluster</strong> (<em>bool</em><em>, </em><em>optional</em>) – Each file is stored in a subfolder determined by the field name. Defaults to False.</p></li>
+<li><p><strong>subdir</strong> (<em>str</em><em>, </em><em>optional</em>) – Store the files in a common subfolder. Defaults to “”.</p></li>
+<li><p><strong>template</strong> (<em>Any</em><em>, </em><em>optional</em>) – Template for serialization. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<p>We provide examples of some of the more advanced features at work below</p>
+<p><strong>1. subdirectories</strong>:
+We showcase how subdirectories are determined in a <code class="docutils literal notranslate"><span class="pre">modelclass</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">cluster</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">subdir</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">store_by_field</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Container</span><span class="p">:</span>
+    <span class="n">root</span><span class="p">:</span> <span class="n">barray</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">recordfield</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+    <span class="n">inner</span><span class="p">:</span> <span class="n">barray</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">recordfield</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span> <span class="n">subdir</span><span class="o">=</span><span class="s1">&#39;override&#39;</span><span class="p">)</span>
+
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;subdirectories&#39;</span><span class="p">,</span> <span class="n">Container</span><span class="p">(),</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;subdirectories&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/subdirectories
+┣━━ 📂 data
+┃   ┗━━ 📂 root
+┃       ┗━━ 📄 root.npy (152 bytes)
+┣━━ 📂 override
+┃   ┗━━ 📄 inner.npy (152 bytes)
+┗━━ 📄 subdirectories.json (477 bytes)
+</pre></div>
+</div>
+<p><strong>2. compact</strong>:
+We showcase how compact works. Note how no types are mentioned.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">compact</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Person</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;Cave Johnson&#39;</span>
+    <span class="n">age</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">43</span>
+    <span class="n">location</span><span class="p">:</span> <span class="n">sarray</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">100.0</span><span class="p">]))</span>
+
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">print_serializable</span><span class="p">(</span><span class="n">Person</span><span class="p">())</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;Person&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;name&quot;: &quot;Cave Johnson&quot;,
+    &quot;age&quot;: 43,
+    &quot;location&quot;: &quot;[3.0, 5.0, -100.0]&quot;
+  }
+}
+</pre></div>
+</div>
+<p><strong>3. skipping serialization</strong>:
+One can designate certain fields to not be serialized.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span>
+<span class="k">class</span> <span class="nc">Adder</span><span class="p">:</span>
+    <span class="n">__no_serialize__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;ans&#39;</span><span class="p">]</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">y</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">ans</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ans</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span>
+
+<span class="n">add</span> <span class="o">=</span> <span class="n">Adder</span><span class="p">(</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">)</span>
+<span class="n">add</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">print_serializable</span><span class="p">(</span><span class="n">add</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;Adder&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;x&quot;: 3.0,
+    &quot;y&quot;: 5.0
+  }
+}
+</pre></div>
+</div>
+<p><strong>4. deciding between storing and serializing</strong>:
+Some objects can be both serialized and stored. This is how you can choose
+which option to use. We also showcase some other advanced features, like storable
+modelclasses and presets.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># This class is a storable and a serializable</span>
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">storable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Fragment</span><span class="p">:</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="c1"># Presets can be used to automatically convert strings to fragments.</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">register_preset</span><span class="p">(</span>
+    <span class="n">Fragment</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Fragment</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">obj</span>
+<span class="p">)</span>
+
+<span class="c1"># Specify fragment fields in a variety of ways.</span>
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">compact</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">store_by_field</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Fragmenter</span><span class="p">:</span>
+    <span class="n">frag0</span><span class="p">:</span> <span class="n">Fragment</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">recordfield</span><span class="p">()</span>
+    <span class="n">frag1</span><span class="p">:</span> <span class="n">Fragment</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">field</span><span class="p">()</span>
+    <span class="n">frag3</span><span class="p">:</span> <span class="n">Fragment</span>
+    <span class="n">frag4</span><span class="p">:</span> <span class="n">Fragment</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serializefield</span><span class="p">()</span>
+
+
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;fragmenter&#39;</span><span class="p">,</span> <span class="n">Fragmenter</span><span class="p">(</span><span class="s1">&#39;stored&#39;</span><span class="p">,</span> <span class="s1">&#39;also stored&#39;</span><span class="p">,</span> <span class="s1">&#39;stored too&#39;</span><span class="p">,</span> <span class="s1">&#39;serialized&#39;</span><span class="p">),</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;fragmenter&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/fragmenter
+┣━━ 📄 frag0.json (25 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;value&quot;: &quot;stored&quot;
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 frag1.json (30 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;value&quot;: &quot;also stored&quot;
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 frag3.json (29 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;value&quot;: &quot;stored too&quot;
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┗━━ 📄 fragmenter.json (430 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;Fragmenter&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;frag0&quot;: {
+            &quot;target&quot;: &quot;frag0.json&quot;,
+            &quot;sto_type&quot;: &quot;Fragment&quot;
+          },
+          &quot;frag1&quot;: {
+            &quot;target&quot;: &quot;frag1.json&quot;,
+            &quot;sto_type&quot;: &quot;Fragment&quot;
+          },
+          &quot;frag3&quot;: {
+            &quot;target&quot;: &quot;frag3.json&quot;,
+            &quot;sto_type&quot;: &quot;Fragment&quot;
+          },
+          &quot;frag4&quot;: {
+            &quot;value&quot;: &quot;serialized&quot;
+          }
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+</section>
+<section id="model-list">
+<h2>Model List<a class="headerlink" href="#model-list" title="Permalink to this heading">¶</a></h2>
+<p>After modelclasses we have some model type equivalents of basic Python types.
+The first of which is the model list or <code class="xref py py-class docutils literal notranslate"><span class="pre">mlist</span></code>. These are lists that
+can contain storables using records as is the case with modelclasses.
+They are used automatically by <code class="docutils literal notranslate"><span class="pre">dman</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">barray</span><span class="p">)</span>
+<span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">barray</span><span class="p">)</span>
+<span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">barray</span><span class="p">)</span>
+
+<span class="n">lst</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">]</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;lst&#39;</span><span class="p">,</span> <span class="n">lst</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;lst&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/lst
+┣━━ 📄 943f15de-c92d-4ef3-b898-71b84268438a.npy (152 bytes)
+┣━━ 📄 b05c7c45-dada-497c-891a-8cda62b64098.npy (152 bytes)
+┗━━ 📄 lst.json (591 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;_ser__mlist&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;store&quot;: [
+            {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;943f15de-c92d-4ef3-b898-71b84268438a.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            },
+            {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;b05c7c45-dada-497c-891a-8cda62b64098.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            }
+          ]
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>If we load the list from disk we can see that its type has changed.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lst</span><span class="p">:</span> <span class="n">dman</span><span class="o">.</span><span class="n">mlist</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;lst&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">lst</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;class &#39;dman.model.modelclasses.mlist&#39;&gt;
+</pre></div>
+</div>
+<p>The internal records can be accessed as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">lst</span><span class="o">.</span><span class="n">store</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Record(UL[_num__barray], target=943f15de-c92d-4ef3-b898-71b84268438a.npy)
+Record(UL[_num__barray], target=b05c7c45-dada-497c-891a-8cda62b64098.npy)
+</pre></div>
+</div>
+<p>You can directly configure a record using the <code class="docutils literal notranslate"><span class="pre">record</span></code> method.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">lst</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">stem</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;lst&#39;</span><span class="p">,</span> <span class="n">lst</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;lst&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/lst
+┣━━ 📄 943f15de-c92d-4ef3-b898-71b84268438a.npy (152 bytes)
+┣━━ 📄 b05c7c45-dada-497c-891a-8cda62b64098.npy (152 bytes)
+┣━━ 📄 c.npy (152 bytes)
+┗━━ 📄 lst.json (805 bytes)
+</pre></div>
+</div>
+<p>If you want a storable version of an <code class="xref py py-class docutils literal notranslate"><span class="pre">mlist</span></code> you can use <code class="xref py py-class docutils literal notranslate"><span class="pre">smlist</span></code>.
+Beyond being storable it acts identical to <code class="xref py py-class docutils literal notranslate"><span class="pre">mlist</span></code> in every way.</p>
+<p>Often you want to specify file names for the internal records incrementally.
+Using the <code class="docutils literal notranslate"><span class="pre">record</span></code> method each time is not convenient however.
+Hence <code class="xref py py-class docutils literal notranslate"><span class="pre">mruns</span></code> (and <code class="xref py py-class docutils literal notranslate"><span class="pre">smruns</span></code>) are provided, which do so automatically.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">runs</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">mruns</span><span class="p">([</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">],</span> <span class="n">stem</span><span class="o">=</span><span class="s1">&#39;run&#39;</span><span class="p">,</span> <span class="n">store_subdir</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;runs&#39;</span><span class="p">,</span> <span class="n">runs</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;runs&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/runs
+┣━━ 📄 run-0.npy (152 bytes)
+┣━━ 📄 run-1.npy (152 bytes)
+┣━━ 📄 run-2.npy (152 bytes)
+┗━━ 📄 runs.json (825 bytes)
+</pre></div>
+</div>
+<p>Here <code class="docutils literal notranslate"><span class="pre">store_subdir=False</span></code> specifies that storables should be stored in
+the root directory of the <code class="docutils literal notranslate"><span class="pre">mruns</span></code> object. Usually if your storables create
+more files it is better to set <code class="docutils literal notranslate"><span class="pre">store_subdir=True</span></code> instead. Then each
+storable is stored in its own directory.</p>
+</section>
+<section id="model-dictionary">
+<h2>Model Dictionary<a class="headerlink" href="#model-dictionary" title="Permalink to this heading">¶</a></h2>
+<p>Similarly to model lists, <code class="docutils literal notranslate"><span class="pre">dman</span></code> also provides the model dictionary <code class="xref py py-class docutils literal notranslate"><span class="pre">mdict</span></code> (<code class="xref py py-class docutils literal notranslate"><span class="pre">smdict</span></code>).
+On a basic level, file names for storables are generated automatically.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dct</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="n">b</span><span class="p">}</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;dct&#39;</span><span class="p">,</span> <span class="n">dct</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;dct&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/dct
+┣━━ 📄 39606a62-fd78-4e9a-9df2-c90cbc3f6d3c.npy (152 bytes)
+┣━━ 📄 3e2d977a-474f-4b79-9ba9-c456f618b180.npy (152 bytes)
+┗━━ 📄 dct.json (601 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;_ser__mdict&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;store&quot;: {
+            &quot;a&quot;: {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;3e2d977a-474f-4b79-9ba9-c456f618b180.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            },
+            &quot;b&quot;: {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;39606a62-fd78-4e9a-9df2-c90cbc3f6d3c.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            }
+          }
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>Standard dictionaries are converted to model dictionaries automatically
+whenever they contain storables.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dct</span><span class="p">:</span> <span class="n">dman</span><span class="o">.</span><span class="n">mdict</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;dct&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">dct</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;class &#39;dman.model.modelclasses.mdict&#39;&gt;
+</pre></div>
+</div>
+<p>Similarly to model lists you can access the internal records as follows</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">dct</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>a Record(UL[_num__barray], target=3e2d977a-474f-4b79-9ba9-c456f618b180.npy)
+b Record(UL[_num__barray], target=39606a62-fd78-4e9a-9df2-c90cbc3f6d3c.npy)
+</pre></div>
+</div>
+<p>You can also specify records directly</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dct</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">stem</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;dct&#39;</span><span class="p">,</span> <span class="n">dct</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;dct&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/dct
+┣━━ 📄 39606a62-fd78-4e9a-9df2-c90cbc3f6d3c.npy (152 bytes)
+┣━━ 📄 3e2d977a-474f-4b79-9ba9-c456f618b180.npy (152 bytes)
+┣━━ 📄 c.npy (152 bytes)
+┗━━ 📄 dct.json (566 bytes)
+</pre></div>
+</div>
+<p>Model dictionaries come with some additional settings that can aid in
+automatically generating suitable stems.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dct</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">mdict</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="n">b</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">:</span> <span class="n">c</span><span class="p">},</span> <span class="n">store_by_key</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">store_subdir</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;dct2&#39;</span><span class="p">,</span> <span class="n">dct</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;dct2&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmpj2qbgsf6/cache/example3_models/dct2
+┣━━ 📂 a
+┃   ┗━━ 📄 a.npy (152 bytes)
+┣━━ 📂 b
+┃   ┗━━ 📄 b.npy (152 bytes)
+┣━━ 📂 c
+┃   ┗━━ 📄 c.npy (152 bytes)
+┗━━ 📄 dct2.json (816 bytes)
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.120 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-fundamentals-example3-models-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/bd451b5ae36116f3f8be5b7fe182e1aa/example3_models.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">example3_models.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/b67548155af40d35243dd94313abc556/example3_models.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">example3_models.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="example4_path.html" class="btn btn-neutral float-right" title="Mounting and Targets" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="example2_records.html" class="btn btn-neutral float-left" title="Using Records" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,576 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Mounting and Targets &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Logging" href="example5_logging.html" />
+    <link rel="prev" title="Model Types" href="example3_models.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Fundamentals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="example0_serializables.html">Defining Serializables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example1_storables.html">Defining Storables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example2_records.html">Using Records</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example3_models.html">Model Types</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Mounting and Targets</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mount-points">Mount points</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#initialization">Initialization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#file-io">File IO</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#targets">Targets</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dman.target"><code class="docutils literal notranslate"><span class="pre">target()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="example5_logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example6_errors.html">Error handling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Fundamentals</a> &raquo;</li>
+        
+      <li>Mounting and Targets</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/gallery/fundamentals/example4_path.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p>Click <a class="reference internal" href="#sphx-glr-download-gallery-fundamentals-example4-path-py"><span class="std std-ref">here</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="mounting-and-targets">
+<span id="sphx-glr-gallery-fundamentals-example4-path-py"></span><h1>Mounting and Targets<a class="headerlink" href="#mounting-and-targets" title="Permalink to this heading">¶</a></h1>
+<p>To keep track of files internally <code class="docutils literal notranslate"><span class="pre">dman</span></code> has some custom path specifications.</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<p>Internally <code class="docutils literal notranslate"><span class="pre">dman</span></code> specifies paths through mount points and targets.
+A mount point determines the root of the file tree that is constructed during
+serialization, while targets are used to specify the positions of files
+within this tree defined relative to the current directory.</p>
+<p>We will operate in a temporary directory for the purpose of this example.
+To do so we need to make sure it contains a <code class="docutils literal notranslate"><span class="pre">.dman</span></code> subfolder. Usually
+you can create one by executing <code class="docutils literal notranslate"><span class="pre">dman</span> <span class="pre">init</span></code> in your terminal. We
+do so using <code class="xref py py-func docutils literal notranslate"><span class="pre">get_root_path()</span></code> here.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">subprocess</span><span class="o">,</span> <span class="nn">textwrap</span>
+<span class="kn">import</span> <span class="nn">dman</span>
+<span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">TemporaryDirectory</span>
+
+<span class="c1"># Create a temporary directory and change our directory to it.</span>
+<span class="n">tmp</span> <span class="o">=</span> <span class="n">TemporaryDirectory</span><span class="p">()</span>
+<span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+<span class="c1"># Create the ``.dman`` folder.</span>
+<span class="c1"># This is identical to calling ``dman init`` in terminal.</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">get_root_path</span><span class="p">(</span><span class="n">create</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&#39;/tmp/tmp3mgn0i04/.dman&#39;
+</pre></div>
+</div>
+</section>
+<section id="mount-points">
+<h2>Mount points<a class="headerlink" href="#mount-points" title="Permalink to this heading">¶</a></h2>
+<p>We begin with introducing mount points. The signature of the <a class="reference internal" href="#dman.mount" title="dman.mount"><code class="xref py py-func docutils literal notranslate"><span class="pre">dman.mount()</span></code></a>
+method will appear often when using <code class="docutils literal notranslate"><span class="pre">dman</span></code> so we begin with discussing
+it in detail, before showing other functionalities provided by mount points.</p>
+<section id="initialization">
+<h3>Initialization<a class="headerlink" href="#initialization" title="Permalink to this heading">¶</a></h3>
+<p>A mount point is specified from some base directory, which usually
+is a <code class="docutils literal notranslate"><span class="pre">.dman</span></code> folder, located above the current working directory
+in the file tree (similarly to how a <code class="docutils literal notranslate"><span class="pre">.git</span></code> folder is located).
+For the purposes of this example we use the temporary directory created above.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;object&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/tmp/tmp3mgn0i04/.dman/cache/example4_path/object
+</pre></div>
+</div>
+<p>We can break up the path into three parts.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;temporary</span> <span class="pre">dir&gt;/.dman`</span></code> is the base directory, outputted by <code class="xref py py-func docutils literal notranslate"><span class="pre">get_root_path()</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cache/example4_path`</span></code> is referred to as the generator.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">object`</span></code> is the key of the specific file tree being operated on.</p></li>
+</ul>
+<p>These match the arguments of <code class="xref py py-func docutils literal notranslate"><span class="pre">mount()</span></code>.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.mount">
+<span class="sig-prename descclassname"><span class="pre">dman.</span></span><span class="sig-name descname"><span class="pre">mount</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">PathLike</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gitignore</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dman/core/path.html#mount"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.mount" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Get the mount point where a file with the given key is stored by dman.</dt><dd><p>The path of the file is determined as described below.</p>
+<blockquote>
+<div><p>If the files are clustered then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;/&lt;key&gt;.&lt;ext&gt;</span></code>
+If cluster is set to False then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;.&lt;ext&gt;</span></code></p>
+<p>When base is not provided then it is set to .dman if
+it does not exist an exception is raised.</p>
+<p>When generator is not provided it will automatically be set based on
+the location of the script relative to the .dman folder
+(again raising an exception if it is not found). For example
+if the script is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/examples/folder/script.py</span></code>
+and .dman is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/.dman</span></code>.
+Then generator is set to cache/examples:folder:script (i.e.
+the / is replaced by : in the output).</p>
+<p>See <a class="reference internal" href="#sphx-glr-gallery-fundamentals-example4-path-py"><span class="std std-ref">Mounting and Targets</span></a> for
+detailed examples on how to create and use mount points.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em><em>, </em><em>optional</em>) – Key for the file. Default <code class="docutils literal notranslate"><span class="pre">''</span></code>, so the generator folder is returned.</p></li>
+<li><p><strong>subdir</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies optional subdirectory in generator folder. Defaults to “”.</p></li>
+<li><p><strong>cluster</strong> (<em>bool</em><em>, </em><em>optional</em>) – A subfolder <code class="docutils literal notranslate"><span class="pre">key</span></code> is automatically created when set to True. Defaults to True.</p></li>
+<li><p><strong>generator</strong> (<em>str</em><em>, </em><em>optional</em>) – Specifies the generator that created the file. Defaults to script label.</p></li>
+<li><p><strong>base</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies the root folder. Defaults to “.dman”.</p></li>
+<li><p><strong>gitignore</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specifies whether files added to this mount point should be ignored.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<p>The most complex argument is the <code class="docutils literal notranslate"><span class="pre">generator</span></code>.
+Usually this is based on the path of the script relative to the root path
+containing <code class="docutils literal notranslate"><span class="pre">.dman</span></code>. We can illustrate this by first creating a script
+local to the temporary directory.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create script that prints the evaluation mount.</span>
+<span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;scripts&#39;</span><span class="p">))</span>
+<span class="n">local</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s1">&#39;scripts&#39;</span><span class="p">,</span> <span class="s1">&#39;script.py&#39;</span><span class="p">)</span>
+<span class="n">content</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">import dman</span>
+<span class="s1">print(dman.mount(&#39;object&#39;))</span>
+<span class="s1">&#39;&#39;&#39;</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">local</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+<span class="c1"># We can then see what the new output of ``mount`` is.</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">check_output</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;python </span><span class="si">{</span><span class="n">local</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/tmp/tmp3mgn0i04/.dman/cache/scripts:script/object
+</pre></div>
+</div>
+<p>The other arguments are relatively straightforward.
+We provide some examples below</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;generator ...&#39;</span><span class="p">,</span> <span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;object&#39;</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="s1">&#39;gen&#39;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;base ........&#39;</span><span class="p">,</span> <span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;object&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s1">&#39;home&#39;</span><span class="p">,</span> <span class="s1">&#39;user&#39;</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;subdir ......&#39;</span><span class="p">,</span> <span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;object&#39;</span><span class="p">,</span> <span class="n">subdir</span><span class="o">=</span><span class="s1">&#39;folder&#39;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;cluster .....&#39;</span><span class="p">,</span> <span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;object&#39;</span><span class="p">,</span> <span class="n">cluster</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>generator ... /tmp/tmp3mgn0i04/.dman/gen/object
+base ........ home/user/cache/example4_path/object
+subdir ...... /tmp/tmp3mgn0i04/.dman/cache/example4_path/folder/object
+cluster ..... /tmp/tmp3mgn0i04/.dman/cache/example4_path/
+</pre></div>
+</div>
+<p>The final example, involving <code class="docutils literal notranslate"><span class="pre">cluster</span></code>, does not include the key
+and is thus equivalent to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;cluster .....&#39;</span><span class="p">,</span> <span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>cluster ..... /tmp/tmp3mgn0i04/.dman/cache/example4_path/
+</pre></div>
+</div>
+<p>The reason for this redundancy is to be consistent with <code class="docutils literal notranslate"><span class="pre">save</span></code>, <code class="docutils literal notranslate"><span class="pre">load</span></code>
+and <code class="docutils literal notranslate"><span class="pre">track</span></code>. There the <code class="docutils literal notranslate"><span class="pre">key</span></code> determines the file name and the default
+<code class="docutils literal notranslate"><span class="pre">cluster=True</span></code> means a dedicated directory is created for the file tree.</p>
+</section>
+<section id="file-io">
+<h3>File IO<a class="headerlink" href="#file-io" title="Permalink to this heading">¶</a></h3>
+<p>Next we show how <code class="docutils literal notranslate"><span class="pre">mount</span></code> can be used to edit and remove files automatically.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">tmp</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="n">mnt</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;object&#39;</span><span class="p">,</span> <span class="n">cluster</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">mnt</span><span class="p">)</span>
+
+<span class="c1"># Write some text to a file.</span>
+<span class="k">with</span> <span class="n">mnt</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;howto.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        This is a book of bad ideas.</span>
+<span class="s2">            At least, most of them are bad ideas. It&#39;s possible some</span>
+<span class="s2">        good ones slipped through the cracks. If so, I apologize.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>/tmp/tmp3mgn0i04/.dman/cache/example4_path/
+</pre></div>
+</div>
+<p>One useful feature of mount points is that they detect when files have
+been written to before. For example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">mnt</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;howto.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        This information was lost.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>By default a warning is provided, but we can also raise an error</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dman.core.path</span> <span class="kn">import</span> <span class="n">UserQuitException</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># set retouch action</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">on_retouch</span> <span class="o">=</span> <span class="s1">&#39;quit&#39;</span>
+
+    <span class="k">with</span> <span class="n">mnt</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;howto.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            This string will never be written.</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">))</span>
+<span class="k">except</span> <span class="n">UserQuitException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Attempted to write to target &quot;howto.txt&quot; twice during serialization.Operation exited by user.
+</pre></div>
+</div>
+<p>Alternatively we can automatically increment the file name.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">on_retouch</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span>
+
+<span class="k">with</span> <span class="n">mnt</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;howto.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">textwrap</span><span class="o">.</span><span class="n">dedent</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        This is a book of bad ideas.</span>
+<span class="s2">            At least, most of them are bad ideas. It&#39;s possible some</span>
+<span class="s2">        good ones slipped through the cracks. If so, I apologize.</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>You can also configure <code class="docutils literal notranslate"><span class="pre">dman</span></code> to prompt the user as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">on_retouch</span> <span class="o">=</span> <span class="s1">&#39;prompt&#39;</span>
+</pre></div>
+</div>
+<p>The default behavior can be recovered using:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">on_retouch</span> <span class="o">=</span> <span class="s1">&#39;ignore&#39;</span>
+</pre></div>
+</div>
+<p>The final state of the</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mnt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">mnt</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmp3mgn0i04/.dman/cache/example4_path/
+┣━━ 📄 .gitignore (42 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     .gitignore
+┃     howto.txt
+┃     howto0.txt
+┃     howto1.txt
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 howto.txt (150 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃
+┃     This is a book of bad ideas.
+┃         At least, most of them are bad ideas. It&#39;s possible some
+┃     good ones slipped through the cracks. If so, I apologize.
+┃
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 howto0.txt (28 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃
+┃     This information was lost.
+┃
+┃    ──────────────────────────────────────────────────────────────────────────
+┗━━ 📄 howto1.txt (150 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+
+      This is a book of bad ideas.
+          At least, most of them are bad ideas. It&#39;s possible some
+      good ones slipped through the cracks. If so, I apologize.
+
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>Note that the edited files are also added to a <code class="docutils literal notranslate"><span class="pre">.gitignore</span></code> file
+automatically. You can add <code class="docutils literal notranslate"><span class="pre">gitignore=False</span></code> to your call of <code class="docutils literal notranslate"><span class="pre">mnt</span></code>
+to avoid this.</p>
+<p>We can also remove files and they are removed from the <code class="docutils literal notranslate"><span class="pre">.gitignore</span></code>
+automatically.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mnt</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;howto.txt&#39;</span><span class="p">)</span>
+<span class="n">mnt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">mnt</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_hidden</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmp3mgn0i04/.dman/cache/example4_path/
+┣━━ 📄 .gitignore (32 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     .gitignore
+┃     howto0.txt
+┃     howto1.txt
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 howto0.txt (28 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃
+┃     This information was lost.
+┃
+┃    ──────────────────────────────────────────────────────────────────────────
+┗━━ 📄 howto1.txt (150 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+
+      This is a book of bad ideas.
+          At least, most of them are bad ideas. It&#39;s possible some
+      good ones slipped through the cracks. If so, I apologize.
+
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+</section>
+</section>
+<section id="targets">
+<h2>Targets<a class="headerlink" href="#targets" title="Permalink to this heading">¶</a></h2>
+<p>For now we have been specifying paths relative to the mount point
+using strings. Internally <code class="docutils literal notranslate"><span class="pre">dman</span></code> used <code class="docutils literal notranslate"><span class="pre">target</span></code> to create these
+paths. It is useful to know about this since many higher-level methods
+use the same signature.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.target">
+<span class="sig-prename descclassname"><span class="pre">dman.</span></span><span class="sig-name descname"><span class="pre">target</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stem:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dman/core/path.html#target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.target" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Get a target path used for relative file definitions.</dt><dd><p><code class="docutils literal notranslate"><span class="pre">&lt;subdir&gt;/&lt;stem&gt;.&lt;suffix&gt;</span></code> or <code class="docutils literal notranslate"><span class="pre">&lt;subdir&gt;/&lt;name&gt;</span></code></p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – Both name and suffix or stem were provided.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>We provide some examples here</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s1">&#39;a.&#39;</span><span class="p">,</span> <span class="n">dman</span><span class="o">.</span><span class="n">target</span><span class="p">(</span><span class="n">stem</span><span class="o">=</span><span class="s1">&#39;file&#39;</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;.obj&#39;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;b.&#39;</span><span class="p">,</span> <span class="n">dman</span><span class="o">.</span><span class="n">target</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;file.obj&#39;</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s1">&#39;c.&#39;</span><span class="p">,</span> <span class="n">dman</span><span class="o">.</span><span class="n">target</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;file.obj&#39;</span><span class="p">,</span> <span class="n">subdir</span><span class="o">=</span><span class="s1">&#39;folder&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>a. file.obj
+b. file.obj
+c. folder/file.obj
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.275 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-fundamentals-example4-path-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/82358dfa9df4b1659720ea0afc2fbd8d/example4_path.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">example4_path.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/74a2606a4a99f3f88d963afb4ec512eb/example4_path.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">example4_path.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="example5_logging.html" class="btn btn-neutral float-right" title="Logging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="example3_models.html" class="btn btn-neutral float-left" title="Model Types" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

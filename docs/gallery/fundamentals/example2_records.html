@@ -1,0 +1,502 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Using Records &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Model Types" href="example3_models.html" />
+    <link rel="prev" title="Defining Storables" href="example1_storables.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Fundamentals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="example0_serializables.html">Defining Serializables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example1_storables.html">Defining Storables</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Using Records</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-usage">Basic usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#contexts">Contexts</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="example3_models.html">Model Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example4_path.html">Mounting and Targets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example5_logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example6_errors.html">Error handling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Fundamentals</a> &raquo;</li>
+        
+      <li>Using Records</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/gallery/fundamentals/example2_records.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p>Click <a class="reference internal" href="#sphx-glr-download-gallery-fundamentals-example2-records-py"><span class="std std-ref">here</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="using-records">
+<span id="sphx-glr-gallery-fundamentals-example2-records-py"></span><h1>Using Records<a class="headerlink" href="#using-records" title="Permalink to this heading">¶</a></h1>
+<p>We show how to use <code class="docutils literal notranslate"><span class="pre">records</span></code> to serialize storables.</p>
+<section id="basic-usage">
+<h2>Basic usage<a class="headerlink" href="#basic-usage" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># We will be using ``barray`` for this example so you should have ``numpy``</span>
+<span class="c1"># installed.</span>
+
+<span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">TemporaryDirectory</span>
+<span class="kn">import</span> <span class="nn">dman</span>
+<span class="kn">from</span> <span class="nn">dman.numeric</span> <span class="kn">import</span> <span class="n">barray</span>
+<span class="kn">from</span> <span class="nn">dman</span> <span class="kn">import</span> <span class="n">tui</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="c1"># turn of logging</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">default_config</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">dman</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>By default a <code class="docutils literal notranslate"><span class="pre">barray</span></code> object is not serializable:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">)</span>
+<span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_json</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">sjson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;__unserializable&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;type&quot;: &quot;barray&quot;,
+    &quot;info&quot;: &quot;Unserializable type: barray.&quot;
+  }
+}
+</pre></div>
+</div>
+<p>Note how <code class="docutils literal notranslate"><span class="pre">dman</span></code> does not throw an error here. This is to make sure that
+as much data is serialized as possible. You can turn on validation
+by setting <code class="docutils literal notranslate"><span class="pre">dman.params.serialize.validate=True</span></code>. Further details are provided
+in <span class="xref std std-ref">sphx_glr_gallery_fundamentals_example5_errors.py</span></p>
+<p>Contexts will also be useful for storing purposes.
+They specify the directory in which files should be stored during serialization.
+To make sure a <code class="docutils literal notranslate"><span class="pre">storable</span></code> can be serialized it should be wrapped in a
+<code class="docutils literal notranslate"><span class="pre">record</span></code>. This interface has a the following features:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>File names and extensions can be specified manually or created automatically.</p></li>
+<li><p>Sub folders can be specified.</p></li>
+<li><p>Reading the object from file can be delayed until the content is accessed.</p></li>
+</ul>
+</div></blockquote>
+<p>The most basic usage is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tdir</span> <span class="o">=</span> <span class="n">TemporaryDirectory</span><span class="p">()</span>
+<span class="n">base</span> <span class="o">=</span> <span class="n">tdir</span><span class="o">.</span><span class="n">name</span>
+<span class="n">ctx</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">from_directory</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+<span class="n">rec</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+<span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_json</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">sjson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;target&quot;: &quot;8aa9fac7-f0b9-4462-a4e5-4cf81acf8966.npy&quot;,
+    &quot;sto_type&quot;: &quot;_num__barray&quot;
+  }
+}
+</pre></div>
+</div>
+<p>You can see that the result of serialization now provides a pointer to
+the file where the array is stored. We can see that the file exists:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmp5k2r9725
+┗━━ 📄 8aa9fac7-f0b9-4462-a4e5-4cf81acf8966.npy (152 bytes)
+</pre></div>
+</div>
+<p>And we can load its content again</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rec</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Record(UL[_num__barray], target=8aa9fac7-f0b9-4462-a4e5-4cf81acf8966.npy)
+</pre></div>
+</div>
+<p>Note how the record specifies that it contains a <code class="docutils literal notranslate"><span class="pre">_num__barray</span></code>
+which is the name for the storable type. However it also specifies <code class="docutils literal notranslate"><span class="pre">UL</span></code>
+implying that the file has not been loaded. We can load it by accessing
+the <code class="docutils literal notranslate"><span class="pre">content</span></code> field:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">array</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">content</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[0 1 2]
+Record(_num__barray, target=8aa9fac7-f0b9-4462-a4e5-4cf81acf8966.npy)
+</pre></div>
+</div>
+<p>Now the record no longer specifies that the <code class="docutils literal notranslate"><span class="pre">content</span></code> is unloaded.
+Also observe that the file name is still the same as the one
+specified in the original record. This means that when serializing
+again the old file will be overwritten instead of creating a new one.
+We can also remove the file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+<span class="n">tdir</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>   <span class="c1"># clean temporary directory</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 /tmp/tmp5k2r9725
+</pre></div>
+</div>
+<p>It is possible to be more precise when specifying a <code class="docutils literal notranslate"><span class="pre">record</span></code>.
+To give an overview of the options available when creating
+a record we provide its documentation:</p>
+<dl class="py function">
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">dman.</span></span><span class="sig-name descname"><span class="pre">record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">content:</span> <span class="pre">~typing.Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stem:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir:</span> <span class="pre">~os.PathLike</span> <span class="pre">=</span> <span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dman/model/record.html#record"><span class="viewcode-link"><span class="pre">[source]</span></span></a></dt>
+<dd><dl class="simple">
+<dt>Wrap a storable object in a serializable record.</dt><dd><p>The target path is specified as:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">./subdir/stem+suffix</span></code> or</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">./subdir/name</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>content</strong> – The storable object.</p></li>
+<li><p><strong>stem</strong> (<em>str</em>) – The stem of a file.</p></li>
+<li><p><strong>suffix</strong> (<em>str</em>) – The suffix or extension of the file (e.g. <code class="docutils literal notranslate"><span class="pre">'.json'</span></code>).</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – The full name of the file.</p></li>
+<li><p><strong>subdir</strong> (<em>str</em>) – The subdirectory in which to store te file.</p></li>
+<li><p><strong>preload</strong> (<em>bool</em>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code> the file will be loaded during deserialization.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – if a name and a stem and/or suffix are specified.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>The way file names are specified is left flexible for internal use,
+but is hence somewhat complex. We list examples below.</p>
+<blockquote>
+<div><table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>options</p></th>
+<th class="head"><p>target</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">stem='test'</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./test</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">stem='test',</span> <span class="pre">suffix='.txt'</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./test.txt</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name='test.txt'</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./test.txt</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">name='test.txt',</span> <span class="pre">subdir='dir'</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./dir/test.txt</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">name='test.txt',</span> <span class="pre">stem='test',</span> <span class="pre">suffix='.txt'</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div></blockquote>
+<p>More details are provided in <a class="reference internal" href="example4_path.html#sphx-glr-gallery-fundamentals-example4-path-py"><span class="std std-ref">Mounting and Targets</span></a>,
+where <cite>targets</cite> are introduced.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is also possible to automatically determine the <code class="docutils literal notranslate"><span class="pre">suffix</span></code> based
+on the class.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@storable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;manual&#39;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ManualFile</span><span class="p">:</span>
+    <span class="n">__ext__</span> <span class="o">=</span> <span class="s1">&#39;.obj&#39;</span>
+    <span class="o">...</span>
+</pre></div>
+</div>
+<p>So if only a <code class="docutils literal notranslate"><span class="pre">stem=test</span></code> is specified the target will automatically become <code class="docutils literal notranslate"><span class="pre">test.obj</span></code>.
+If a <code class="docutils literal notranslate"><span class="pre">suffix</span></code> is specified anyway, then the one specified through <code class="docutils literal notranslate"><span class="pre">__ext__</span></code>
+is overridden.</p>
+<p>When a <code class="docutils literal notranslate"><span class="pre">storable</span></code> is automatically created from a <code class="docutils literal notranslate"><span class="pre">dataclass</span></code> or a <code class="docutils literal notranslate"><span class="pre">serializable</span></code>
+the <code class="docutils literal notranslate"><span class="pre">suffix</span></code> will be set to <code class="docutils literal notranslate"><span class="pre">.json</span></code> by default.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Be careful specifying the <code class="docutils literal notranslate"><span class="pre">stem</span></code> of a file. It often makes sense
+to omit it and leave the selection up to the <code class="docutils literal notranslate"><span class="pre">record</span></code>. That way you
+will not accidentally re-use existing files. When a file is re-used,
+<code class="docutils literal notranslate"><span class="pre">dman</span></code> can automatically handle this when configured to do so
+or, by default, it gives a warning.
+See <a class="reference internal" href="example4_path.html#sphx-glr-gallery-fundamentals-example4-path-py"><span class="std std-ref">Mounting and Targets</span></a> for details.</p>
+</div>
+</section>
+<section id="contexts">
+<h2>Contexts<a class="headerlink" href="#contexts" title="Permalink to this heading">¶</a></h2>
+<p>Sometimes storable objects can create more than one file. The types
+provided by <code class="docutils literal notranslate"><span class="pre">dman</span></code> that do so are referred to as <code class="docutils literal notranslate"><span class="pre">models</span></code>.
+See <a class="reference internal" href="example3_models.html#sphx-glr-gallery-fundamentals-example3-models-py"><span class="std std-ref">Model Types</span></a> for examples.</p>
+<p>The files created by these models should also be stored somewhere.
+Their path is determined relative to the root storable. This process is
+handled by the context. As we will illustrate below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span>
+<span class="k">class</span> <span class="nc">Feedback</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__write__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__read__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">()</span>
+
+<span class="n">_</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">Feedback</span><span class="p">(),</span> <span class="n">subdir</span><span class="o">=</span><span class="s1">&#39;folder&#39;</span><span class="p">),</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Context(/tmp/tmp5k2r9725/folder)
+</pre></div>
+</div>
+<p>As you can see the context received in the <code class="docutils literal notranslate"><span class="pre">__write__</span></code> method
+now keeps track of the subfolder. Hence any further serializations happen
+relative to it.</p>
+<p>We can keep going:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span>
+<span class="k">class</span> <span class="nc">SubSerialize</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__write__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">Feedback</span><span class="p">(),</span> <span class="n">subdir</span><span class="o">=</span><span class="s1">&#39;folder2&#39;</span><span class="p">),</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__read__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">()</span>
+
+<span class="n">_</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">SubSerialize</span><span class="p">(),</span> <span class="n">subdir</span><span class="o">=</span><span class="s1">&#39;folder&#39;</span><span class="p">),</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Context(/tmp/tmp5k2r9725/folder/folder2)
+</pre></div>
+</div>
+<p>This is used inside of model types to determine the file paths.
+We will not go into much more detail here and instead refer
+to <a class="reference internal" href="example3_models.html#sphx-glr-gallery-fundamentals-example3-models-py"><span class="std std-ref">Model Types</span></a>.</p>
+<p>Whenever you create additional files you should also add a <code class="docutils literal notranslate"><span class="pre">__remove__</span></code>
+method. See the end of <a class="reference internal" href="example1_storables.html#sphx-glr-gallery-fundamentals-example1-storables-py"><span class="std std-ref">Defining Storables</span></a>
+for more details on this topic.</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.016 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-fundamentals-example2-records-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/5cdf3da52983d2c5966a764763a887cc/example2_records.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">example2_records.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/280202716a3823a861a0098bea3a2d51/example2_records.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">example2_records.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="example3_models.html" class="btn btn-neutral float-right" title="Model Types" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="example1_storables.html" class="btn btn-neutral float-left" title="Defining Storables" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

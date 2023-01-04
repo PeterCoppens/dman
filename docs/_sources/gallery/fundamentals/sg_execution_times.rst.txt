@@ -1,0 +1,24 @@
+
+:orphan:
+
+.. _sphx_glr_gallery_fundamentals_sg_execution_times:
+
+Computation times
+=================
+**00:00.562** total execution time for **gallery_fundamentals** files:
+
++------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_fundamentals_example4_path.py` (``example4_path.py``)                   | 00:00.275 | 0.0 MB |
++------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_fundamentals_example3_models.py` (``example3_models.py``)               | 00:00.120 | 0.0 MB |
++------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_fundamentals_example5_logging.py` (``example5_logging.py``)             | 00:00.056 | 0.0 MB |
++------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_fundamentals_example6_errors.py` (``example6_errors.py``)               | 00:00.046 | 0.0 MB |
++------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_fundamentals_example0_serializables.py` (``example0_serializables.py``) | 00:00.026 | 0.0 MB |
++------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_fundamentals_example1_storables.py` (``example1_storables.py``)         | 00:00.023 | 0.0 MB |
++------------------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_fundamentals_example2_records.py` (``example2_records.py``)             | 00:00.016 | 0.0 MB |
++------------------------------------------------------------------------------------------------+-----------+--------+

@@ -1,0 +1,12 @@
+
+:orphan:
+
+.. _sphx_glr_gallery_misc_sg_execution_times:
+
+Computation times
+=================
+**00:00.090** total execution time for **gallery_misc** files:
+
++--------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_misc_example0_common.py` (``example0_common.py``) | 00:00.090 | 0.0 MB |
++--------------------------------------------------------------------------+-----------+--------+

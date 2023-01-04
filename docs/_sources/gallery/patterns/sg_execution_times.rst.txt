@@ -1,0 +1,16 @@
+
+:orphan:
+
+.. _sphx_glr_gallery_patterns_sg_execution_times:
+
+Computation times
+=================
+**00:05.766** total execution time for **gallery_patterns** files:
+
++--------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_patterns_example3_resumable.py` (``example3_resumable.py``)   | 00:04.371 | 0.0 MB |
++--------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_patterns_example1_repository.py` (``example1_repository.py``) | 00:00.754 | 0.0 MB |
++--------------------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_patterns_example2_backup.py` (``example2_backup.py``)         | 00:00.642 | 0.0 MB |
++--------------------------------------------------------------------------------------+-----------+--------+

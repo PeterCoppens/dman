@@ -1,0 +1,739 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>dman.core.path &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/fundamentals/index.html">Fundamentals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>dman.core.path</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dman.core.path</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Contains path handling systems used internally by ``dman``.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span><span class="p">,</span> <span class="n">suppress</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="kn">from</span> <span class="nn">dman.core</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="kn">from</span> <span class="nn">dman.utils.smartdataclasses</span> <span class="kn">import</span> <span class="n">configclass</span><span class="p">,</span> <span class="n">optionfield</span>
+<span class="kn">from</span> <span class="nn">dman.utils.regex</span> <span class="kn">import</span> <span class="n">substitute</span>
+<span class="kn">from</span> <span class="nn">dman.utils.user</span> <span class="kn">import</span> <span class="n">prompt_user</span>
+
+<span class="n">ROOT_FOLDER</span> <span class="o">=</span> <span class="s2">&quot;.dman&quot;</span>
+
+
+<div class="viewcode-block" id="Config"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Config">[docs]</a><span class="nd">@configclass</span>
+<span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration class for path handling.</span>
+
+<span class="sd">        This class has a global instance that can be accessed as follows:</span>
+
+<span class="sd">        &gt;&gt;&gt; dman.core.path.config.on_retouch = &#39;prompt&#39;</span>
+<span class="sd">        &gt;&gt;&gt; dman.params.store.on_retouch = &#39;prompt&#39;  # equivalent</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        on_retouch (str, optional): Procedure handling re-used file names. </span>
+<span class="sd">            Options are ``&#39;prompt&#39;``, ``&#39;quit&#39;``, ``&#39;ignore&#39;``, ``&#39;auto&#39;``.</span>
+<span class="sd">            Defaults to ``&#39;ignore&#39;``. </span>
+<span class="sd">        default_suffix (str, optional): Default suffix used for files when none is specified.</span>
+<span class="sd">            Defaults to ``&#39;.sto&#39;``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">on_retouch</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">optionfield</span><span class="p">(</span>
+        <span class="p">[</span><span class="s2">&quot;prompt&quot;</span><span class="p">,</span> <span class="s2">&quot;quit&quot;</span><span class="p">,</span> <span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="s2">&quot;auto&quot;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span>
+    <span class="p">)</span>
+    <span class="n">default_suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;.sto&#39;</span></div>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">_Auto</span><span class="p">:</span> <span class="o">...</span>
+<span class="n">AUTO</span> <span class="o">=</span> <span class="n">_Auto</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="RootError"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.RootError">[docs]</a><span class="k">class</span> <span class="nc">RootError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when no ``.dman`` directory could be found.&quot;&quot;&quot;</span>
+    <span class="o">...</span></div>
+
+
+<span class="k">def</span> <span class="nf">get_root_path</span><span class="p">(</span><span class="n">create</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cwd</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="n">root_path</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">cwd</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span> <span class="k">if</span> <span class="n">cwd</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="n">cwd</span><span class="p">)</span>
+
+    <span class="n">current_path</span> <span class="o">=</span> <span class="n">cwd</span>
+    <span class="k">while</span> <span class="n">root_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">current_path</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="n">ROOT_FOLDER</span><span class="p">)</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="n">root_path</span> <span class="o">=</span> <span class="n">current_path</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="n">ROOT_FOLDER</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">current_path</span> <span class="o">=</span> <span class="n">current_path</span><span class="o">.</span><span class="n">parent</span>
+            <span class="k">if</span> <span class="n">current_path</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span> <span class="n">current_path</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">create</span><span class="p">:</span>
+                    <span class="n">log</span><span class="o">.</span><span class="n">io</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;no .dman folder found, created one in </span><span class="si">{</span><span class="n">normalize_path</span><span class="p">(</span><span class="n">cwd</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;path&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">root_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cwd</span><span class="p">,</span> <span class="n">ROOT_FOLDER</span><span class="p">)</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">root_path</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">root_path</span>
+                <span class="k">raise</span> <span class="n">RootError</span><span class="p">(</span><span class="s2">&quot;no .dman folder found. Consider running $dman init&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">root_path</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="script_label"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.script_label">[docs]</a><span class="k">def</span> <span class="nf">script_label</span><span class="p">(</span><span class="n">base</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate a label for the current executing script. </span>
+
+<span class="sd">        Takes the path relative to the folder containing ``.dman`` and </span>
+<span class="sd">        replaces the separators with ``:``.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">base</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="n">get_root_path</span><span class="p">()</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">base</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">script</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">script</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;__interpreter__&quot;</span>
+        <span class="n">script</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">script</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">stem</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;__interpreter__&quot;</span>
+
+    <span class="n">directory</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">script</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">script</span><span class="o">.</span><span class="n">stem</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">directory</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;:&quot;</span><span class="p">)</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">&#39;</span></div>
+
+
+<div class="viewcode-block" id="normalize_path"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.normalize_path">[docs]</a><span class="k">def</span> <span class="nf">normalize_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simplify path string relative to folder containing </span>
+<span class="sd">        ``.dman`` to be used for printing.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># root = Path(os.getcwd())</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">get_root_path</span><span class="p">())</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">root</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">RootError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">path</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">path</span></div>
+
+
+<div class="viewcode-block" id="TargetException"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.TargetException">[docs]</a><span class="k">class</span> <span class="nc">TargetException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when an invalid target file is encountered.&quot;&quot;&quot;</span>
+    <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Target"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Target">[docs]</a><span class="k">class</span> <span class="nc">Target</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Object representing file relative to current folder.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stem</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+        <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+        <span class="n">subdir</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a target path used for relative file definitions.</span>
+<span class="sd">            ``&lt;subdir&gt;/&lt;stem&gt;.&lt;suffix&gt;`` or ``&lt;subdir&gt;/&lt;name&gt;``</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: Both name and suffix or stem were provided.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">AUTO</span> <span class="ow">and</span> <span class="p">(</span><span class="n">stem</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">AUTO</span> <span class="ow">or</span> <span class="n">suffix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">AUTO</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either provide a name or suffix + stem.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">AUTO</span><span class="p">:</span>
+            <span class="n">stem</span><span class="p">,</span> <span class="n">suffix</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subdir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stem</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="o">=</span> <span class="n">subdir</span><span class="p">,</span> <span class="n">stem</span><span class="p">,</span> <span class="n">suffix</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the file&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stem</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span>
+
+<div class="viewcode-block" id="Target.from_path"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Target.from_path">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_path</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a target from a relative path.&quot;&quot;&quot;</span>
+        <span class="n">subdir</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">subdir</span><span class="o">=</span><span class="n">subdir</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Target.from_tuple"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Target.from_tuple">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_tuple</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">t</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a target from a tuple (subdir, stem, suffix).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subdir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">stem</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_complete</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fspath__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;target</span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__fspath__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the file system path representation of the object.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_complete</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subdir</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">TargetException</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Tried to process incomplete target &quot;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1">&quot;.&#39;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_complete</span><span class="p">():</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Target.is_complete"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Target.is_complete">[docs]</a>    <span class="k">def</span> <span class="nf">is_complete</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Is the target completely specified.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">AUTO</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="Target.merge"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Target.merge">[docs]</a>    <span class="k">def</span> <span class="nf">merge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Merge target with others.</span>
+<span class="sd">        </span>
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; Target(name=&#39;test.json&#39;).merge(Target(suffix=&#39;.obj&#39;), Target(subdir=&#39;folder&#39;))</span>
+<span class="sd">            folder/test.obj</span>
+<span class="sd">            &gt;&gt;&gt; Target(name=&#39;test.json&#39;).merge(Target(subdir=&#39;folder&#39;), Target(suffix=&#39;.obj&#39;))</span>
+<span class="sd">            test.obj</span>
+<span class="sd">            &gt;&gt;&gt; Target(name=&#39;test.json&#39;).merge(Target(subdir=&#39;folder&#39;), Target(suffix=&#39;.obj&#39;, subdir=AUTO))</span>
+<span class="sd">            folder/test.obj</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">v</span> <span class="k">if</span> <span class="n">_v</span> <span class="ow">is</span> <span class="n">AUTO</span> <span class="k">else</span> <span class="n">_v</span> <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">_v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">Target</span><span class="o">.</span><span class="n">from_tuple</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span></div>
+
+<div class="viewcode-block" id="Target.update"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Target.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">stem</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+        <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+        <span class="n">subdir</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update parts of target.</span>
+<span class="sd">            See also :func:`merge`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">Target</span><span class="p">(</span><span class="n">stem</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="n">subdir</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="target"><a class="viewcode-back" href="../../../gallery/fundamentals/example4_path.html#dman.core.path.target">[docs]</a><span class="k">def</span> <span class="nf">target</span><span class="p">(</span><span class="n">stem</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span> <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span> <span class="n">subdir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a target path used for relative file definitions.</span>
+<span class="sd">        ``&lt;subdir&gt;/&lt;stem&gt;.&lt;suffix&gt;`` or ``&lt;subdir&gt;/&lt;name&gt;``</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: Both name and suffix or stem were provided.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Target</span><span class="p">(</span><span class="n">stem</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="n">subdir</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="gitignore"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.gitignore">[docs]</a><span class="k">def</span> <span class="nf">gitignore</span><span class="p">(</span><span class="n">directory</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">ignored</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">check</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add ignored files to gitignore in provided directory.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        directory (os.PathLike): Directory to add ``.gitignore`` file to.</span>
+<span class="sd">        ignored (Iterable): Files to add to current ``.gitignore``.</span>
+<span class="sd">        check (Iterable, optional): Check whether these files still exists. If not, don&#39;t add them.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">check</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="n">check</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="s2">&quot;.gitignore&quot;</span><span class="p">)</span>
+    <span class="n">original</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">original</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">())</span>
+            <span class="n">original</span> <span class="o">=</span> <span class="nb">set</span><span class="p">((</span>
+                <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">original</span> 
+                <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">check</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">p</span><span class="p">))</span>
+            <span class="p">))</span>
+    <span class="n">ignored</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">ignored</span><span class="p">)</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">original</span><span class="p">)</span>
+    <span class="n">ignored</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;.gitignore&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ignored</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">ignored</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="prune_directories"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.prune_directories">[docs]</a><span class="k">def</span> <span class="nf">prune_directories</span><span class="p">(</span><span class="n">directory</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">root</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prune all empty directories contained within this one.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>   <span class="c1"># no need to keep parent</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># found file, keep this directory</span>
+
+    <span class="n">keep</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">prune_directories</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">f</span><span class="p">),</span> <span class="n">root</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="n">keep</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">keep</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">root</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">rmdir</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>  <span class="c1"># was able to prune all subdirectories.</span>
+    <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># no need to keep parent</span></div>
+
+
+<div class="viewcode-block" id="UserQuitException"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.UserQuitException">[docs]</a><span class="k">class</span> <span class="nc">UserQuitException</span><span class="p">(</span><span class="n">TargetException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a file was re-used by a mount point and the quit option was selected.&quot;&quot;&quot;</span>
+    <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="MountException"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.MountException">[docs]</a><span class="k">class</span> <span class="nc">MountException</span><span class="p">(</span><span class="n">TargetException</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a file is accessed outside of a mount point.&quot;&quot;&quot;</span>
+    <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="Mount"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount">[docs]</a><span class="k">class</span> <span class="nc">Mount</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Mount point used as start of file hierarchy.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">directory</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span>
+        <span class="n">cluster</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">gitignore</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct a mount point at the specified directory.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">directory</span> <span class="o">=</span> <span class="n">directory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cluster</span> <span class="o">=</span> <span class="n">cluster</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">gitignore</span> <span class="o">=</span> <span class="n">gitignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">touched</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">removed</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fspath__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__fspath__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the file system path representation of the object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">directory</span>
+    
+    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">normpath</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="fm">__hash__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Mount.contains"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.contains">[docs]</a>    <span class="k">def</span> <span class="nf">contains</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Is the specified path contained within this mount point.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">commonpath</span><span class="p">([</span><span class="bp">self</span><span class="p">])</span> <span class="o">==</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">commonpath</span><span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">)]</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Mount.abspath"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.abspath">[docs]</a>    <span class="k">def</span> <span class="nf">abspath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the absolute path</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: The path is not contained within this FileSystem.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Get absolute path.</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+
+        <span class="c1"># Check if absolute path is contained within the controlled directory.</span>
+        <span class="k">if</span> <span class="n">validate</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MountException</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;Tried to access path &quot;</span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1">&quot;. The specified&#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">&quot; is not contained within this mount point.&#39;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Return result.</span>
+        <span class="k">return</span> <span class="n">path</span></div>
+
+<div class="viewcode-block" id="Mount.normalize"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.normalize">[docs]</a>    <span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct a target based on the path relative to this mount point.&quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="p">),</span> <span class="n">start</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Target</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Mount.default"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.default">[docs]</a>    <span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">Target</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get default suggestion for target.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">touched</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">target</span>
+
+        <span class="n">base</span><span class="p">,</span> <span class="n">matches</span> <span class="o">=</span> <span class="n">substitute</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[0-9]+\b&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">stem</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">0&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}{</span><span class="nb">int</span><span class="p">(</span><span class="n">matches</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base</span><span class="si">}{</span><span class="n">target</span><span class="o">.</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Mount.register"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.register">[docs]</a>    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">Target</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">choice</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Register a target in the mount point. </span>
+<span class="sd">        </span>
+<span class="sd">            It avoids registering a target multiple times. </span>
+<span class="sd">            The behavior is determined by ``config.on_retouch`` or the value in `choice`.</span>
+
+<span class="sd">            - ``&#39;prompt&#39;``: Prompt the user for a different file name.</span>
+<span class="sd">            - ``&#39;quit&#39;``: Raise a :class:`UserQuitException`.</span>
+<span class="sd">            - ``&#39;ignore&#39;``: Override the existing file.</span>
+<span class="sd">            - ``&#39;auto&#39;``: Add an index to the file name to make it unique.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># If the target is not registered we can do so and return it.</span>
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">touched</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">touched</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">target</span>
+
+        <span class="c1"># Otherwise we should find an alternative.</span>
+        <span class="c1"># First get the default target and choice.</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="n">choice</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">on_retouch</span> <span class="k">if</span> <span class="n">choice</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">choice</span>
+
+        <span class="c1"># If the choice is &quot;prompt&quot; then we request input from the user.</span>
+        <span class="k">if</span> <span class="n">choice</span> <span class="o">==</span> <span class="s2">&quot;prompt&quot;</span><span class="p">:</span>
+            <span class="n">choice</span> <span class="o">=</span> <span class="n">prompt_user</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Tried to write to same target twice: </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="s2">&quot;Specify alternative filename.</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="s1">&#39;    Enter &quot;q&quot; to cancel serialization and &quot;x&quot; to ignore&#39;</span>
+                <span class="p">),</span>
+                <span class="n">default</span><span class="o">=</span><span class="n">default</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># If the choice is &quot;auto&quot; (or the same as default) then write to the default</span>
+        <span class="k">if</span> <span class="n">choice</span> <span class="o">==</span> <span class="n">default</span> <span class="ow">or</span> <span class="n">choice</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">default</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">choice</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">)</span>
+
+        <span class="c1"># If the choice is &quot;quit&quot; then we raise a SerializationError,</span>
+        <span class="c1"># which will cancel serialization.</span>
+        <span class="k">if</span> <span class="n">choice</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;q&quot;</span><span class="p">,</span> <span class="s2">&quot;quit&quot;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">UserQuitException</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;Attempted to write to target &quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s1">&quot; twice during serialization.&#39;</span>
+                    <span class="s2">&quot;Operation exited by user.&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="c1"># If the choice is &quot;ignore&quot; then the file is overwritten.</span>
+        <span class="k">if</span> <span class="n">choice</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="s2">&quot;_ignore&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">choice</span> <span class="o">!=</span> <span class="s2">&quot;_ignore&quot;</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;Overwritten previously stored object at target &quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s1">&quot;.&#39;</span><span class="p">,</span>
+                    <span class="s2">&quot;fs&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">target</span>
+        <span class="c1"># We reach this option if a custom file name was provided by the user.</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">choice</span><span class="p">),</span> <span class="n">choice</span><span class="o">=</span><span class="s2">&quot;prompt&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Mount.prepare"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">choice</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare directory to write to target path.&quot;&quot;&quot;</span>
+        <span class="c1"># Normalize the path relative to this mount point.</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="p">)</span>
+
+        <span class="c1"># Register the target</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">choice</span><span class="o">=</span><span class="n">choice</span><span class="p">)</span>
+
+        <span class="c1"># Create the required directories</span>
+        <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">subdir</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">directory</span><span class="p">):</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">io</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Creating empty directory &quot;</span><span class="si">{</span><span class="n">normalize_path</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span><span class="si">}</span><span class="s1">&quot;.&#39;</span><span class="p">,</span> <span class="s2">&quot;mount&quot;</span><span class="p">)</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">directory</span><span class="p">)</span>
+
+        <span class="c1"># Return the target</span>
+        <span class="k">return</span> <span class="n">target</span></div>
+
+<div class="viewcode-block" id="Mount.close"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close this mount point. </span>
+<span class="sd">        </span>
+<span class="sd">            Empty subdirectories are deleted and a gitignore is created if </span>
+<span class="sd">            requested on creation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prune_directories</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">gitignore</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">ignored</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">touched</span> <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">f</span><span class="p">))}</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ignored</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cluster</span><span class="p">:</span>
+            <span class="n">directory</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">gitignore</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="p">(</span><span class="n">name</span><span class="p">,),</span> <span class="n">check</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gitignore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignored</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Mount.open"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.open">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open a file, registered by this mount point.</span>
+<span class="sd">        </span>
+<span class="sd">            The signature is identical to the standard ``open`` command.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">),</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">f</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="Mount.untrack"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.untrack">[docs]</a>    <span class="k">def</span> <span class="nf">untrack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Untrack a registered file. Afterwards it can be overridden without issues.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">touched</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">removed</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Mount.remove"><a class="viewcode-back" href="../../../api/path.html#dman.core.path.Mount.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a file from the mount point and stop tracking it.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">untrack</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="n">validate</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">rmdir</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">path</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="mount"><a class="viewcode-back" href="../../../gallery/fundamentals/example4_path.html#dman.core.path.mount">[docs]</a><span class="k">def</span> <span class="nf">mount</span><span class="p">(</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">subdir</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">cluster</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">generator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">base</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">gitignore</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the mount point where a file with the given key is stored by dman.</span>
+<span class="sd">        The path of the file is determined as described below.</span>
+
+<span class="sd">            If the files are clustered then the path is ``&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;/&lt;key&gt;.&lt;ext&gt;``</span>
+<span class="sd">            If cluster is set to False then the path is ``&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;.&lt;ext&gt;``</span>
+
+<span class="sd">            When base is not provided then it is set to .dman if</span>
+<span class="sd">            it does not exist an exception is raised.</span>
+
+<span class="sd">            When generator is not provided it will automatically be set based on</span>
+<span class="sd">            the location of the script relative to the .dman folder</span>
+<span class="sd">            (again raising an exception if it is not found). For example</span>
+<span class="sd">            if the script is located in ``&lt;project-root&gt;/examples/folder/script.py``</span>
+<span class="sd">            and .dman is located in ``&lt;project-root&gt;/.dman``.</span>
+<span class="sd">            Then generator is set to cache/examples:folder:script (i.e.</span>
+<span class="sd">            the / is replaced by : in the output).</span>
+<span class="sd">        </span>
+<span class="sd">            See :ref:`sphx_glr_gallery_fundamentals_example4_path.py` for</span>
+<span class="sd">            detailed examples on how to create and use mount points.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        key (str, optional):  Key for the file. Default ``&#39;&#39;``, so the generator folder is returned.</span>
+<span class="sd">        subdir (os.PathLike, optional): Specifies optional subdirectory in generator folder. Defaults to &quot;&quot;.</span>
+<span class="sd">        cluster (bool, optional): A subfolder ``key`` is automatically created when set to True. Defaults to True.</span>
+<span class="sd">        generator (str, optional): Specifies the generator that created the file. Defaults to script label.</span>
+<span class="sd">        base (os.PathLike, optional): Specifies the root folder. Defaults to &quot;.dman&quot;.</span>
+<span class="sd">        gitignore (bool, optional): Specifies whether files added to this mount point should be ignored.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="n">get_root_path</span><span class="p">()</span> <span class="k">if</span> <span class="n">base</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">base</span>
+    <span class="k">if</span> <span class="n">generator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">generator</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;cache&quot;</span><span class="p">,</span> <span class="n">script_label</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">base</span><span class="p">)))</span>
+    <span class="k">if</span> <span class="n">cluster</span><span class="p">:</span>
+        <span class="n">subdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">subdir</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+    <span class="n">directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">generator</span><span class="p">,</span> <span class="n">subdir</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Mount</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">cluster</span><span class="o">=</span><span class="n">cluster</span><span class="p">,</span> <span class="n">gitignore</span><span class="o">=</span><span class="n">gitignore</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

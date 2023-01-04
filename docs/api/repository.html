@@ -1,0 +1,484 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Repository &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Model Types" href="modelclasses.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../gallery/fundamentals/index.html">Fundamentals</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="modules.html#core">Core</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="modules.html#model-types">Model Types</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="records.html">Records</a></li>
+<li class="toctree-l3"><a class="reference internal" href="modelclasses.html">Model Types</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Repository</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.repository.uninterrupted"><code class="docutils literal notranslate"><span class="pre">uninterrupted()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.repository.context"><code class="docutils literal notranslate"><span class="pre">context()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.repository.store"><code class="docutils literal notranslate"><span class="pre">store()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.repository.save"><code class="docutils literal notranslate"><span class="pre">save()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.repository.load"><code class="docutils literal notranslate"><span class="pre">load()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.repository.clean"><code class="docutils literal notranslate"><span class="pre">clean()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.repository.track"><code class="docutils literal notranslate"><span class="pre">track()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+      <li>Repository</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/repository.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="module-dman.model.repository">
+<span id="repository"></span><h1>Repository<a class="headerlink" href="#module-dman.model.repository" title="Permalink to this heading">¶</a></h1>
+<p>High-level saving and loading functionality for <code class="docutils literal notranslate"><span class="pre">dman</span></code>.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.repository.uninterrupted">
+<span class="sig-prename descclassname"><span class="pre">dman.model.repository.</span></span><span class="sig-name descname"><span class="pre">uninterrupted</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/repository.html#uninterrupted"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.repository.uninterrupted" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return context that suppresses keyboard interrupts until it exists.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.repository.context">
+<span class="sig-prename descclassname"><span class="pre">dman.model.repository.</span></span><span class="sig-name descname"><span class="pre">context</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gitignore</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/repository.html#context"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.repository.context" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Get a context from a mount point.</dt><dd><p>The path of the file is determined as described below.</p>
+<blockquote>
+<div><p>If the files are clustered then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;/&lt;key&gt;.&lt;ext&gt;</span></code>
+If cluster is set to False then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;.&lt;ext&gt;</span></code></p>
+<p>When base is not provided then it is set to .dman if
+it does not exist an exception is raised.</p>
+<p>When generator is not provided it will automatically be set based on
+the location of the script relative to the .dman folder
+(again raising an exception if it is not found). For example
+if the script is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/examples/folder/script.py</span></code>
+and .dman is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/.dman</span></code>.
+Then generator is set to cache/examples:folder:script (i.e.
+the / is replaced by : in the output).</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – Key for the file.</p></li>
+<li><p><strong>subdir</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies optional subdirectory in generator folder. Defaults to “”.</p></li>
+<li><p><strong>cluster</strong> (<em>bool</em><em>, </em><em>optional</em>) – A subfolder <code class="docutils literal notranslate"><span class="pre">key</span></code> is automatically created when set to True. Defaults to True.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Level of verbosity. Defaults to False</p></li>
+<li><p><strong>generator</strong> (<em>str</em><em>, </em><em>optional</em>) – Specifies the generator that created the file. Defaults to script label.</p></li>
+<li><p><strong>base</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies the root folder. Defaults to “.dman”.</p></li>
+<li><p><strong>gitignore</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specifies whether files added to this mount point should be ignored.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.repository.store">
+<span class="sig-prename descclassname"><span class="pre">dman.model.repository.</span></span><span class="sig-name descname"><span class="pre">store</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gitignore</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">PathLike</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/repository.html#store"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.repository.store" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Save a storable object.</dt><dd><p>The path of the file is determined as described below.</p>
+<blockquote>
+<div><p>If the files are clustered then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;/&lt;key&gt;.&lt;ext&gt;</span></code>
+If cluster is set to False then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;.&lt;ext&gt;</span></code></p>
+<p>When base is not provided then it is set to .dman if
+it does not exist an exception is raised.</p>
+<p>When generator is not provided it will automatically be set based on
+the location of the script relative to the .dman folder
+(again raising an exception if it is not found). For example
+if the script is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/examples/folder/script.py</span></code>
+and .dman is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/.dman</span></code>.
+Then generator is set to cache/examples:folder:script (i.e.
+the / is replaced by : in the output).</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – Key for the file.</p></li>
+<li><p><strong>obj</strong> (<em>Any</em>) – The storable to store.</p></li>
+<li><p><strong>subdir</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies optional subdirectory in generator folder. Defaults to “”.</p></li>
+<li><p><strong>cluster</strong> (<em>bool</em><em>, </em><em>optional</em>) – A subfolder <code class="docutils literal notranslate"><span class="pre">key</span></code> is automatically created when set to True. Defaults to True.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Level of verbosity. Defaults to False</p></li>
+<li><p><strong>generator</strong> (<em>str</em><em>, </em><em>optional</em>) – Specifies the generator that created the file. Defaults to script label.</p></li>
+<li><p><strong>base</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies the root folder. Defaults to “.dman”.</p></li>
+<li><p><strong>gitignore</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specifies whether files added to this mount point should be ignored.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.repository.save">
+<span class="sig-prename descclassname"><span class="pre">dman.model.repository.</span></span><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gitignore</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">PathLike</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/repository.html#save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.repository.save" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Save a serializable object to a file.</dt><dd><p>The path of the file is determined as described below.</p>
+<blockquote>
+<div><p>If the files are clustered then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;/&lt;key&gt;.&lt;ext&gt;</span></code>
+If cluster is set to False then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;.&lt;ext&gt;</span></code></p>
+<p>When base is not provided then it is set to .dman if
+it does not exist an exception is raised.</p>
+<p>When generator is not provided it will automatically be set based on
+the location of the script relative to the .dman folder
+(again raising an exception if it is not found). For example
+if the script is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/examples/folder/script.py</span></code>
+and .dman is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/.dman</span></code>.
+Then generator is set to cache/examples:folder:script (i.e.
+the / is replaced by : in the output).</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – Key for the file.</p></li>
+<li><p><strong>obj</strong> (<em>Any</em>) – The serializable to save.</p></li>
+<li><p><strong>subdir</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies optional subdirectory in generator folder. Defaults to “”.</p></li>
+<li><p><strong>cluster</strong> (<em>bool</em><em>, </em><em>optional</em>) – A subfolder <code class="docutils literal notranslate"><span class="pre">key</span></code> is automatically created when set to True. Defaults to True.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Level of verbosity. Defaults to False</p></li>
+<li><p><strong>generator</strong> (<em>str</em><em>, </em><em>optional</em>) – Specifies the generator that created the file. Defaults to script label.</p></li>
+<li><p><strong>base</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies the root folder. Defaults to “.dman”.</p></li>
+<li><p><strong>gitignore</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specifies whether files added to this mount point should be ignored.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.repository.load">
+<span class="sig-prename descclassname"><span class="pre">dman.model.repository.</span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default=&lt;dataclasses._MISSING_TYPE</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_factory=&lt;dataclasses._MISSING_TYPE</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir:</span> <span class="pre">~os.PathLike</span> <span class="pre">=</span> <span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">~typing.Optional[int]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gitignore:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator:</span> <span class="pre">~typing.Optional[str]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base:</span> <span class="pre">~typing.Optional[~os.PathLike]</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/repository.html#load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.repository.load" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Load a serializable or storable object from a file.</dt><dd><p>A default value can be provided, which is returned when no file is found.
+Similarly default_factory is a function without arguments that
+is called instead of default. If both default and default_factory
+are specified then the value in default is returned.</p>
+<p>The path of the file is determined as described below.</p>
+<blockquote>
+<div><p>If the files are clustered then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;/&lt;key&gt;.&lt;ext&gt;</span></code>
+If cluster is set to False then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;.&lt;ext&gt;</span></code></p>
+<p>When base is not provided then it is set to .dman if
+it does not exist an exception is raised.</p>
+<p>When generator is not provided it will automatically be set based on
+the location of the script relative to the .dman folder
+(again raising an exception if it is not found). For example
+if the script is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/examples/folder/script.py</span></code>
+and .dman is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/.dman</span></code>.
+Then generator is set to cache/examples:folder:script (i.e.
+the / is replaced by : in the output).</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – Key for the file.</p></li>
+<li><p><strong>default</strong> (<em>Any</em><em>, </em><em>optional</em>) – The default value.</p></li>
+<li><p><strong>default_factory</strong> (<em>Callable</em><em>, </em><em>optional</em>) – Method with no argument that produces the default value.</p></li>
+<li><p><strong>subdir</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies optional subdirectory in generator folder. Defaults to “”.</p></li>
+<li><p><strong>cluster</strong> (<em>bool</em><em>, </em><em>optional</em>) – A subfolder <code class="docutils literal notranslate"><span class="pre">key</span></code> is automatically created when set to True. Defaults to True.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Level of verbosity. Defaults to False</p></li>
+<li><p><strong>generator</strong> (<em>str</em><em>, </em><em>optional</em>) – Specifies the generator that created the file. Defaults to script label.</p></li>
+<li><p><strong>base</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies the root folder. Defaults to “.dman”.</p></li>
+<li><p><strong>gitignore</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specifies whether files added to this mount point should be ignored.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loaded object or default value if file does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.repository.clean">
+<span class="sig-prename descclassname"><span class="pre">dman.model.repository.</span></span><span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">PathLike</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/repository.html#clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.repository.clean" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Remove a serializable object.</dt><dd><p>The path of the file is determined as described below.</p>
+<blockquote>
+<div><p>If the files are clustered then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;/&lt;key&gt;.&lt;ext&gt;</span></code>
+If cluster is set to False then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;.&lt;ext&gt;</span></code></p>
+<p>When base is not provided then it is set to .dman if
+it does not exist an exception is raised.</p>
+<p>When generator is not provided it will automatically be set based on
+the location of the script relative to the .dman folder
+(again raising an exception if it is not found). For example
+if the script is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/examples/folder/script.py</span></code>
+and .dman is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/.dman</span></code>.
+Then generator is set to cache/examples:folder:script (i.e.
+the / is replaced by : in the output).</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – Key for the file.</p></li>
+<li><p><strong>subdir</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies optional subdirectory in generator folder. Defaults to “”.</p></li>
+<li><p><strong>cluster</strong> (<em>bool</em><em>, </em><em>optional</em>) – A subfolder <code class="docutils literal notranslate"><span class="pre">key</span></code> is automatically created when set to True. Defaults to True.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Level of verbosity. Defaults to False</p></li>
+<li><p><strong>generator</strong> (<em>str</em><em>, </em><em>optional</em>) – Specifies the generator that created the file. Defaults to script label.</p></li>
+<li><p><strong>base</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies the root folder. Defaults to “.dman”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.repository.track">
+<span class="sig-prename descclassname"><span class="pre">dman.model.repository.</span></span><span class="sig-name descname"><span class="pre">track</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default=&lt;dataclasses._MISSING_TYPE</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_factory=&lt;dataclasses._MISSING_TYPE</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir:</span> <span class="pre">~os.PathLike</span> <span class="pre">=</span> <span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose:</span> <span class="pre">~typing.Optional[int]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gitignore:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generator:</span> <span class="pre">~typing.Optional[str]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base:</span> <span class="pre">~typing.Optional[~os.PathLike]</span> <span class="pre">=</span> <span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/repository.html#track"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.repository.track" title="Permalink to this definition">¶</a></dt>
+<dd><dl>
+<dt>Create track a serializable or storable object with a file.</dt><dd><p>Ideally track is used as a context: i.e. <code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">track(...)</span> <span class="pre">as</span> <span class="pre">obj:</span> <span class="pre">...</span></code>.
+When the context is entered the object is loaded from a file
+(or default value is returned as described below). When the context
+exits, then the file is saved.</p>
+<p>If the object is storable, it will automatically be wrapped in a
+record before serialization.</p>
+<p>The path of the file is determined as described below.</p>
+<blockquote>
+<div><p>If the files are clustered then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;/&lt;key&gt;.&lt;ext&gt;</span></code>
+If cluster is set to False then the path is <code class="docutils literal notranslate"><span class="pre">&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;.&lt;ext&gt;</span></code></p>
+<p>When base is not provided then it is set to .dman if
+it does not exist an exception is raised.</p>
+<p>When generator is not provided it will automatically be set based on
+the location of the script relative to the .dman folder
+(again raising an exception if it is not found). For example
+if the script is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/examples/folder/script.py</span></code>
+and .dman is located in <code class="docutils literal notranslate"><span class="pre">&lt;project-root&gt;/.dman</span></code>.
+Then generator is set to cache/examples:folder:script (i.e.
+the / is replaced by : in the output).</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – Key for the file.</p></li>
+<li><p><strong>default</strong> (<em>Any</em><em>, </em><em>optional</em>) – The default value.</p></li>
+<li><p><strong>default_factory</strong> (<em>Callable</em><em>, </em><em>optional</em>) – Method with no argument that produces the default value.</p></li>
+<li><p><strong>subdir</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies optional subdirectory in generator folder. Defaults to “”.</p></li>
+<li><p><strong>cluster</strong> (<em>bool</em><em>, </em><em>optional</em>) – A subfolder <code class="docutils literal notranslate"><span class="pre">key</span></code> is automatically created when set to True. Defaults to True.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Level of verbosity. Defaults to False</p></li>
+<li><p><strong>generator</strong> (<em>str</em><em>, </em><em>optional</em>) – Specifies the generator that created the file. Defaults to script label.</p></li>
+<li><p><strong>base</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – Specifies the root folder. Defaults to “.dman”.</p></li>
+<li><p><strong>gitignore</strong> (<em>bool</em><em>, </em><em>optional</em>) – Specifies whether files added to this mount point should be ignored.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="modelclasses.html" class="btn btn-neutral float-left" title="Model Types" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

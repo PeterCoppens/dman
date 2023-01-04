@@ -1,0 +1,359 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Storables &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Path" href="path.html" />
+    <link rel="prev" title="Serializables" href="serializables.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../gallery/fundamentals/index.html">Fundamentals</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="modules.html#core">Core</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="serializables.html">Serializables</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Storables</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dman.core.storables.sto_type2str"><code class="docutils literal notranslate"><span class="pre">sto_type2str()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.core.storables.register_storable"><code class="docutils literal notranslate"><span class="pre">register_storable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.core.storables.storable_types"><code class="docutils literal notranslate"><span class="pre">storable_types()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.core.storables.get_custom_storable"><code class="docutils literal notranslate"><span class="pre">get_custom_storable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.core.storables.storable"><code class="docutils literal notranslate"><span class="pre">storable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.core.storables.WriteException"><code class="docutils literal notranslate"><span class="pre">WriteException</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.core.storables.ReadException"><code class="docutils literal notranslate"><span class="pre">ReadException</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.core.storables.write"><code class="docutils literal notranslate"><span class="pre">write()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.core.storables.read"><code class="docutils literal notranslate"><span class="pre">read()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="path.html">Path</a></li>
+<li class="toctree-l3"><a class="reference internal" href="log.html">Log</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="modules.html#model-types">Model Types</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+      <li>Storables</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/storables.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="module-dman.core.storables">
+<span id="storables"></span><h1>Storables<a class="headerlink" href="#module-dman.core.storables" title="Permalink to this heading">¶</a></h1>
+<p>Contains utilities for creating storable types and to write and read
+from disk.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.core.storables.sto_type2str">
+<span class="sig-prename descclassname"><span class="pre">dman.core.storables.</span></span><span class="sig-name descname"><span class="pre">sto_type2str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/core/storables.html#sto_type2str"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.core.storables.sto_type2str" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the storable type string.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.core.storables.register_storable">
+<span class="sig-prename descclassname"><span class="pre">dman.core.storables.</span></span><span class="sig-name descname"><span class="pre">register_storable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="serializables.html#dman.core.serializables.BaseContext" title="dman.core.serializables.BaseContext"><span class="pre">BaseContext</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="serializables.html#dman.core.serializables.BaseContext" title="dman.core.serializables.BaseContext"><span class="pre">BaseContext</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/core/storables.html#register_storable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.core.storables.register_storable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a class as a storable type with a given name</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.core.storables.storable_types">
+<span class="sig-prename descclassname"><span class="pre">dman.core.storables.</span></span><span class="sig-name descname"><span class="pre">storable_types</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/core/storables.html#storable_types"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.core.storables.storable_types" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the storable types dictionary.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.core.storables.get_custom_storable">
+<span class="sig-prename descclassname"><span class="pre">dman.core.storables.</span></span><span class="sig-name descname"><span class="pre">get_custom_storable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/core/storables.html#get_custom_storable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.core.storables.get_custom_storable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the signature of a custom storable object.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.core.storables.storable">
+<span class="sig-prename descclassname"><span class="pre">dman.core.storables.</span></span><span class="sig-name descname"><span class="pre">storable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/core/storables.html#storable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.core.storables.storable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make a class storable.</p>
+<blockquote>
+<div><p>Returns the same class as was passed in and the class is registered as a
+storable type. Write and Read methods are added
+automatically if cls is a dataclass or a serializable type.
+Otherwise a <code class="docutils literal notranslate"><span class="pre">__write__</span></code> and <code class="docutils literal notranslate"><span class="pre">__read__</span></code> method should be provided for
+storing. If these are not provided conversion will fail.</p>
+<p>See <a class="reference internal" href="../gallery/fundamentals/example1_storables.html#sphx-glr-gallery-fundamentals-example1-storables-py"><span class="std std-ref">Defining Storables</span></a> for
+detailed examples on how to create storable types.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cls</strong> – The class to convert.</p></li>
+<li><p><strong>name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the storable. Defaults to the name of the class.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – The class could not be made storable.
+    Provide a <code class="docutils literal notranslate"><span class="pre">__write__</span></code> and <code class="docutils literal notranslate"><span class="pre">__read__</span></code> method.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="dman.core.storables.WriteException">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dman.core.storables.</span></span><span class="sig-name descname"><span class="pre">WriteException</span></span><a class="reference internal" href="../_modules/dman/core/storables.html#WriteException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.core.storables.WriteException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exception raised when a write of a storable fails.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="dman.core.storables.ReadException">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dman.core.storables.</span></span><span class="sig-name descname"><span class="pre">ReadException</span></span><a class="reference internal" href="../_modules/dman/core/storables.html#ReadException"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.core.storables.ReadException" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exception raised when a read of a storable fails.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.core.storables.write">
+<span class="sig-prename descclassname"><span class="pre">dman.core.storables.</span></span><span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">storable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="serializables.html#dman.core.serializables.BaseContext" title="dman.core.serializables.BaseContext"><span class="pre">BaseContext</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/core/storables.html#write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.core.storables.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a storable to the specified path.</p>
+<blockquote>
+<div><p>See <a class="reference internal" href="../gallery/fundamentals/example1_storables.html#sphx-glr-gallery-fundamentals-example1-storables-py"><span class="std std-ref">Defining Storables</span></a>
+for details on how to use this method.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>storable</strong> – The storable instance to write</p></li>
+<li><p><strong>path</strong> (<em>os.PathLike</em>) – Target path</p></li>
+<li><p><strong>context</strong> (<a class="reference internal" href="serializables.html#dman.core.serializables.BaseContext" title="dman.core.serializables.BaseContext"><em>BaseContext</em></a><em>, </em><em>optional</em>) – Context to pass to the <code class="docutils literal notranslate"><span class="pre">__write__</span></code> method.
+Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.core.storables.read">
+<span class="sig-prename descclassname"><span class="pre">dman.core.storables.</span></span><span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Type</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="serializables.html#dman.core.serializables.BaseContext" title="dman.core.serializables.BaseContext"><span class="pre">BaseContext</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/core/storables.html#read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.core.storables.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a storable from the specified path.</p>
+<blockquote>
+<div><p>See <a class="reference internal" href="../gallery/fundamentals/example1_storables.html#sphx-glr-gallery-fundamentals-example1-storables-py"><span class="std std-ref">Defining Storables</span></a>
+for details on how to use this method.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>Type</em><em>]</em>) – The type (string) of the storable</p></li>
+<li><p><strong>path</strong> (<em>os.PathLike</em>) – The path from which to read</p></li>
+<li><p><strong>context</strong> (<a class="reference internal" href="serializables.html#dman.core.serializables.BaseContext" title="dman.core.serializables.BaseContext"><em>BaseContext</em></a><em>, </em><em>optional</em>) – The context to pass to the <code class="docutils literal notranslate"><span class="pre">__read__</span></code> method.
+Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="path.html" class="btn btn-neutral float-right" title="Path" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="serializables.html" class="btn btn-neutral float-left" title="Serializables" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

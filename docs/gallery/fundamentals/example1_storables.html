@@ -1,0 +1,584 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Defining Storables &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Using Records" href="example2_records.html" />
+    <link rel="prev" title="Defining Serializables" href="example0_serializables.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Fundamentals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="example0_serializables.html">Defining Serializables</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Defining Storables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#manual-definition">Manual Definition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#registered-definition">Registered Definition</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-multiple-files">Creating Multiple Files</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="example2_records.html">Using Records</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example3_models.html">Model Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example4_path.html">Mounting and Targets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example5_logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example6_errors.html">Error handling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Fundamentals</a> &raquo;</li>
+        
+      <li>Defining Storables</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/gallery/fundamentals/example1_storables.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p>Click <a class="reference internal" href="#sphx-glr-download-gallery-fundamentals-example1-storables-py"><span class="std std-ref">here</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="defining-storables">
+<span id="sphx-glr-gallery-fundamentals-example1-storables-py"></span><h1>Defining Storables<a class="headerlink" href="#defining-storables" title="Permalink to this heading">¶</a></h1>
+<p>This example describes ways in which one can define storable objects.</p>
+<p>Sometimes it is not feasible to serialize an object. For example large
+arrays in <code class="docutils literal notranslate"><span class="pre">numpy</span></code>. The <code class="docutils literal notranslate"><span class="pre">dman</span></code> framework supports such objects
+through <code class="docutils literal notranslate"><span class="pre">storables</span></code>. These should interface with the <code class="docutils literal notranslate"><span class="pre">read</span></code> and <code class="docutils literal notranslate"><span class="pre">write</span></code>
+methods as follows</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dman</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;obj.out&#39;</span><span class="p">)</span>
+<span class="k">assert</span><span class="p">(</span><span class="n">obj</span> <span class="o">==</span> <span class="n">dman</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="s1">&#39;obj.out&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>There are several ways to define <code class="docutils literal notranslate"><span class="pre">storable</span></code> types. We provide an overview
+here.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">TemporaryDirectory</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">dman</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</pre></div>
+</div>
+<section id="manual-definition">
+<h2>Manual Definition<a class="headerlink" href="#manual-definition" title="Permalink to this heading">¶</a></h2>
+<p>The first method is to define writing and reading behavior in the signature
+of the class.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;_num__barray&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">barray</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+    <span class="n">__ext__</span> <span class="o">=</span> <span class="s2">&quot;.npy&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__write__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__read__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">res</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">barray</span></code> class is also provided in <code class="docutils literal notranslate"><span class="pre">dman.numeric</span></code> which can
+be imported when <code class="docutils literal notranslate"><span class="pre">numpy</span></code> is installed. We can use it as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">base</span><span class="p">:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s1">&#39;array.npy&#39;</span><span class="p">)</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">),</span> <span class="n">path</span><span class="p">)</span>
+    <span class="n">array</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">barray</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[[1. 0. 0.]
+ [0. 1. 0.]
+ [0. 0. 1.]]
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Again, the specified name should be unique for all storables.
+It can be the same as a name of a serializable object. A name can
+also be automatically generated similar to <code class="docutils literal notranslate"><span class="pre">serializable</span></code> when it is left unspecified.
+The name can be used instead of the type when reading, which is used by the
+more complex objects in <code class="docutils literal notranslate"><span class="pre">dman</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s1">&#39;_num__barray&#39;</span><span class="p">,</span> <span class="s1">&#39;array.npy&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>It is also possible to automatically produce storables from
+dataclasses or serializable objects. With both json is used to
+store the object, however with a dataclass we use the default <code class="docutils literal notranslate"><span class="pre">asdict</span></code>
+method to convert it to a dictionary, which only works for certain types of fields.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;manual&#39;</span><span class="p">)</span>
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">DCLBasic</span><span class="p">:</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;manual&#39;</span><span class="p">)</span>
+<span class="nd">@dman</span><span class="o">.</span><span class="n">serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;manual&#39;</span><span class="p">)</span>
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">SerBasic</span><span class="p">:</span>
+    <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
+</pre></div>
+</div>
+<p>Both types result in the same <code class="docutils literal notranslate"><span class="pre">json</span></code> file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">base</span><span class="p">:</span>
+    <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s1">&#39;dcl.json&#39;</span><span class="p">)</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">DCLBasic</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s1">&#39;hello world!&#39;</span><span class="p">),</span> <span class="n">path</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+    &quot;value&quot;: &quot;hello world!&quot;
+}
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is not recommended to create storables from dataclasses as above.
+Instead one should use the more powerful <code class="docutils literal notranslate"><span class="pre">modelclass</span></code> decorator
+with <code class="docutils literal notranslate"><span class="pre">storable=True</span></code>. The reason is that <code class="docutils literal notranslate"><span class="pre">modelclass</span></code> supports
+storables as fields, where this method does not. See <a class="reference internal" href="example3_models.html#sphx-glr-gallery-fundamentals-example3-models-py"><span class="std std-ref">Model Types</span></a>
+for an overview of the <code class="docutils literal notranslate"><span class="pre">modelclass</span></code> decorator.</p>
+</div>
+</section>
+<section id="registered-definition">
+<h2>Registered Definition<a class="headerlink" href="#registered-definition" title="Permalink to this heading">¶</a></h2>
+<p>Similarly to <code class="docutils literal notranslate"><span class="pre">serializable</span></code> types you can also define a custom
+<code class="docutils literal notranslate"><span class="pre">storable</span></code> type without touching the original class.
+For a more complete example see <a class="reference internal" href="../cases/example_pandas.html#sphx-glr-gallery-cases-example-pandas-py"><span class="std std-ref">Panda DataFrames</span></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Frozen</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">(data=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="si">}</span><span class="s1">)&#39;</span>
+
+
+<span class="k">def</span> <span class="nf">_write_frozen</span><span class="p">(</span><span class="n">frozen</span><span class="p">:</span> <span class="n">Frozen</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write frozen to disk.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">frozen</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_read_frozen</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read frozen from disk.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Frozen</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
+
+
+<span class="n">dman</span><span class="o">.</span><span class="n">register_storable</span><span class="p">(</span>
+    <span class="s1">&#39;frozen&#39;</span><span class="p">,</span>
+    <span class="n">Frozen</span><span class="p">,</span>
+    <span class="n">write</span><span class="o">=</span><span class="n">_write_frozen</span><span class="p">,</span>
+    <span class="n">read</span><span class="o">=</span><span class="n">_read_frozen</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="creating-multiple-files">
+<h2>Creating Multiple Files<a class="headerlink" href="#creating-multiple-files" title="Permalink to this heading">¶</a></h2>
+<p>Advanced users might want to have storables create more than one file.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>It is usually best to have a <code class="docutils literal notranslate"><span class="pre">storable</span></code> write to just one file.
+Whenever you require multiple classes then it is usually better
+to wrap them in a <code class="docutils literal notranslate"><span class="pre">serializable</span></code> class like the models
+provided by <code class="docutils literal notranslate"><span class="pre">dman</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">mlist</span></code>, <code class="docutils literal notranslate"><span class="pre">mdict</span></code>, <code class="docutils literal notranslate"><span class="pre">modelclass</span></code>).
+See <a class="reference internal" href="example3_models.html#sphx-glr-gallery-fundamentals-example3-models-py"><span class="std std-ref">Model Types</span></a> for details.</p>
+</div>
+<p>If you do want to have storables create multiple files, this is possible,
+but you should do so in such a way that <code class="docutils literal notranslate"><span class="pre">dman</span></code> can safely keep track of
+the created files. We provide an example below.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span>
+<span class="k">class</span> <span class="nc">Multiple</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+
+    <span class="k">def</span> <span class="nf">__write__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">dman</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
+        <span class="c1"># The provided path always points to a specific file associated</span>
+        <span class="c1"># with this storable. So you can use it for the main file.</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="c1"># For additional files however you need to use the ``context``</span>
+        <span class="c1"># to keep track of them. You can do so as follows:</span>
+        <span class="k">with</span> <span class="n">context</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;description.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">description</span><span class="p">)</span>
+
+        <span class="c1"># The context keeps track of the current directory to which writing</span>
+        <span class="c1"># occurs. So you usually specify the path relative to it.</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__read__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">dman</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
+        <span class="c1"># Reading occurs similarly.</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="k">with</span> <span class="n">context</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s1">&#39;description.txt&#39;</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">description</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">description</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__remove__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">dman</span><span class="o">.</span><span class="n">Context</span><span class="p">):</span>
+        <span class="c1"># Since ``dman`` also removes files when they are no longer tracked</span>
+        <span class="c1"># you should define a ``__remove__`` method that deletes</span>
+        <span class="c1"># any additional files you created. To do so you can use the provided</span>
+        <span class="c1"># context again. The removal of the main file is handled by</span>
+        <span class="c1"># the record.</span>
+        <span class="n">context</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;description.txt&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We will show how to interact with the storable using a <code class="docutils literal notranslate"><span class="pre">record</span></code>
+here. For more information on how to use those see
+<a class="reference internal" href="example2_records.html#sphx-glr-gallery-fundamentals-example2-records-py"><span class="std std-ref">Using Records</span></a>.
+To see when <code class="docutils literal notranslate"><span class="pre">dman</span></code> requires the <code class="docutils literal notranslate"><span class="pre">__remove__</span></code> method to
+delete untracked files, see <a class="reference internal" href="example3_models.html#sphx-glr-gallery-fundamentals-example3-models-py"><span class="std std-ref">Model Types</span></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">base</span><span class="p">:</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">from_directory</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>     <span class="c1"># we will need a context.</span>
+
+    <span class="c1"># Create the storable and add it to a record.</span>
+    <span class="c1"># The record will handle all path specifications automatically.</span>
+    <span class="n">mult</span> <span class="o">=</span> <span class="n">Multiple</span><span class="p">(</span><span class="s1">&#39;John Snow&#39;</span><span class="p">,</span> <span class="s1">&#39;The name of the current user.&#39;</span><span class="p">)</span>
+    <span class="n">rec</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">mult</span><span class="p">,</span> <span class="n">stem</span><span class="o">=</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+
+    <span class="c1"># We can store the file through serialization.</span>
+    <span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;record data:&#39;</span><span class="p">)</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">print_serializable</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;files:&#39;</span><span class="p">)</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Remove all files associated with the record</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;files after removal:&#39;</span><span class="p">)</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>record data:
+{
+  &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;target&quot;: &quot;value.sto&quot;,
+    &quot;sto_type&quot;: &quot;Multiple&quot;
+  }
+}
+files:
+📂 /tmp/tmptmqggo3o
+┣━━ 📄 description.txt (29 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     The name of the current user.
+┃    ──────────────────────────────────────────────────────────────────────────
+┗━━ 📄 value.sto (9 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      John Snow
+     ──────────────────────────────────────────────────────────────────────────
+files after removal:
+📂 /tmp/tmptmqggo3o
+</pre></div>
+</div>
+<p>To avoid having to manually use <code class="docutils literal notranslate"><span class="pre">context</span></code> and <code class="docutils literal notranslate"><span class="pre">__remove__</span></code>,
+which can likely cause errors we also show a similar implementation
+of the above. The above functionality can usually be avoided like this.
+We use a <code class="docutils literal notranslate"><span class="pre">modelclass</span></code>. Details on these can be found in
+<a class="reference internal" href="example3_models.html#sphx-glr-gallery-fundamentals-example3-models-py"><span class="std std-ref">Model Types</span></a>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create an atomic storable type, creating only one file.</span>
+<span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span>
+<span class="k">class</span> <span class="nc">StringFile</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">__write__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__read__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+
+
+<span class="c1"># Automatically convert values to string files in a ``modelclass``.</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">register_preset</span><span class="p">(</span><span class="n">StringFile</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="n">StringFile</span><span class="p">(</span><span class="n">s</span><span class="p">))</span>
+
+
+<span class="c1"># Create the modelclass that contains the atomic storable types.</span>
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">store_by_field</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">compact</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Multiple</span><span class="p">:</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">StringFile</span>
+    <span class="n">description</span><span class="p">:</span> <span class="n">StringFile</span>
+</pre></div>
+</div>
+<p>We can now store the instance in a similar way to before, but now without
+requiring a <code class="docutils literal notranslate"><span class="pre">record</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">TemporaryDirectory</span><span class="p">()</span> <span class="k">as</span> <span class="n">base</span><span class="p">:</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">from_directory</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>     <span class="c1"># we will need a context.</span>
+
+    <span class="c1"># Create the modelclass.</span>
+    <span class="n">mult</span> <span class="o">=</span> <span class="n">Multiple</span><span class="p">(</span><span class="s1">&#39;John Snow&#39;</span><span class="p">,</span> <span class="s1">&#39;The name of the current user.&#39;</span><span class="p">)</span>
+
+    <span class="c1"># We can store the file through serialization.</span>
+    <span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">mult</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;the modelclass data:&#39;</span><span class="p">)</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">print_serializable</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;files:&#39;</span><span class="p">)</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Remove all files associated with the modelclass</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">mult</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;files after removal:&#39;</span><span class="p">)</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>the modelclass data:
+{
+  &quot;_ser__type&quot;: &quot;Multiple&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;value&quot;: {
+      &quot;target&quot;: &quot;value.sto&quot;,
+      &quot;sto_type&quot;: &quot;StringFile&quot;
+    },
+    &quot;description&quot;: {
+      &quot;target&quot;: &quot;description.sto&quot;,
+      &quot;sto_type&quot;: &quot;StringFile&quot;
+    }
+  }
+}
+files:
+📂 /tmp/tmpq1i7x0ig
+┣━━ 📄 description.sto (29 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     The name of the current user.
+┃    ──────────────────────────────────────────────────────────────────────────
+┗━━ 📄 value.sto (9 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      John Snow
+     ──────────────────────────────────────────────────────────────────────────
+files after removal:
+📂 /tmp/tmpq1i7x0ig
+</pre></div>
+</div>
+<p>The resulting files are also much more readable, since the modelclass
+now tells a user what the created files are associated to.</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.023 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-fundamentals-example1-storables-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/625bcadf762bffc33ebaeff824d6e334/example1_storables.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">example1_storables.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/4743a83faa15648635a3857632b84596/example1_storables.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">example1_storables.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="example2_records.html" class="btn btn-neutral float-right" title="Using Records" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="example0_serializables.html" class="btn btn-neutral float-left" title="Defining Serializables" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

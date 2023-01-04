@@ -1,0 +1,754 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Error handling &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Modules" href="../../api/modules.html" />
+    <link rel="prev" title="Logging" href="example5_logging.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Fundamentals</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="example0_serializables.html">Defining Serializables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example1_storables.html">Defining Storables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example2_records.html">Using Records</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example3_models.html">Model Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example4_path.html">Mounting and Targets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example5_logging.html">Logging</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Error handling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#serializables">Serializables</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#serialization">Serialization</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deserialization">Deserialization</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#records">Records</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Fundamentals</a> &raquo;</li>
+        
+      <li>Error handling</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/gallery/fundamentals/example6_errors.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p>Click <a class="reference internal" href="#sphx-glr-download-gallery-fundamentals-example6-errors-py"><span class="std std-ref">here</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="error-handling">
+<span id="sphx-glr-gallery-fundamentals-example6-errors-py"></span><h1>Error handling<a class="headerlink" href="#error-handling" title="Permalink to this heading">¶</a></h1>
+<p>We show how errors are handled within <code class="docutils literal notranslate"><span class="pre">dman</span></code>.</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<p>To run the example you will need the following imports:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">TemporaryDirectory</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">dman</span>
+<span class="kn">from</span> <span class="nn">dman</span> <span class="kn">import</span> <span class="n">tui</span>
+<span class="kn">from</span> <span class="nn">dman</span> <span class="kn">import</span> <span class="n">log</span>
+
+<span class="c1"># turn off warnings</span>
+<span class="n">log</span><span class="o">.</span><span class="n">default_config</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">log</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Since <cite>dman</cite> is designed to store results generated by experiments, it
+always attempts to store as much information as possible. This implies
+that exceptions are handled internally. Often such exceptions
+can occur when encountering unserializable types.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Address</span><span class="p">:</span>
+    <span class="n">street</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">number</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">zip_code</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">city</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">country</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">street</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">number</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zip_code</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">city</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">country</span><span class="si">}</span><span class="s1">&#39;</span>
+
+<span class="n">home</span> <span class="o">=</span> <span class="n">Address</span><span class="p">(</span><span class="s1">&#39;Kasteelpark Arenberg&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">3001</span><span class="p">,</span> <span class="s1">&#39;Leuven&#39;</span><span class="p">,</span> <span class="s1">&#39;Belgium&#39;</span><span class="p">)</span>
+<span class="n">employee</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;John Doe&#39;</span><span class="p">,</span> <span class="s1">&#39;home&#39;</span><span class="p">:</span> <span class="n">home</span><span class="p">}</span>
+
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;employee&#39;</span><span class="p">,</span> <span class="n">employee</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;employee&#39;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/cache/examples:fundamentals:example6_errors/employee
+┗━━ 📄 employee.json (209 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;name&quot;: &quot;John Doe&quot;,
+        &quot;home&quot;: {
+          &quot;_ser__type&quot;: &quot;__unserializable&quot;,
+          &quot;_ser__content&quot;: {
+            &quot;type&quot;: &quot;Address&quot;,
+            &quot;info&quot;: &quot;Unserializable type: Address.&quot;
+          }
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>As you can see only the serializable parts of the data structure were stored.
+The address has been replaced with a specification of the issue encountered.
+When we load the employee from disk again we get the following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">recovered</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;employee&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">recovered</span><span class="p">[</span><span class="s1">&#39;home&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Unserializable: Address
+    Unserializable type: Address.
+</pre></div>
+</div>
+<p>Usually a warning is raised when serialization fails:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">dman</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">logger_context</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">log</span><span class="o">.</span><span class="n">WARNING</span><span class="p">):</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">employee</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>[01/04/23 10:12:24] WARNING  [@dict.Address | context]:     serializables.py:629
+                             Serialization resulted in an
+                             invalid object.
+                             Unserializable: Address
+                                 Unserializable type:
+                             Address.
+</pre></div>
+</div>
+<p>The warning will tell you where the serialization failed. In this case
+it specifies <cite>&#64;dict.Address</cite> to indicate that the <cite>Address</cite> object
+was stored in a dictionary.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you do want an exception thrown you can do get one as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">employee</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">dman</span><span class="o">.</span><span class="n">BaseContext</span><span class="p">(</span><span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="k">except</span> <span class="n">dman</span><span class="o">.</span><span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="n">traceback</span><span class="o">.</span><span class="n">format_exception</span><span class="p">(</span><span class="o">*</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">msg</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>This is only recommended during debugging, since it interrupts
+serialization while it is in progress and can therefore result
+in loss of large amounts of data.</p>
+</div>
+<p>Usually the log messages should provide enough information to
+fix any issues. We nonetheless continue this example with more
+detailed examples describing the different things that can go wrong during
+serialization and what you can expect as output.
+We also illustrate how data can be recovered even if initial errors
+were present in the implementation.</p>
+<p>We will be doing so in terms of the fundamental datastructures involved
+in <cite>dman</cite>. To understand how these fit into the bigger picture
+take a look at the other examples.</p>
+</section>
+<section id="serializables">
+<h2>Serializables<a class="headerlink" href="#serializables" title="Permalink to this heading">¶</a></h2>
+<section id="serialization">
+<h3>Serialization<a class="headerlink" href="#serialization" title="Permalink to this heading">¶</a></h3>
+<p>We first serialize an unserializable type:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="o">...</span>
+
+
+<span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">Base</span><span class="p">())</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serialized</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;__unserializable&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;type&quot;: &quot;Base&quot;,
+    &quot;info&quot;: &quot;Unserializable type: Base.&quot;
+  }
+}
+</pre></div>
+</div>
+<p>Next let’s try serialization of an object with an erroneous implementation
+of <cite>__serialize__</cite>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Invalid implementation&quot;</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">):</span>
+        <span class="o">...</span>
+
+
+<span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">Base</span><span class="p">())</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serialized</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;__exc_unserializable&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;type&quot;: &quot;Base&quot;,
+    &quot;info&quot;: &quot;Error during serialization:&quot;,
+    &quot;trace&quot;: [
+      {
+        &quot;exc&quot;: &quot;RuntimeError(Invalid implementation)&quot;,
+        &quot;frames&quot;: [
+          &quot;File
+/home/runner/work/dman/dman/examples/fundamentals/example6_errors.py, line 121,
+in __serialize__: raise RuntimeError(\&quot;Invalid implementation\&quot;)&quot;
+        ]
+      }
+    ]
+  }
+}
+</pre></div>
+</div>
+<p>After deserialization we can still view the traceback resulting in the exception:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">err</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>ExcUnserializable: Base
+    Error during serialization:
+Traceback (most recent call last):
+  File &quot;/home/runner/work/dman/dman/examples/fundamentals/example6_errors.py&quot;, line 121, in __serialize__
+    raise RuntimeError(&quot;Invalid implementation&quot;)
+RuntimeError: Invalid implementation
+</pre></div>
+</div>
+<p>We also detect <cite>__serialize__</cite> methods with invalid signatures.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="c1"># `__serialize__` should either have no or two arguments besides `self`.</span>
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;Base&#39;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Invalid implementation&#39;</span><span class="p">)</span>
+
+
+<span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">Base</span><span class="p">())</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serialized</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;__exc_unserializable&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;type&quot;: &quot;Base&quot;,
+    &quot;info&quot;: &quot;Error during serialization:&quot;,
+    &quot;trace&quot;: [
+      {
+        &quot;exc&quot;: &quot;TypeError(Expected method that takes 0 or 1 positional arguments
+but got 2.)&quot;,
+        &quot;frames&quot;: []
+      }
+    ]
+  }
+}
+</pre></div>
+</div>
+</section>
+<section id="deserialization">
+<h3>Deserialization<a class="headerlink" href="#deserialization" title="Permalink to this heading">¶</a></h3>
+<p>Now we move on to deserialization.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;&lt;base&gt;&#39;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Invalid implementation&#39;</span><span class="p">)</span>
+
+
+<span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">Base</span><span class="p">())</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serialized</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;base&quot;,
+  &quot;_ser__content&quot;: &quot;&lt;base&gt;&quot;
+}
+</pre></div>
+</div>
+<p>Even though the serialized object is valid, we cannot recover the object.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">err</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>ExcUndeserializable: base
+    Exception encountered while deserializing &lt;class &#39;__main__.Base&#39;&gt;:
+Traceback (most recent call last):
+  File &quot;/home/runner/work/dman/dman/examples/fundamentals/example6_errors.py&quot;, line 166, in __deserialize__
+    raise RuntimeError(&#39;Invalid implementation&#39;)
+RuntimeError: Invalid implementation
+
+Serialized
+&quot;&lt;base&gt;&quot;
+</pre></div>
+</div>
+<p>Note how the error contains information about what was serialized.
+The error is serializable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serialized</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;__exc_undeserializable&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;type&quot;: &quot;base&quot;,
+    &quot;info&quot;: &quot;Exception encountered while deserializing &lt;class
+&#39;__main__.Base&#39;&gt;:&quot;,
+    &quot;trace&quot;: [
+      {
+        &quot;exc&quot;: &quot;RuntimeError(Invalid implementation)&quot;,
+        &quot;frames&quot;: [
+          &quot;File
+/home/runner/work/dman/dman/examples/fundamentals/example6_errors.py, line 166,
+in __deserialize__: raise RuntimeError(&#39;Invalid implementation&#39;)&quot;
+        ]
+      }
+    ],
+    &quot;serialized&quot;: &quot;&lt;base&gt;&quot;,
+    &quot;expected&quot;: &quot;base&quot;
+  }
+}
+</pre></div>
+</div>
+<p>Moreover when we try to deserialize it again, now with a valid
+class definition, things work. This sometimes allows for data restoration.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;&lt;base&gt;&#39;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">()</span>
+
+<span class="n">base</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;__main__.Base object at 0x7fe4a1bf7b50&gt;
+</pre></div>
+</div>
+</section>
+</section>
+<section id="records">
+<h2>Records<a class="headerlink" href="#records" title="Permalink to this heading">¶</a></h2>
+<p>Since a <cite>record</cite> is also serializable it should suppress errors as well
+such that the data structure is not damaged by a single erroneous item.
+We provide an overview of the errors that typically occur
+and how they are represented within the result of the serialization.</p>
+<p>Let’s begin with a storable class that cannot write to disk</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;base&#39;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__write__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Cannot write to disk.&#39;</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__read__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">()</span>
+
+<span class="n">rec</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">Base</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>If we try to serialize the object without a context we run into some issues</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serialized</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;target&quot;: &quot;db45b45e-79b5-4cee-9fb7-b84e76457603.sto&quot;,
+    &quot;sto_type&quot;: &quot;base&quot;,
+    &quot;exceptions&quot;: {
+      &quot;write&quot;: {
+        &quot;_ser__type&quot;: &quot;__un_writable&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;type&quot;: &quot;base&quot;,
+          &quot;info&quot;: &quot;Invalid context passed to Record(base,
+target=db45b45e-79b5-4cee-9fb7-b84e76457603.sto).&quot;
+        }
+      }
+    }
+  }
+}
+</pre></div>
+</div>
+<p>And when serializing it with a context we run into another.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">root</span> <span class="o">=</span> <span class="n">TemporaryDirectory</span><span class="p">()</span>
+<span class="n">ctx</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">Context</span><span class="o">.</span><span class="n">from_directory</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serialized</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;target&quot;: &quot;db45b45e-79b5-4cee-9fb7-b84e76457603.sto&quot;,
+    &quot;sto_type&quot;: &quot;base&quot;,
+    &quot;exceptions&quot;: {
+      &quot;write&quot;: {
+        &quot;_ser__type&quot;: &quot;__exc_un_writable&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;type&quot;: &quot;base&quot;,
+          &quot;info&quot;: &quot;Exception encountered while writing.&quot;,
+          &quot;trace&quot;: [
+            {
+              &quot;exc&quot;: &quot;RuntimeError(Cannot write to disk.)&quot;,
+              &quot;frames&quot;: [
+                &quot;File
+/home/runner/work/dman/dman/examples/fundamentals/example6_errors.py, line 214,
+in __write__: raise RuntimeError(&#39;Cannot write to disk.&#39;)&quot;
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}
+</pre></div>
+</div>
+<p>When we cannot write instead then we get the following behavior:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;base&#39;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__write__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;&lt;base&gt;&#39;</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__read__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Cannot read from disk.&#39;</span><span class="p">)</span>
+
+<span class="n">rec</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">Base</span><span class="p">(),</span> <span class="n">preload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serialized</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;target&quot;: &quot;3c3c8c7d-6718-4b30-82c5-8d4260254673.sto&quot;,
+    &quot;sto_type&quot;: &quot;base&quot;,
+    &quot;preload&quot;: true
+  }
+}
+</pre></div>
+</div>
+<p>When deserializing we get the following.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dser</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dser</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Record(UL[base], target=3c3c8c7d-6718-4b30-82c5-8d4260254673.sto, preload)
+ExcUnReadable: base
+    Exception encountered while reading.
+Traceback (most recent call last):
+  File &quot;/home/runner/work/dman/dman/examples/fundamentals/example6_errors.py&quot;, line 245, in __read__
+    raise RuntimeError(&#39;Cannot read from disk.&#39;)
+RuntimeError: Cannot read from disk.
+</pre></div>
+</div>
+<p>Note how the contents are still unloaded. We could fix <cite>Base</cite> and try loading
+again. We also simulate a more advanced scenario where we first serialize
+the invalid record again, reproducing what would happen
+if objects became invalid and the remainder of the data structure
+was saved to disk again. We also define a corrected version of <cite>Base</cite>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">dser</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serialized</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">root</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">console</span><span class="o">=</span><span class="n">tui</span><span class="o">.</span><span class="n">Console</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mi">200</span><span class="p">))</span>
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">storable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;base&#39;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Base</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__write__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;&lt;base&gt;&#39;</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__read__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;target&quot;: &quot;3c3c8c7d-6718-4b30-82c5-8d4260254673.sto&quot;,
+    &quot;sto_type&quot;: &quot;base&quot;,
+    &quot;preload&quot;: true,
+    &quot;exceptions&quot;: {
+      &quot;read&quot;: {
+        &quot;_ser__type&quot;: &quot;__exc_un_readable&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;type&quot;: &quot;base&quot;,
+          &quot;info&quot;: &quot;Exception encountered while reading.&quot;,
+          &quot;trace&quot;: [
+            {
+              &quot;exc&quot;: &quot;RuntimeError(Cannot read from disk.)&quot;,
+              &quot;frames&quot;: [
+                &quot;File
+/home/runner/work/dman/dman/examples/fundamentals/example6_errors.py, line 245,
+in __read__: raise RuntimeError(&#39;Cannot read from disk.&#39;)&quot;
+              ]
+            }
+          ],
+          &quot;target&quot;: &quot;&lt;un-serializable: Target&gt;&quot;
+        }
+      }
+    }
+  }
+}
+📂 /tmp/tmpgkez2wvo
+┗━━ 📄 3c3c8c7d-6718-4b30-82c5-8d4260254673.sto (6 bytes)
+     ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+      &lt;base&gt;
+     ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>Now we can load the contents of the original invalid record.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">dser</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;__main__.Base object at 0x7fe4a1e42f80&gt;
+</pre></div>
+</div>
+<p>And we can load the contents of the one that was serialized when
+it was invalid.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dser</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dser</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dser</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Record(base, target=3c3c8c7d-6718-4b30-82c5-8d4260254673.sto, preload)
+&lt;__main__.Base object at 0x7fe4a1bf7d60&gt;
+</pre></div>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.046 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-fundamentals-example6-errors-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/da20d8c4c59a1ebeaff173b6dfa33404/example6_errors.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">example6_errors.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/95ee7296e5dc08a4687d8f7f042ea685/example6_errors.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">example6_errors.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../../api/modules.html" class="btn btn-neutral float-right" title="Modules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="example5_logging.html" class="btn btn-neutral float-left" title="Logging" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

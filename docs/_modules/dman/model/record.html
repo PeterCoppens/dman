@@ -1,0 +1,868 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>dman.model.record &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/fundamentals/index.html">Fundamentals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>dman.model.record</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dman.model.record</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Defines records, which are used to make ``storable`` objects ``serializable``.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">asdict</span><span class="p">,</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">is_dataclass</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
+
+<span class="kn">from</span> <span class="nn">dman.core</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="kn">from</span> <span class="nn">dman.core.serializables</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SER_CONTENT</span><span class="p">,</span>
+    <span class="n">SER_TYPE</span><span class="p">,</span>
+    <span class="n">is_serializable</span><span class="p">,</span>
+    <span class="n">serializable</span><span class="p">,</span>
+    <span class="n">BaseContext</span><span class="p">,</span>
+    <span class="n">serialize</span><span class="p">,</span>
+    <span class="n">SerializationError</span><span class="p">,</span>
+    <span class="n">isvalid</span><span class="p">,</span>
+    <span class="n">ExcUnserializable</span><span class="p">,</span>
+    <span class="n">Unserializable</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dman.core.storables</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">STO_TYPE</span><span class="p">,</span>
+    <span class="n">is_storable</span><span class="p">,</span>
+    <span class="n">read</span><span class="p">,</span>
+    <span class="n">sto_type2str</span><span class="p">,</span>
+    <span class="n">get_storable_name</span><span class="p">,</span>
+    <span class="n">write</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">dman.core.path</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Target</span><span class="p">,</span>
+    <span class="n">AUTO</span><span class="p">,</span>
+    <span class="n">Mount</span><span class="p">,</span>
+    <span class="n">mount</span><span class="p">,</span>
+    <span class="n">UserQuitException</span><span class="p">,</span>
+    <span class="n">MountException</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="n">REMOVE</span> <span class="o">=</span> <span class="s2">&quot;__remove__&quot;</span>
+<span class="n">EXTENSION</span> <span class="o">=</span> <span class="s2">&quot;__ext__&quot;</span>
+
+
+<div class="viewcode-block" id="is_removable"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.is_removable">[docs]</a><span class="k">def</span> <span class="nf">is_removable</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if an object is removable.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">REMOVE</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NoFile"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.NoFile">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;__no_file&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">NoFile</span><span class="p">(</span><span class="n">Unserializable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returned when no file was found in the record target.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;NoFile: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="UnWritable"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.UnWritable">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;__un_writable&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">UnWritable</span><span class="p">(</span><span class="n">Unserializable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returned when no data could be written to the record target file.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;UnWritable: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="ExcUnWritable"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.ExcUnWritable">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;__exc_un_writable&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ExcUnWritable</span><span class="p">(</span><span class="n">ExcUnserializable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returned when no data could be written to the </span>
+<span class="sd">        record target file due to an exception.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;ExcUnWritable: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="UnReadable"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.UnReadable">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;__un_readable&quot;</span><span class="p">)</span>
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">UnReadable</span><span class="p">(</span><span class="n">Unserializable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returned when the record target file could not be read.&quot;&quot;&quot;</span>
+    <span class="n">target</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;UnReadable: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__serialize__</span><span class="p">()</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
+        <span class="n">res</span><span class="p">:</span> <span class="n">Unserializable</span> <span class="o">=</span> <span class="n">Unserializable</span><span class="o">.</span><span class="n">__deserialize__</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">res</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ExcUnReadable"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.ExcUnReadable">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;__exc_un_readable&quot;</span><span class="p">)</span>
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">ExcUnReadable</span><span class="p">(</span><span class="n">ExcUnserializable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returned when the record target file </span>
+<span class="sd">        could not be read due to an exception.&quot;&quot;&quot;</span>
+    <span class="n">target</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__serialize__</span><span class="p">()</span>
+        <span class="n">res</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">ser</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
+        <span class="n">res</span><span class="p">:</span> <span class="n">ExcUnserializable</span> <span class="o">=</span> <span class="n">ExcUnserializable</span><span class="o">.</span><span class="n">__deserialize__</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">type</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">trace</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StoreError"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.StoreError">[docs]</a><span class="k">class</span> <span class="nc">StoreError</span><span class="p">(</span><span class="n">SerializationError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when storing failed in such a way that </span>
+<span class="sd">        serialization should be cancelled. Usually caused by </span>
+<span class="sd">        the quit option was passed when a file is overwritten.&quot;&quot;&quot;</span>    
+    <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Context"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context">[docs]</a><span class="k">class</span> <span class="nc">Context</span><span class="p">(</span><span class="n">BaseContext</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialization context that keeps track of the current folder.&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">mnt</span><span class="p">:</span> <span class="n">Mount</span><span class="p">,</span>
+        <span class="n">subdir</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a context with a mount point and a subdirectory relative to it.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span> <span class="o">=</span> <span class="n">mnt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">subdir</span> <span class="o">=</span> <span class="n">subdir</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">directory</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Absolute directory that the context controls.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subdir</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Context(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">directory</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+<div class="viewcode-block" id="Context.from_directory"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.from_directory">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_directory</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">gitignore</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a context based on a directory.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">Mount</span><span class="p">(</span><span class="n">directory</span><span class="p">,</span> <span class="n">gitignore</span><span class="o">=</span><span class="n">gitignore</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Context.mount"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.mount">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">mount</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">subdir</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">cluster</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">generator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">base</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">gitignore</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a context from a mount point.</span>
+<span class="sd">        The path of the file is determined as described below.</span>
+
+<span class="sd">            If the files are clustered then the path is ``&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;/&lt;key&gt;.&lt;ext&gt;``</span>
+<span class="sd">            If cluster is set to False then the path is ``&lt;base&gt;/&lt;generator&gt;/&lt;subdir&gt;/&lt;key&gt;.&lt;ext&gt;``</span>
+
+<span class="sd">            When base is not provided then it is set to .dman if</span>
+<span class="sd">            it does not exist an exception is raised.</span>
+
+<span class="sd">            When generator is not provided it will automatically be set based on</span>
+<span class="sd">            the location of the script relative to the .dman folder</span>
+<span class="sd">            (again raising an exception if it is not found). For example</span>
+<span class="sd">            if the script is located in ``&lt;project-root&gt;/examples/folder/script.py``</span>
+<span class="sd">            and .dman is located in ``&lt;project-root&gt;/.dman``.</span>
+<span class="sd">            Then generator is set to cache/examples:folder:script (i.e.</span>
+<span class="sd">            the / is replaced by : in the output).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key (str):  Key for the file.</span>
+<span class="sd">            subdir (os.PathLike, optional): Specifies optional subdirectory in generator folder. Defaults to &quot;&quot;.</span>
+<span class="sd">            cluster (bool, optional): A subfolder ``key`` is automatically created when set to True. Defaults to True.</span>
+<span class="sd">            generator (str, optional): Specifies the generator that created the file. Defaults to script label.</span>
+<span class="sd">            base (os.PathLike, optional): Specifies the root folder. Defaults to &quot;.dman&quot;.</span>
+<span class="sd">            gitignore (bool, optional): Specifies whether files added to this mount point should be ignored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">mount</span><span class="p">(</span>
+                <span class="n">key</span><span class="p">,</span>
+                <span class="n">subdir</span><span class="o">=</span><span class="n">subdir</span><span class="p">,</span>
+                <span class="n">cluster</span><span class="o">=</span><span class="n">cluster</span><span class="p">,</span>
+                <span class="n">generator</span><span class="o">=</span><span class="n">generator</span><span class="p">,</span>
+                <span class="n">base</span><span class="o">=</span><span class="n">base</span><span class="p">,</span>
+                <span class="n">gitignore</span><span class="o">=</span><span class="n">gitignore</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Context.serialize_list"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.serialize_list">[docs]</a>    <span class="k">def</span> <span class="nf">serialize_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ser</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize a list.</span>
+<span class="sd">            Automatically turns the list into an :class:`dman.mlist` if</span>
+<span class="sd">            it contains a storable object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">is_model</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">itm</span> <span class="ow">in</span> <span class="n">ser</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">is_storable</span><span class="p">(</span><span class="n">itm</span><span class="p">):</span>
+                <span class="n">itm</span> <span class="o">=</span> <span class="n">record</span><span class="p">(</span><span class="n">itm</span><span class="p">)</span>
+                <span class="n">is_model</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">itm</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">is_model</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="p">{</span><span class="n">SER_TYPE</span><span class="p">:</span> <span class="s2">&quot;_ser__mlist&quot;</span><span class="p">,</span> <span class="n">SER_CONTENT</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;store&quot;</span><span class="p">:</span> <span class="n">res</span><span class="p">}}</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="Context.serialize_dict"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.serialize_dict">[docs]</a>    <span class="k">def</span> <span class="nf">serialize_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ser</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize a dict.</span>
+<span class="sd">            Automatically turns the dict into an :class:`dman.mdict` if</span>
+<span class="sd">            it contains a storable object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">is_model</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ser</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">is_storable</span><span class="p">(</span><span class="n">v</span><span class="p">):</span>
+                <span class="n">v</span> <span class="o">=</span> <span class="n">record</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+                <span class="n">is_model</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">res</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_model</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="p">{</span><span class="n">SER_TYPE</span><span class="p">:</span> <span class="s2">&quot;_ser__mdict&quot;</span><span class="p">,</span> <span class="n">SER_CONTENT</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;store&quot;</span><span class="p">:</span> <span class="n">res</span><span class="p">}}</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="Context.absolute"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.absolute">[docs]</a>    <span class="k">def</span> <span class="nf">absolute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the path of a target relative to the mount point.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Target</span><span class="p">):</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">Target</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">target</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">subdir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">subdir</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">subdir</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="Context.write"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">storable</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write a storable to a target.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">Target</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="n">local</span><span class="p">,</span> <span class="n">_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">local</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">_target</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">target</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">_target</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">write</span><span class="p">(</span><span class="n">storable</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">SerializationError</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="n">UserQuitException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">StoreError</span><span class="p">(</span><span class="o">*</span><span class="n">e</span><span class="o">.</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">ExcUnWritable</span><span class="o">.</span><span class="n">from_exception</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">(),</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">get_storable_name</span><span class="p">(</span><span class="n">storable</span><span class="p">),</span>
+                <span class="n">info</span><span class="o">=</span><span class="s2">&quot;Exception encountered while writing.&quot;</span><span class="p">,</span>
+                <span class="n">ignore</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>  <span class="c1"># TODO verify</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">process_invalid</span><span class="p">(</span><span class="s2">&quot;An error occurred while writing.&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">target</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">_target</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="Context.read"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.read">[docs]</a>    <span class="k">def</span> <span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read a storable of some expected type from a target.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">local</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">choice</span><span class="o">=</span><span class="s2">&quot;_ignore&quot;</span><span class="p">)</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">local</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">target</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">read</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">local</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">expected</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">STO_TYPE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">NoFile</span><span class="p">(</span><span class="nb">type</span><span class="o">=</span><span class="n">expected</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Missing Target: </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">process_invalid</span><span class="p">(</span><span class="s2">&quot;Could not find specified file.&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">res</span>
+        <span class="k">except</span> <span class="n">SerializationError</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">ExcUnReadable</span><span class="o">.</span><span class="n">from_exception</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">(),</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">get_storable_name</span><span class="p">(</span><span class="n">expected</span><span class="p">),</span>
+                <span class="n">info</span><span class="o">=</span><span class="s2">&quot;Exception encountered while reading.&quot;</span><span class="p">,</span>
+                <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                <span class="n">ignore</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>  <span class="c1"># TODO verify</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">process_invalid</span><span class="p">(</span><span class="s2">&quot;An error occurred while reading.&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="Context.remove"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.remove">[docs]</a>    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">obj</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove object or file, stored at specified target.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">local</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Get target with respect to mount point</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+
+            <span class="c1"># Remove file if it exists.</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">MountException</span><span class="p">:</span>
+                <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;Tried to remove file outside of mount point: &quot;</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s1">&quot;.&#39;</span><span class="p">,</span>
+                    <span class="s2">&quot;context&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="c1"># Localize the target</span>
+            <span class="n">local</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">subdir</span><span class="p">),</span> <span class="n">Target</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="c1"># Remove files created by the object</span>
+        <span class="n">tp</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_removable</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="n">tp</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="s2">&quot;remove&quot;</span><span class="p">):</span>
+                <span class="n">inner_remove</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">REMOVE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">inner_remove</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">inner_remove</span><span class="p">(</span><span class="n">local</span><span class="p">)</span>
+                <span class="k">return</span>
+
+        <span class="k">if</span> <span class="n">is_dataclass</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">asdict</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+            <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="n">tp</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="s2">&quot;remove&quot;</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">[:]:</span>
+                    <span class="n">local</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="n">tp</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="s2">&quot;remove&quot;</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">local</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">obj</span><span class="p">[</span><span class="n">k</span><span class="p">])</span></div>
+
+<div class="viewcode-block" id="Context.join"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.join">[docs]</a>    <span class="k">def</span> <span class="nf">join</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">subdir</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a context relative to this one based on the subdirectory.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">subdir</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">mnt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="p">,</span> <span class="n">subdir</span><span class="o">=</span><span class="n">subdir</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="Context.open"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.open">[docs]</a>    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Open a file, registered by this context.</span>
+<span class="sd">        </span>
+<span class="sd">            The signature is identical to the standard ``open`` command.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">target</span><span class="p">),</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Context.prepare"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.prepare">[docs]</a>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">choice</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;Context&quot;</span><span class="p">,</span> <span class="n">Target</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare a target for writing a storable to.&quot;&quot;&quot;</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">absolute</span><span class="p">(</span><span class="n">target</span><span class="p">),</span> <span class="n">choice</span><span class="o">=</span><span class="n">choice</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">subdir</span><span class="p">),</span> <span class="n">Target</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">target</span><span class="o">.</span><span class="n">name</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="o">.</span><span class="fm">__enter__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="o">.</span><span class="fm">__exit__</span><span class="p">(</span><span class="o">*</span><span class="n">_</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Context.close"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Context.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Close this context point. </span>
+<span class="sd">        </span>
+<span class="sd">            Empty subdirectories are deleted and a gitignore is created if </span>
+<span class="sd">            requested on creation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mnt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="is_unloaded"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.is_unloaded">[docs]</a><span class="k">def</span> <span class="nf">is_unloaded</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if an object is unloaded.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Unloaded</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_undefined"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.is_undefined">[docs]</a><span class="k">def</span> <span class="nf">is_undefined</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if an object is undefined.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Undefined</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Unloaded"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Unloaded">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Unloaded</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unloaded storable object.&quot;&quot;&quot;</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>               <span class="c1">#: Storable type</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span>     <span class="c1">#: Target relative to the context</span>
+    <span class="n">base</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span>       <span class="c1">#: The directory of the context</span>
+    <span class="n">context</span><span class="p">:</span> <span class="n">Context</span>        <span class="c1">#: The context used when the record was deserialized.</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Path where the content of this storable is located.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__load__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;UL[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">]&quot;</span></div>
+
+
+<div class="viewcode-block" id="Undefined"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Undefined">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">Undefined</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Undefined storable object.&quot;&quot;&quot;</span>
+    <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1">#: Storable type</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;ERR[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">]&quot;</span></div>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;_record_exceptions&quot;</span><span class="p">)</span>
+<span class="nd">@dataclass</span>
+<span class="k">class</span> <span class="nc">_RecordExceptions</span><span class="p">:</span>
+    <span class="n">write</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">read</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">write</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;write&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">ser</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;write&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="n">ser</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">empty</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">write</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">read</span> <span class="ow">is</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="Record"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Record">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;_ser__record&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Record</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wraps a storable in such a way to make it serializable. </span>
+<span class="sd">    </span>
+<span class="sd">        Keeps track of the file the storable is written to and </span>
+<span class="sd">        by default only loads the content when it is requested.</span>
+
+<span class="sd">        When no target is given a unique file name is determined using </span>
+<span class="sd">        ``uuid4``. The suffix of the file is determined automatically </span>
+<span class="sd">        based on the type.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="n">Target</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">preload</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a new record</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            content (Any): The storable contained within.</span>
+<span class="sd">            target (Target, optional): The target to which to write.</span>
+<span class="sd">            preload (bool, optional): Load the storable upon deserialization. Defaults to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_content</span> <span class="o">=</span> <span class="n">content</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_target</span> <span class="o">=</span> <span class="n">Target</span><span class="p">()</span> <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">target</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">preload</span> <span class="o">=</span> <span class="n">preload</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span> <span class="o">=</span> <span class="n">_RecordExceptions</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Record.exists"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Record.exists">[docs]</a>    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the file associated with this record exists.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">read</span><span class="p">,</span> <span class="n">NoFile</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Record.isvalid"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Record.isvalid">[docs]</a>    <span class="k">def</span> <span class="nf">isvalid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">load</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check whether the content was loaded successfully.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">load</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">read</span> <span class="ow">is</span> <span class="kc">None</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">target</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The target path where content is written.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">is_complete</span><span class="p">():</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span>
+
+        <span class="n">base</span> <span class="o">=</span> <span class="n">Target</span><span class="p">(</span><span class="n">stem</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">subdir</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">is_serializable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">)</span> <span class="ow">or</span> <span class="n">is_dataclass</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">):</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;.json&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">default_suffix</span><span class="p">)</span>
+        <span class="n">request</span> <span class="o">=</span> <span class="n">Target</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">,</span> <span class="n">EXTENSION</span><span class="p">,</span> <span class="n">AUTO</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_target</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">sto_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The storable type string of the content.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">is_unloaded</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">)</span> <span class="ow">or</span> <span class="n">is_undefined</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="o">.</span><span class="n">type</span>
+        <span class="k">return</span> <span class="n">sto_type2str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">content</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the content of this method, loading it if not done before.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+    <span class="nd">@content</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">content</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Assign a storable value to the content of this record.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_storable</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expected storable type.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_content</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span>
+        <span class="n">preload_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preload</span><span class="p">:</span>
+            <span class="n">preload_str</span> <span class="o">=</span> <span class="s2">&quot;, preload&quot;</span>
+        <span class="k">if</span> <span class="n">content</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Record(None, target=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="si">}{</span><span class="n">preload_str</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="k">if</span> <span class="n">is_unloaded</span><span class="p">(</span><span class="n">content</span><span class="p">)</span> <span class="ow">or</span> <span class="n">is_undefined</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Record(</span><span class="si">{</span><span class="n">content</span><span class="si">}</span><span class="s2">, target=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="si">}{</span><span class="n">preload_str</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Record(</span><span class="si">{</span><span class="n">sto_type2str</span><span class="p">(</span><span class="n">content</span><span class="p">)</span><span class="si">}</span><span class="s2">, target=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="si">}{</span><span class="n">preload_str</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+<div class="viewcode-block" id="Record.load"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Record.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the content of this record from the file.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_unloaded</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span>
+
+        <span class="n">ul</span><span class="p">:</span> <span class="n">Unloaded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span>
+        <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="s2">&quot;loading content&quot;</span><span class="p">,</span> <span class="s2">&quot;record&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="s2">&quot;record&quot;</span><span class="p">):</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">ul</span><span class="o">.</span><span class="n">__load__</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">isvalid</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="n">content</span>
+                <span class="k">return</span> <span class="n">content</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_content</span> <span class="o">=</span> <span class="n">content</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span></div>
+
+<div class="viewcode-block" id="Record.store"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.Record.store">[docs]</a>    <span class="k">def</span> <span class="nf">store</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">BaseContext</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store the content of this record.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">Context</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">is_unloaded</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="o">.</span><span class="n">base</span> <span class="o">!=</span> <span class="n">context</span><span class="o">.</span><span class="n">directory</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>  <span class="c1"># the target was moved</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">write</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>  <span class="c1"># the previous store failed</span>
+            <span class="k">elif</span> <span class="n">is_unloaded</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="o">.</span><span class="n">target</span>  <span class="c1"># no load needed</span>
+
+            <span class="c1"># execute store</span>
+            <span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">write</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_content</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">target</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">write</span> <span class="o">=</span> <span class="n">UnWritable</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sto_type</span><span class="p">,</span>
+                <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Invalid context passed to Record(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sto_type</span><span class="si">}</span><span class="s2">, target=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">process_invalid</span><span class="p">(</span>
+                <span class="s2">&quot;Exception encountered during write.&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">write</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">target</span></div>
+
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">BaseContext</span><span class="p">):</span>
+        <span class="n">sto_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sto_type</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">Target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">context</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_target</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">is_complete</span><span class="p">()</span> <span class="k">else</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">target</span><span class="p">),</span>
+            <span class="s2">&quot;sto_type&quot;</span><span class="p">:</span> <span class="n">sto_type</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">preload</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;preload&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">preload</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;exceptions&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">exceptions</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">content_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">serialized</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">BaseContext</span><span class="p">):</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">serialized</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">Target</span><span class="o">.</span><span class="n">from_path</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">Target</span><span class="p">(</span><span class="o">*</span><span class="n">target</span><span class="p">)</span>
+        <span class="n">sto_type</span> <span class="o">=</span> <span class="n">serialized</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sto_type&quot;</span><span class="p">)</span>
+        <span class="n">preload</span> <span class="o">=</span> <span class="n">serialized</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;preload&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># load previous exceptions</span>
+        <span class="n">exceptions</span> <span class="o">=</span> <span class="n">serialized</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;exceptions&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">exceptions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">exceptions</span> <span class="o">=</span> <span class="n">_RecordExceptions</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exceptions</span> <span class="o">=</span> <span class="n">_RecordExceptions</span><span class="o">.</span><span class="n">__deserialize__</span><span class="p">(</span><span class="n">exceptions</span><span class="p">)</span>
+
+        <span class="c1"># try to load the contents of the record</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">Context</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Target</span><span class="p">):</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">Unloaded</span><span class="p">(</span><span class="n">sto_type</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">context</span><span class="o">.</span><span class="n">directory</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">Context</span><span class="p">):</span>
+            <span class="n">exceptions</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="n">UnReadable</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">sto_type</span><span class="p">,</span>
+                <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Invalid context passed to Record(</span><span class="si">{</span><span class="n">sto_type</span><span class="si">}</span><span class="s2">, target=</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">,</span>
+                <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">process_invalid</span><span class="p">(</span>
+                <span class="s2">&quot;Exception encountered during read.&quot;</span><span class="p">,</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">read</span>
+            <span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">Undefined</span><span class="p">(</span><span class="n">sto_type</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exceptions</span><span class="o">.</span><span class="n">read</span> <span class="o">=</span> <span class="n">UnReadable</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">sto_type</span><span class="p">,</span>
+                <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Invalid target recovered Record(</span><span class="si">{</span><span class="n">sto_type</span><span class="si">}</span><span class="s2">, target=</span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">,</span>
+                <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">process_invalid</span><span class="p">(</span>
+                <span class="s2">&quot;Exception encountered during read.&quot;</span><span class="p">,</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">read</span>
+            <span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">Undefined</span><span class="p">(</span><span class="n">sto_type</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">preload</span><span class="o">=</span><span class="n">preload</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">preload</span><span class="p">:</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">exceptions</span> <span class="o">=</span> <span class="n">exceptions</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span> <span class="nf">__remove__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">BaseContext</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">Context</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">isvalid</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="p">)</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Loaded content is invalid. Could not continue removing.&quot;</span><span class="p">,</span> <span class="s2">&quot;record&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Tried removing with invalid context type.&quot;</span><span class="p">,</span> <span class="s2">&quot;record&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="record"><a class="viewcode-back" href="../../../gallery/fundamentals/example2_records.html#dman.model.record.record">[docs]</a><span class="k">def</span> <span class="nf">record</span><span class="p">(</span>
+    <span class="n">content</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="o">/</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">stem</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+    <span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">AUTO</span><span class="p">,</span>
+    <span class="n">subdir</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">preload</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrap a storable object in a serializable record.</span>
+<span class="sd">        The target path is specified as:</span>
+
+<span class="sd">        * ``./subdir/stem+suffix`` or</span>
+<span class="sd">        * ``./subdir/name``.</span>
+
+<span class="sd">    :param content:         The storable object.</span>
+<span class="sd">    :param str stem:        The stem of a file.</span>
+<span class="sd">    :param str suffix:      The suffix or extension of the file (e.g. ``&#39;.json&#39;``).</span>
+<span class="sd">    :param str name:        The full name of the file.</span>
+<span class="sd">    :param str subdir:      The subdirectory in which to store te file.</span>
+<span class="sd">    :param bool preload:    When ``True`` the file will be loaded during deserialization.</span>
+
+<span class="sd">    :raises ValueError:     if a name and a stem and/or suffix are specified.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Record</span><span class="p">(</span>
+        <span class="n">content</span><span class="p">,</span>
+        <span class="n">Target</span><span class="p">(</span><span class="n">stem</span><span class="o">=</span><span class="n">stem</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="n">suffix</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">subdir</span><span class="o">=</span><span class="n">subdir</span><span class="p">),</span>
+        <span class="n">preload</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="remove"><a class="viewcode-back" href="../../../api/records.html#dman.model.record.remove">[docs]</a><span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Context</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove all files created by an object.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">Context</span><span class="p">):</span>
+        <span class="k">return</span>
+    <span class="n">context</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">obj</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

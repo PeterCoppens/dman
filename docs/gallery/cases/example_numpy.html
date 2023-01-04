@@ -1,0 +1,854 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Numpy Experiments &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Panda DataFrames" href="example_pandas.html" />
+    <link rel="prev" title="Case Studies" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Case Studies</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Numpy Experiments</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#experiment-configuration">Experiment configuration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#executing-experiments">Executing experiments</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="example_pandas.html">Panda DataFrames</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_svm.html">SKLearn and SVM</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../fundamentals/index.html">Fundamentals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Case Studies</a> &raquo;</li>
+        
+      <li>Numpy Experiments</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/gallery/cases/example_numpy.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p>Click <a class="reference internal" href="#sphx-glr-download-gallery-cases-example-numpy-py"><span class="std std-ref">here</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="numpy-experiments">
+<span id="sphx-glr-gallery-cases-example-numpy-py"></span><h1>Numpy Experiments<a class="headerlink" href="#numpy-experiments" title="Permalink to this heading">¶</a></h1>
+<p>We provide a common use case with <code class="docutils literal notranslate"><span class="pre">numpy</span></code> and <code class="docutils literal notranslate"><span class="pre">dman</span></code>.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h2>
+<p>Consider the following simple code to compute least-squares estimates.
+We would like to run a batch experiment on this estimator to evaluate its
+performance for different sample sizes. While doing so we want to
+keep track of our data and how it was generated.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.random</span> <span class="k">as</span> <span class="nn">npr</span>
+
+
+<span class="k">def</span> <span class="nf">gather_data</span><span class="p">(</span>
+    <span class="n">nb_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">std</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rg</span><span class="p">:</span> <span class="n">npr</span><span class="o">.</span><span class="n">Generator</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="n">rg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rg</span> <span class="o">=</span> <span class="n">npr</span><span class="o">.</span><span class="n">default_rng</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">rg</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">nb_samples</span><span class="p">)</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">rg</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">nb_samples</span><span class="p">)</span> <span class="o">*</span> <span class="n">std</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">theta</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">theta</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">e</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">regressors</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))])</span><span class="o">.</span><span class="n">T</span>
+
+
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">gather_data</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">th</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">regressors</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">y</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="experiment-configuration">
+<h2>Experiment configuration<a class="headerlink" href="#experiment-configuration" title="Permalink to this heading">¶</a></h2>
+<p>First we need to somehow represent an experiment configuration.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">dman</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span>
+
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">storable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Model</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Linear model.</span>
+<span class="sd">    Support storing in a file (storable=True)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">theta</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">std</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+</pre></div>
+</div>
+<p>If we take a look at the serialization of <code class="docutils literal notranslate"><span class="pre">Model</span></code> we see that
+the result could be significantly more compact.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dman</span> <span class="kn">import</span> <span class="n">tui</span>
+
+<span class="n">tui</span><span class="o">.</span><span class="n">print_serializable</span><span class="p">(</span><span class="n">Model</span><span class="p">())</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{
+  &quot;_ser__type&quot;: &quot;model&quot;,
+  &quot;_ser__content&quot;: {
+    &quot;theta&quot;: [
+      0.5,
+      3
+    ],
+    &quot;std&quot;: 0.1
+  }
+}
+</pre></div>
+</div>
+<p>The current serialization has been automatically generated by <code class="docutils literal notranslate"><span class="pre">dman</span></code>.
+Instead a custom serialization procedure can be specified.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">re</span>
+
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="n">storable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Model</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Linear model.</span>
+<span class="sd">    Support storing in a file (storable=True)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">theta</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">std</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span>
+
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Model(theta=</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">theta</span><span class="p">))</span><span class="si">}</span><span class="s2">, std=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">std</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">):</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;Model\(theta=\[(?P&lt;theta&gt;[0-9., ]+)\], std=(?P&lt;std&gt;[0-9.]*)\)&quot;</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">ser</span><span class="p">)</span><span class="o">.</span><span class="n">groupdict</span><span class="p">()</span>
+        <span class="n">theta</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;theta&quot;</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;std&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">theta</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)],</span> <span class="nb">float</span><span class="p">(</span><span class="n">std</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>We can then create a gallery of models as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gallery</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">mdict</span><span class="p">(</span><span class="n">store_by_key</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">store_subdir</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">gallery</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="n">Model</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
+        <span class="s2">&quot;flat&quot;</span><span class="p">:</span> <span class="n">Model</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
+        <span class="s2">&quot;steep&quot;</span><span class="p">:</span> <span class="n">Model</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="n">std</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
+        <span class="s2">&quot;noisy&quot;</span><span class="p">:</span> <span class="n">Model</span><span class="p">(</span><span class="n">theta</span><span class="o">=</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">std</span><span class="o">=</span><span class="mf">5.0</span><span class="p">),</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;__gallery&quot;</span><span class="p">,</span> <span class="n">gallery</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="s2">&quot;gallery&quot;</span><span class="p">,</span> <span class="n">cluster</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="s2">&quot;gallery&quot;</span><span class="p">,</span> <span class="n">cluster</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/gallery
+┣━━ 📄 __gallery.json (1.0 kB)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;_ser__type&quot;: &quot;_ser__mdict&quot;,
+┃       &quot;_ser__content&quot;: {
+┃         &quot;store&quot;: {
+┃           &quot;default&quot;: {
+┃             &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃             &quot;_ser__content&quot;: {
+┃               &quot;target&quot;: &quot;default.json&quot;,
+┃               &quot;sto_type&quot;: &quot;model&quot;
+┃             }
+┃           },
+┃           &quot;flat&quot;: {
+┃             &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃             &quot;_ser__content&quot;: {
+┃               &quot;target&quot;: &quot;flat.json&quot;,
+┃               &quot;sto_type&quot;: &quot;model&quot;
+┃             }
+┃           },
+┃           &quot;steep&quot;: {
+┃             &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃             &quot;_ser__content&quot;: {
+┃               &quot;target&quot;: &quot;steep.json&quot;,
+┃               &quot;sto_type&quot;: &quot;model&quot;
+┃             }
+┃           },
+┃           &quot;noisy&quot;: {
+┃             &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃             &quot;_ser__content&quot;: {
+┃               &quot;target&quot;: &quot;noisy.json&quot;,
+┃               &quot;sto_type&quot;: &quot;model&quot;
+┃             }
+┃           }
+┃         },
+┃         &quot;store_by_key&quot;: true
+┃       }
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 default.json (32 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     &quot;Model(theta=[0.5, 3], std=0.1)&quot;
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 flat.json (32 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     &quot;Model(theta=[0, 1.0], std=0.1)&quot;
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 noisy.json (32 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     &quot;Model(theta=[0.5, 3], std=5.0)&quot;
+┃    ──────────────────────────────────────────────────────────────────────────
+┗━━ 📄 steep.json (35 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      &quot;Model(theta=[10.0, 0.0], std=0.1)&quot;
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>Models can then be loaded from the gallery as follows</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">dman</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;__gallery&quot;</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="s2">&quot;gallery&quot;</span><span class="p">,</span> <span class="n">cluster</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="n">key</span><span class="p">]</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">model</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Model(theta=[0.5, 3.0], std=0.1)
+</pre></div>
+</div>
+<p>Note that <code class="docutils literal notranslate"><span class="pre">modelclass</span></code> acts like a <code class="docutils literal notranslate"><span class="pre">dataclass</span></code>, but supports some additional
+field types. Some examples are given below.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># We specify that the field should be serialized (not stored)</span>
+<span class="c1"># an alternative would be ``dman.field`` or ``dman.recordfield``</span>
+<span class="c1"># in which case the model would be stored in a separate file</span>
+<span class="c1"># from the configuration.</span>
+<span class="n">_model_field</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serializefield</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Model</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Comparable arrays (<code class="docutils literal notranslate"><span class="pre">carray</span></code>)
+provide some additional functionality when used in a <code class="docutils literal notranslate"><span class="pre">modelclass</span></code>
+especially useful in configuration classes. We specifically state that the
+array is of type integer and should  be comparable.
+When assigning an array to the class, it will be converted automatically.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dman.numeric</span> <span class="kn">import</span> <span class="n">carray</span>
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;config&quot;</span><span class="p">,</span> <span class="n">storable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">compact</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Configuration</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Experiment Configuration.&quot;&quot;&quot;</span>
+
+    <span class="n">model</span><span class="p">:</span> <span class="n">Model</span> <span class="o">=</span> <span class="n">_model_field</span>
+    <span class="n">nb_samples</span><span class="p">:</span> <span class="n">carray</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+    <span class="n">nb_repeats</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
+    <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<p>Note how we simply pass some logspace to <code class="docutils literal notranslate"><span class="pre">nb_samples</span></code> as default factory.
+The input there will be converted to (numpy) integers automatically.
+All types in <code class="docutils literal notranslate"><span class="pre">dman.numeric</span></code> – that is <code class="docutils literal notranslate"><span class="pre">sarray</span></code>, <code class="docutils literal notranslate"><span class="pre">carray</span></code> and <code class="docutils literal notranslate"><span class="pre">barray</span></code>
+can be typed similarly to how we do for <code class="docutils literal notranslate"><span class="pre">carray</span></code> here.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;type of nb_samples:&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">Configuration</span><span class="p">()</span><span class="o">.</span><span class="n">nb_samples</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>type of nb_samples: &lt;class &#39;numpy.int64&#39;&gt;
+</pre></div>
+</div>
+<p>We can also compare configurations (since we specified <code class="docutils literal notranslate"><span class="pre">carray</span></code>)</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span>
+    <span class="s2">&quot;check for configs:&quot;</span><span class="p">,</span>
+    <span class="n">Configuration</span><span class="p">()</span> <span class="o">==</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">nb_samples</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">20</span><span class="p">)),</span>
+    <span class="n">Configuration</span><span class="p">()</span> <span class="o">==</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">nb_samples</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">20</span><span class="p">)),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>check for configs: True False
+</pre></div>
+</div>
+</section>
+<section id="executing-experiments">
+<h2>Executing experiments<a class="headerlink" href="#executing-experiments" title="Permalink to this heading">¶</a></h2>
+<p>We can now define the experiment behavior. We can do so as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">asdict</span>
+
+
+<span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span> <span class="n">nb_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">rg</span><span class="p">:</span> <span class="n">npr</span><span class="o">.</span><span class="n">Generator</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">gather_data</span><span class="p">(</span><span class="n">nb_samples</span><span class="p">,</span> <span class="o">**</span><span class="n">asdict</span><span class="p">(</span><span class="n">model</span><span class="p">),</span> <span class="n">rg</span><span class="o">=</span><span class="n">rg</span><span class="p">)</span>
+    <span class="n">th</span><span class="p">,</span> <span class="n">res</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">regressors</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">y</span><span class="p">,</span> <span class="n">rcond</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">th</span> <span class="o">-</span> <span class="n">model</span><span class="o">.</span><span class="n">theta</span><span class="p">,</span> <span class="nb">ord</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="n">res</span>
+
+
+<span class="c1"># Specify the location of the data using a recordfield.</span>
+<span class="c1"># The data will be stored in:</span>
+<span class="c1">#   ./data/&lt;key&gt;.&lt;suffix&gt;</span>
+<span class="c1"># for each (storable) key.</span>
+<span class="n">_data_field</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">recordfield</span><span class="p">(</span>
+    <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">smdict</span><span class="p">(</span><span class="n">store_subdir</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">store_by_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)),</span>
+    <span class="n">subdir</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">,</span>
+    <span class="n">stem</span><span class="o">=</span><span class="s2">&quot;__data&quot;</span><span class="p">,</span>
+    <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="kn">from</span> <span class="nn">dman.numeric</span> <span class="kn">import</span> <span class="n">barray</span>
+
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">storable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">compact</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Experiment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Experiment result.&quot;&quot;&quot;</span>
+
+    <span class="n">model</span><span class="p">:</span> <span class="n">Model</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serializefield</span><span class="p">()</span>
+    <span class="n">nb_samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">nb_repeats</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">dman</span><span class="o">.</span><span class="n">smdict</span> <span class="o">=</span> <span class="n">_data_field</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">Configuration</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="n">rg</span> <span class="o">=</span> <span class="n">npr</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">nb_samples</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_samples</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">nb_repeats</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span>
+        <span class="p">)</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span><span class="p">,))</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">),</span>
+                <span class="s2">&quot;residual&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span><span class="p">))</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="n">_iter</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="n">_iter</span> <span class="o">=</span> <span class="n">tui</span><span class="o">.</span><span class="n">track</span><span class="p">(</span>
+                <span class="n">_iter</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Executing experiment ...&quot;</span>
+            <span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">_iter</span><span class="p">:</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;residual&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">execute</span><span class="p">(</span>
+                <span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">nb_samples</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">rg</span><span class="o">=</span><span class="n">rg</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+</pre></div>
+</div>
+<p>We can run one experiment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">exp</span> <span class="o">=</span> <span class="n">Experiment</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">Configuration</span><span class="p">(</span><span class="n">nb_repeats</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;demo-modelclass&quot;</span><span class="p">,</span> <span class="n">exp</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;demo-modelclass&quot;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Executing experiment ... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+📂 .dman/cache/examples:cases:example_numpy/demo-modelclass
+┣━━ 📂 data
+┃   ┣━━ 📄 __data.json (453 bytes)
+┃   ┃    ──────────────────────────────────────────────────────────────────────
+┃   ┃     {
+┃   ┃       &quot;store&quot;: {
+┃   ┃         &quot;error&quot;: {
+┃   ┃           &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃   ┃           &quot;_ser__content&quot;: {
+┃   ┃             &quot;target&quot;: &quot;error.npy&quot;,
+┃   ┃             &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃   ┃           }
+┃   ┃         },
+┃   ┃         &quot;residual&quot;: {
+┃   ┃           &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃   ┃           &quot;_ser__content&quot;: {
+┃   ┃             &quot;target&quot;: &quot;residual.npy&quot;,
+┃   ┃             &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃   ┃           }
+┃   ┃         }
+┃   ┃       },
+┃   ┃       &quot;store_by_key&quot;: true
+┃   ┃     }
+┃   ┃    ──────────────────────────────────────────────────────────────────────
+┃   ┣━━ 📄 error.npy (168 bytes)
+┃   ┗━━ 📄 residual.npy (168 bytes)
+┗━━ 📄 demo-modelclass.json (275 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;Experiment&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;model&quot;: &quot;Model(theta=[0.5, 3], std=0.1)&quot;,
+          &quot;nb_samples&quot;: 10,
+          &quot;nb_repeats&quot;: 5,
+          &quot;data&quot;: {
+            &quot;target&quot;: &quot;data/__data.json&quot;,
+            &quot;sto_type&quot;: &quot;_sto__smdict&quot;
+          }
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>The creation of the data dictionary is somewhat verbose. Instead
+we can again create a data modelclass</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">store_by_field</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">storable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">compact</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">DataItem</span><span class="p">:</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">barray</span>
+    <span class="n">residual</span><span class="p">:</span> <span class="n">barray</span>
+
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">storable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">compact</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Experiment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Experiment result.&quot;&quot;&quot;</span>
+
+    <span class="n">model</span><span class="p">:</span> <span class="n">Model</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">serializefield</span><span class="p">()</span>  <span class="c1"># Store the model in experiment json.</span>
+    <span class="n">nb_samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">nb_repeats</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">DataItem</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">recordfield</span><span class="p">(</span><span class="n">stem</span><span class="o">=</span><span class="s1">&#39;__data&#39;</span><span class="p">,</span> <span class="n">subdir</span><span class="o">=</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">cfg</span><span class="p">:</span> <span class="n">Configuration</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="n">rg</span> <span class="o">=</span> <span class="n">npr</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">seed</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">nb_samples</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_samples</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">nb_repeats</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span>
+        <span class="p">)</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">DataItem</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span><span class="p">,)),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span><span class="p">)))</span>
+        <span class="n">_iter</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+            <span class="n">_iter</span> <span class="o">=</span> <span class="n">tui</span><span class="o">.</span><span class="n">track</span><span class="p">(</span>
+                <span class="n">_iter</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_repeats</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Executing experiment ...&quot;</span>
+            <span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">_iter</span><span class="p">:</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">error</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">res</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">residual</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">execute</span><span class="p">(</span>
+                <span class="n">cfg</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">nb_samples</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">rg</span><span class="o">=</span><span class="n">rg</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+</pre></div>
+</div>
+<p>No need to convert to <code class="docutils literal notranslate"><span class="pre">barray</span></code>. We can again store the experiment:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">exp</span> <span class="o">=</span> <span class="n">Experiment</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">Configuration</span><span class="p">(</span><span class="n">nb_repeats</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span> <span class="n">idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;demo&quot;</span><span class="p">,</span> <span class="n">exp</span><span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;demo&quot;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Executing experiment ... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+📂 .dman/cache/examples:cases:example_numpy/demo
+┣━━ 📂 data
+┃   ┣━━ 📄 __data.json (184 bytes)
+┃   ┃    ──────────────────────────────────────────────────────────────────────
+┃   ┃     {
+┃   ┃       &quot;error&quot;: {
+┃   ┃         &quot;target&quot;: &quot;error.npy&quot;,
+┃   ┃         &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃   ┃       },
+┃   ┃       &quot;residual&quot;: {
+┃   ┃         &quot;target&quot;: &quot;residual.npy&quot;,
+┃   ┃         &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃   ┃       }
+┃   ┃     }
+┃   ┃    ──────────────────────────────────────────────────────────────────────
+┃   ┣━━ 📄 error.npy (168 bytes)
+┃   ┗━━ 📄 residual.npy (168 bytes)
+┗━━ 📄 demo.json (271 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;Experiment&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;model&quot;: &quot;Model(theta=[0.5, 3], std=0.1)&quot;,
+          &quot;nb_samples&quot;: 10,
+          &quot;nb_repeats&quot;: 5,
+          &quot;data&quot;: {
+            &quot;target&quot;: &quot;data/__data.json&quot;,
+            &quot;sto_type&quot;: &quot;DataItem&quot;
+          }
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>To store multiple experiments we can use a <code class="docutils literal notranslate"><span class="pre">mruns</span></code> object.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">runs</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">smruns</span><span class="p">(</span><span class="n">stem</span><span class="o">=</span><span class="s2">&quot;experiment&quot;</span><span class="p">,</span> <span class="n">subdir</span><span class="o">=</span><span class="s2">&quot;experiments&quot;</span><span class="p">)</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">Configuration</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">(</span><span class="s2">&quot;flat&quot;</span><span class="p">),</span> <span class="n">nb_samples</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tui</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_samples</span><span class="p">)),</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">nb_samples</span><span class="p">)):</span>
+    <span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Experiment</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">idx</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
+    <span class="s2">&quot;experiment&quot;</span><span class="p">,</span> <span class="n">dman</span><span class="o">.</span><span class="n">mdict</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span><span class="s2">&quot;cfg&quot;</span><span class="p">:</span> <span class="n">cfg</span><span class="p">,</span> <span class="s2">&quot;experiments&quot;</span><span class="p">:</span> <span class="n">runs</span><span class="p">},</span> <span class="n">store_by_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;experiment&quot;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Working... ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:00
+📂 .dman/cache/examples:cases:example_numpy/experiment
+┣━━ 📂 experiments
+┃   ┣━━ 📂 experiment-0
+┃   ┃   ┣━━ 📂 data
+┃   ┃   ┃   ┣━━ 📄 __data.json (184 bytes)
+┃   ┃   ┃   ┃    ──────────────────────────────────────────────────────────────
+┃   ┃   ┃   ┃     {
+┃   ┃   ┃   ┃       &quot;error&quot;: {
+┃   ┃   ┃   ┃         &quot;target&quot;: &quot;error.npy&quot;,
+┃   ┃   ┃   ┃         &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃   ┃   ┃   ┃       },
+┃   ┃   ┃   ┃       &quot;residual&quot;: {
+┃   ┃   ┃   ┃         &quot;target&quot;: &quot;residual.npy&quot;,
+┃   ┃   ┃   ┃         &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃   ┃   ┃   ┃       }
+┃   ┃   ┃   ┃     }
+┃   ┃   ┃   ┃    ──────────────────────────────────────────────────────────────
+┃   ┃   ┃   ┣━━ 📄 error.npy (8.1 kB)
+┃   ┃   ┃   ┗━━ 📄 residual.npy (8.1 kB)
+┃   ┃   ┗━━ 📄 experiment.json (187 bytes)
+┃   ┃        ──────────────────────────────────────────────────────────────────
+┃   ┃         {
+┃   ┃           &quot;model&quot;: &quot;Model(theta=[0.0, 1.0], std=0.1)&quot;,
+┃   ┃           &quot;nb_samples&quot;: 10,
+┃   ┃           &quot;nb_repeats&quot;: 1000,
+┃   ┃           &quot;data&quot;: {
+┃   ┃             &quot;target&quot;: &quot;data/__data.json&quot;,
+┃   ┃             &quot;sto_type&quot;: &quot;DataItem&quot;
+┃   ┃           }
+┃   ┃         }
+┃   ┃        ──────────────────────────────────────────────────────────────────
+┃   ┣━━ 📂 experiment-1
+┃   ┃   ┣━━ 📂 data
+┃   ┃   ┃   ┣━━ 📄 __data.json (184 bytes)
+┃   ┃   ┃   ┃    ──────────────────────────────────────────────────────────────
+┃   ┃   ┃   ┃     {
+┃   ┃   ┃   ┃       &quot;error&quot;: {
+┃   ┃   ┃   ┃         &quot;target&quot;: &quot;error.npy&quot;,
+┃   ┃   ┃   ┃         &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃   ┃   ┃   ┃       },
+┃   ┃   ┃   ┃       &quot;residual&quot;: {
+┃   ┃   ┃   ┃         &quot;target&quot;: &quot;residual.npy&quot;,
+┃   ┃   ┃   ┃         &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃   ┃   ┃   ┃       }
+┃   ┃   ┃   ┃     }
+┃   ┃   ┃   ┃    ──────────────────────────────────────────────────────────────
+┃   ┃   ┃   ┣━━ 📄 error.npy (8.1 kB)
+┃   ┃   ┃   ┗━━ 📄 residual.npy (8.1 kB)
+┃   ┃   ┗━━ 📄 experiment.json (188 bytes)
+┃   ┃        ──────────────────────────────────────────────────────────────────
+┃   ┃         {
+┃   ┃           &quot;model&quot;: &quot;Model(theta=[0.0, 1.0], std=0.1)&quot;,
+┃   ┃           &quot;nb_samples&quot;: 100,
+┃   ┃           &quot;nb_repeats&quot;: 1000,
+┃   ┃           &quot;data&quot;: {
+┃   ┃             &quot;target&quot;: &quot;data/__data.json&quot;,
+┃   ┃             &quot;sto_type&quot;: &quot;DataItem&quot;
+┃   ┃           }
+┃   ┃         }
+┃   ┃        ──────────────────────────────────────────────────────────────────
+┃   ┗━━ 📂 experiment-2
+┃       ┣━━ 📂 data
+┃       ┃   ┣━━ 📄 __data.json (184 bytes)
+┃       ┃   ┃    ──────────────────────────────────────────────────────────────
+┃       ┃   ┃     {
+┃       ┃   ┃       &quot;error&quot;: {
+┃       ┃   ┃         &quot;target&quot;: &quot;error.npy&quot;,
+┃       ┃   ┃         &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃       ┃   ┃       },
+┃       ┃   ┃       &quot;residual&quot;: {
+┃       ┃   ┃         &quot;target&quot;: &quot;residual.npy&quot;,
+┃       ┃   ┃         &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃       ┃   ┃       }
+┃       ┃   ┃     }
+┃       ┃   ┃    ──────────────────────────────────────────────────────────────
+┃       ┃   ┣━━ 📄 error.npy (8.1 kB)
+┃       ┃   ┗━━ 📄 residual.npy (8.1 kB)
+┃       ┗━━ 📄 experiment.json (189 bytes)
+┃            ──────────────────────────────────────────────────────────────────
+┃             {
+┃               &quot;model&quot;: &quot;Model(theta=[0.0, 1.0], std=0.1)&quot;,
+┃               &quot;nb_samples&quot;: 1000,
+┃               &quot;nb_repeats&quot;: 1000,
+┃               &quot;data&quot;: {
+┃                 &quot;target&quot;: &quot;data/__data.json&quot;,
+┃                 &quot;sto_type&quot;: &quot;DataItem&quot;
+┃               }
+┃             }
+┃            ──────────────────────────────────────────────────────────────────
+┣━━ 📄 cfg.json (140 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;model&quot;: &quot;Model(theta=[0.0, 1.0], std=0.1)&quot;,
+┃       &quot;nb_samples&quot;: [
+┃         10,
+┃         100,
+┃         1000
+┃       ],
+┃       &quot;nb_repeats&quot;: 1000
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 experiment.json (581 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;_ser__type&quot;: &quot;_ser__mdict&quot;,
+┃       &quot;_ser__content&quot;: {
+┃         &quot;store&quot;: {
+┃           &quot;cfg&quot;: {
+┃             &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃             &quot;_ser__content&quot;: {
+┃               &quot;target&quot;: &quot;cfg.json&quot;,
+┃               &quot;sto_type&quot;: &quot;config&quot;
+┃             }
+┃           },
+┃           &quot;experiments&quot;: {
+┃             &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃             &quot;_ser__content&quot;: {
+┃               &quot;target&quot;: &quot;experiments.json&quot;,
+┃               &quot;sto_type&quot;: &quot;_sto__smruns&quot;
+┃             }
+┃           }
+┃         },
+┃         &quot;store_by_key&quot;: true
+┃       }
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┗━━ 📄 experiments.json (755 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;stem&quot;: &quot;experiment&quot;,
+        &quot;run_count&quot;: 3,
+        &quot;store&quot;: [
+          {
+            &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+            &quot;_ser__content&quot;: {
+              &quot;target&quot;: &quot;experiments/experiment-0/experiment.json&quot;,
+              &quot;sto_type&quot;: &quot;Experiment&quot;
+            }
+          },
+          {
+            &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+            &quot;_ser__content&quot;: {
+              &quot;target&quot;: &quot;experiments/experiment-1/experiment.json&quot;,
+              &quot;sto_type&quot;: &quot;Experiment&quot;
+            }
+          },
+          {
+            &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+            &quot;_ser__content&quot;: {
+              &quot;target&quot;: &quot;experiments/experiment-2/experiment.json&quot;,
+              &quot;sto_type&quot;: &quot;Experiment&quot;
+            }
+          }
+        ],
+        &quot;subdir&quot;: &quot;experiments&quot;
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>It is always important to keep in mind how you defined your file hierarchy,
+especially when dealing with modelclasses. For example an instance of
+<code class="docutils literal notranslate"><span class="pre">Experiment</span></code> will always write the errors to ./data/error.npy. If
+you try to serialize two instances to the same folder therefore, the data
+will be overridden.</p>
+</div>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.484 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-cases-example-numpy-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/5e1cdae35151d26c2110ee03a8b90435/example_numpy.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">example_numpy.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/269bc077f6c3a8392ce3f398d5e97ba8/example_numpy.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">example_numpy.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="example_pandas.html" class="btn btn-neutral float-right" title="Panda DataFrames" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Case Studies" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

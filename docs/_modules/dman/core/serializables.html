@@ -1,0 +1,1028 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>dman.core.serializables &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/fundamentals/index.html">Fundamentals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>dman.core.serializables</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dman.core.serializables</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Contains utilities for creating serializable types and to serialize and </span>
+<span class="sd">deserialize them into objects that can be encoded through json.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">MISSING</span><span class="p">,</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">is_dataclass</span><span class="p">,</span> <span class="n">asdict</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Type</span>
+
+
+<span class="kn">from</span> <span class="nn">dman.utils</span> <span class="kn">import</span> <span class="n">sjson</span>
+<span class="kn">from</span> <span class="nn">dman.core</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="kn">from</span> <span class="nn">dman.core.errors</span> <span class="kn">import</span> <span class="n">Trace</span><span class="p">,</span> <span class="n">Stack</span><span class="p">,</span> <span class="n">Frame</span><span class="p">,</span> <span class="n">BaseInvalid</span><span class="p">,</span> <span class="n">ExcInvalid</span>
+<span class="kn">from</span> <span class="nn">dman.utils.smartdataclasses</span> <span class="kn">import</span> <span class="n">configclass</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">suppress</span>
+
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+
+
+<span class="n">SER_TYPE</span> <span class="o">=</span> <span class="s2">&quot;_ser__type&quot;</span>
+<span class="n">SER_CONTENT</span> <span class="o">=</span> <span class="s2">&quot;_ser__content&quot;</span>
+<span class="n">SERIALIZE</span> <span class="o">=</span> <span class="s2">&quot;__serialize__&quot;</span>
+<span class="n">DESERIALIZE</span> <span class="o">=</span> <span class="s2">&quot;__deserialize__&quot;</span>
+<span class="n">NO_SERIALIZE</span> <span class="o">=</span> <span class="s2">&quot;__no_serialize__&quot;</span>
+<span class="n">CONVERT</span> <span class="o">=</span> <span class="s2">&quot;__convert__&quot;</span>
+<span class="n">DECONVERT</span> <span class="o">=</span> <span class="s2">&quot;__de_convert__&quot;</span>
+
+
+<span class="n">__serializable_types</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+<span class="n">__custom_serializable</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Config"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.Config">[docs]</a><span class="nd">@configclass</span>
+<span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for serializables.</span>
+
+<span class="sd">        This class has a global instance that can be accessed as follows:</span>
+
+<span class="sd">        &gt;&gt;&gt; dman.core.serializables.config.validate = True</span>
+<span class="sd">        &gt;&gt;&gt; dman.params.serialize.validate = True  # equivalent</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        validate (bool, optional): Cancel serialization when an invalid object is encountered. Defaults to False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">validate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">Config</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="compare_type"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.compare_type">[docs]</a><span class="k">def</span> <span class="nf">compare_type</span><span class="p">(</span><span class="n">base</span><span class="p">:</span> <span class="n">Type</span><span class="p">,</span> <span class="n">check</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compare two types, supporting generic types.</span>
+
+<span class="sd">    The signature operates similarly to ``isinstance``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">check</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+        <span class="n">check</span> <span class="o">=</span> <span class="p">(</span><span class="n">check</span><span class="p">,)</span>
+    <span class="k">if</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">check</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">&quot;__origin__&quot;</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">base</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">MISSING</span> <span class="ow">and</span> <span class="n">base</span> <span class="ow">in</span> <span class="n">check</span></div>
+    
+
+<div class="viewcode-block" id="get_type_name"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.get_type_name">[docs]</a><span class="k">def</span> <span class="nf">get_type_name</span><span class="p">(</span><span class="n">ser_type</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the class name of an instance or type.&quot;&quot;&quot;</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ser_type</span><span class="p">,</span> <span class="s2">&quot;__name__&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ser_type</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">ser_type</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">name</span></div>
+
+
+<div class="viewcode-block" id="ser_type2str"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.ser_type2str">[docs]</a><span class="k">def</span> <span class="nf">ser_type2str</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the serialize type string of an object or class.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">SER_TYPE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ser_str2type"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.ser_str2type">[docs]</a><span class="k">def</span> <span class="nf">ser_str2type</span><span class="p">(</span><span class="n">ser</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the class represented by a serialize type string.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">__serializable_types</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_serializable"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.is_serializable">[docs]</a><span class="k">def</span> <span class="nf">is_serializable</span><span class="p">(</span><span class="n">ser</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if an object is a serializable type.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">_Instance</span><span class="o">.</span><span class="n">__convert__</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">is_serializable_type_str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">SER_TYPE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="n">sjson</span><span class="o">.</span><span class="n">atomic_type</span><span class="p">(</span><span class="n">ser</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">ser</span><span class="p">)</span> <span class="ow">in</span> <span class="n">__custom_serializable</span></div>
+    
+
+<div class="viewcode-block" id="is_serializable_type_str"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.is_serializable_type_str">[docs]</a><span class="k">def</span> <span class="nf">is_serializable_type_str</span><span class="p">(</span><span class="n">ser</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a string is the name of a registered serializable type.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">ser</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ser</span> <span class="ow">in</span> <span class="n">__serializable_types</span></div>
+
+
+<div class="viewcode-block" id="is_deserializable"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.is_deserializable">[docs]</a><span class="k">def</span> <span class="nf">is_deserializable</span><span class="p">(</span><span class="n">serialized</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if an object has been produced through serialization.</span>
+
+<span class="sd">    If the serialized object is a dictionary, then it should include</span>
+<span class="sd">    the serializable type string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">sjson</span><span class="o">.</span><span class="n">atomic_type</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">ser_type</span> <span class="o">=</span> <span class="n">serialized</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SER_TYPE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ser_type</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">is_serializable_type_str</span><span class="p">(</span><span class="n">ser_type</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="register_serializable"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.register_serializable">[docs]</a><span class="k">def</span> <span class="nf">register_serializable</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+    <span class="n">serialize</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseContext&quot;</span><span class="p">]],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">deserialize</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseContext&quot;</span><span class="p">]],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register a class as a serializable type with a given name.</span>
+
+<span class="sd">        If the serialize and deserialize methods are not provided then the class</span>
+<span class="sd">        should have a `__serialize__` and `__deserialize__` method defined.</span>
+<span class="sd">        In this case however you should prefer using the :func:``serializable``</span>
+<span class="sd">        decorator instead.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name (str): Name of the serializable</span>
+<span class="sd">        cls (Type[Any]): Class to register</span>
+<span class="sd">        serialize (Callable[[Any, Optional[BaseContext]], Any], optional): Serialize method. Defaults to None.</span>
+<span class="sd">        deserialize (Callable[[Any, Optional[BaseContext]], Any], optional): Deserialize method. Defaults to None.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; class Base: ...</span>
+<span class="sd">        &gt;&gt;&gt; register_serializable(&#39;base&#39;, Base, lambda obj: &#39;&lt;base&gt;&#39;, lambda ser: Base())</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">__serializable_types</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">cls</span>
+    <span class="k">if</span> <span class="n">serialize</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">deserialize</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">__custom_serializable</span><span class="p">[</span><span class="bp">cls</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">serialize</span><span class="p">,</span> <span class="n">deserialize</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="serializable_types"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.serializable_types">[docs]</a><span class="k">def</span> <span class="nf">serializable_types</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the serializable types dictionary.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">__serializable_types</span></div>
+
+
+<div class="viewcode-block" id="get_custom_serializable"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.get_custom_serializable">[docs]</a><span class="k">def</span> <span class="nf">get_custom_serializable</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the signature of a custom serializable object.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">__custom_serializable</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="serialize"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.serialize">[docs]</a><span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;BaseContext&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">content_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize a serializable object.</span>
+
+<span class="sd">        The context can be used to store the current directory, logging</span>
+<span class="sd">        and custom serialization behavior. Serializable objects are created</span>
+<span class="sd">        using :func:`serializable` or alternatively using :func:`register_serializable`.</span>
+
+<span class="sd">        By default, any object that can be handled by json is serializable.</span>
+<span class="sd">        That is ``str``, ``int``, ``float``, ``None``, ``list``, ``tuple`` and ``dict``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj: The object to serialize</span>
+<span class="sd">        context (BaseContext, optional): The serialization context. Defaults to None.</span>
+<span class="sd">        content_only (bool, optional): Do not include type information when true.</span>
+<span class="sd">            Results in more compact serialization. Defaults to False.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; @serializable</span>
+<span class="sd">        &gt;&gt;&gt; @dataclass</span>
+<span class="sd">        &gt;&gt;&gt; class Base:</span>
+<span class="sd">        &gt;&gt;&gt;     value: str</span>
+<span class="sd">        &gt;&gt;&gt; ser = serialize([Base(&#39;content&#39;), &#39;message&#39;])</span>
+<span class="sd">        &gt;&gt;&gt; print(sjson.dumps(ser, indent=4))</span>
+<span class="sd">        [</span>
+<span class="sd">            {</span>
+<span class="sd">                &quot;_ser__type&quot;: &quot;Base&quot;,</span>
+<span class="sd">                &quot;_ser__content&quot;: {</span>
+<span class="sd">                    &quot;value&quot;: &quot;content&quot;</span>
+<span class="sd">                }</span>
+<span class="sd">            },</span>
+<span class="sd">            &quot;message&quot;</span>
+<span class="sd">        ]</span>
+<span class="sd">        &gt;&gt;&gt; ser = serialize(Base(&#39;content&#39;), content_only=True)</span>
+<span class="sd">        &gt;&gt;&gt; print(sjson.dumps(ser, indent=4))</span>
+<span class="sd">        {</span>
+<span class="sd">            &quot;value&quot;: &quot;content&quot;</span>
+<span class="sd">        }</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">BaseContext</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">content_only</span><span class="o">=</span><span class="n">content_only</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="deserialize"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.deserialize">[docs]</a><span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;BaseContext&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">expected</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deserialize an object produced through serialization.</span>
+
+<span class="sd">        The context can be used to store the current directory, logging</span>
+<span class="sd">        and custom serialization behavior. Deserializable objects are created</span>
+<span class="sd">        using :func:`serializable` or alternatively using :func:`register_serializable`.</span>
+
+<span class="sd">        By default, any object that can be handled by json is deserializable.</span>
+<span class="sd">        That is ``str``, ``int``, ``float``, ``None``, ``list``, ``tuple`` and ``dict``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        serialized: The object to deserialize.</span>
+<span class="sd">        context (BaseContext, optional): _description_. Defaults to None.</span>
+<span class="sd">        expected (_type_, optional): Class or string representing the expected type. If set to</span>
+<span class="sd">            None the type is received from the dictionary. Defaults to None.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; @serializable(name=&#39;_base&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; @dataclass</span>
+<span class="sd">        &gt;&gt;&gt; class Base:</span>
+<span class="sd">        &gt;&gt;&gt;     value: str</span>
+<span class="sd">        &gt;&gt;&gt; ser = serialize(Base(&#39;content&#39;))</span>
+<span class="sd">        &gt;&gt;&gt; print(deserialize(ser).value)</span>
+<span class="sd">        content</span>
+<span class="sd">        &gt;&gt;&gt; ser = serialize(Base(&#39;content&#39;), content_only=True)</span>
+<span class="sd">        &gt;&gt;&gt; print(deserialize(ser, expected=Base).value)</span>
+<span class="sd">        content</span>
+<span class="sd">        &gt;&gt;&gt; print(deserialize(ser, expected=&#39;_base&#39;).value)</span>
+<span class="sd">        content</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">context</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">BaseContext</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_serialize__dataclass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;BaseContext&quot;</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="n">serialized</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">NO_SERIALIZE</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">serialized</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialize</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">serialized</span>
+
+
+<span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">_deserialize__dataclass</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">serialized</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="s2">&quot;BaseContext&quot;</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">serialized</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">res</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserialize</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">res</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_serialize__enum</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+
+<span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">_deserialize__enum</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">serialized</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="o">*</span><span class="n">_</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">serialized</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+
+
+<span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">_default__convert</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">base</span><span class="p">):</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">asdict</span><span class="p">(</span><span class="n">base</span><span class="p">))</span>
+
+
+<span class="k">def</span> <span class="nf">_serialize__template</span><span class="p">(</span><span class="n">template</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="bp">cls</span><span class="p">:</span> <span class="nb">any</span><span class="p">):</span>
+    <span class="n">convert</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">CONVERT</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">convert</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">is_dataclass</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Serializable should either be a dataclass or should have a &quot;</span><span class="si">{</span><span class="n">CONVERT</span><span class="si">}</span><span class="s1">&quot; method specified.&#39;</span>
+            <span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">CONVERT</span><span class="p">,</span> <span class="n">_default__convert</span><span class="p">)</span>
+        <span class="n">convert</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">CONVERT</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">BaseContext</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">serialize</span><span class="p">(</span><span class="n">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">context</span><span class="p">,</span> <span class="n">content_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">__serialize__</span>
+
+
+<span class="k">def</span> <span class="nf">_deserialize__template</span><span class="p">(</span><span class="n">template</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">BaseContext</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">convert</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">CONVERT</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">convert</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">convert</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">DECONVERT</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">convert</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">convert</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span>
+        <span class="k">return</span> <span class="n">convert</span><span class="p">(</span><span class="n">deserialize</span><span class="p">(</span><span class="n">ser</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">expected</span><span class="o">=</span><span class="n">template</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">__deserialize__</span>
+
+
+<div class="viewcode-block" id="serializable"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.serializable">[docs]</a><span class="k">def</span> <span class="nf">serializable</span><span class="p">(</span><span class="bp">cls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">template</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a class serializable.</span>
+
+<span class="sd">        Returns the same class as was passed in and the class is registered as a</span>
+<span class="sd">        serializable type. Serialization and Deserialization methods are added</span>
+<span class="sd">        automatically if cls is a dataclass or an Enum. Otherwise a</span>
+<span class="sd">        ``__serialize__`` and ``__deserialize__`` method should be provided</span>
+<span class="sd">        for serialization. If these are not provided conversion will fail.</span>
+
+<span class="sd">        See :ref:`sphx_glr_gallery_fundamentals_example0_serializables.py` for</span>
+<span class="sd">        detailed examples on how to create serializable types.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cls (Any): The class to process.</span>
+<span class="sd">        name (str, optional): The name of the serializable type. Defaults to None.</span>
+<span class="sd">        template (Any, optional): Template class to use during serialization. Defaults to None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="n">local_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">if</span> <span class="n">local_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">local_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="s2">&quot;__name__&quot;</span><span class="p">)</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">SER_TYPE</span><span class="p">,</span> <span class="n">local_name</span><span class="p">)</span>
+        <span class="n">register_serializable</span><span class="p">(</span><span class="n">local_name</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">template</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">CONVERT</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_dataclass</span><span class="p">(</span><span class="n">template</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s1">&#39;Template should be either a dataclass or should have a &quot;</span><span class="si">{</span><span class="n">CONVERT</span><span class="si">}</span><span class="s1">&quot; method defined.&#39;</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="n">DECONVERT</span><span class="p">):</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">CONVERT</span><span class="p">,</span> <span class="n">_default__convert</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">SERIALIZE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">SERIALIZE</span><span class="p">,</span> <span class="n">_serialize__template</span><span class="p">(</span><span class="n">template</span><span class="p">,</span> <span class="bp">cls</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">DESERIALIZE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">DESERIALIZE</span><span class="p">,</span> <span class="n">_deserialize__template</span><span class="p">(</span><span class="n">template</span><span class="p">))</span>
+
+        <span class="k">elif</span> <span class="n">is_dataclass</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">SERIALIZE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">SERIALIZE</span><span class="p">,</span> <span class="n">_serialize__dataclass</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">DESERIALIZE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">DESERIALIZE</span><span class="p">,</span> <span class="n">_deserialize__dataclass</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">issubclass</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">SERIALIZE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">SERIALIZE</span><span class="p">,</span> <span class="n">_serialize__enum</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">DESERIALIZE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">DESERIALIZE</span><span class="p">,</span> <span class="n">_deserialize__enum</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">SERIALIZE</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">DESERIALIZE</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Class </span><span class="si">{</span><span class="bp">cls</span><span class="si">}</span><span class="s2"> could not be made serializable. Provide a manual definition of a `__serialize__` and `__deserialize__` method.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span>
+
+    <span class="c1"># See if we&#39;re being called as @serializable or @serializable().</span>
+    <span class="k">if</span> <span class="bp">cls</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># We&#39;re called with parens.</span>
+        <span class="k">return</span> <span class="n">wrap</span>
+
+    <span class="c1"># We&#39;re called as @serializable without parens.</span>
+    <span class="k">return</span> <span class="n">wrap</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span></div>
+
+
+<span class="n">serializable</span><span class="p">(</span><span class="n">Frame</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;__frame&quot;</span><span class="p">)</span>
+<span class="n">serializable</span><span class="p">(</span><span class="n">Stack</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;__stack&quot;</span><span class="p">)</span>
+<span class="n">serializable</span><span class="p">(</span><span class="n">Trace</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;__trace&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;__instance&#39;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">_Instance</span><span class="p">:</span>
+    <span class="n">registered</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">registered</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Created an instance tracker for an unregistered name&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__convert__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">inst</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">registered</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="n">inst</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+    
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">ser</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">registered</span><span class="p">[</span><span class="n">ser</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="register_instance"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.register_instance">[docs]</a><span class="k">def</span> <span class="nf">register_instance</span><span class="p">(</span><span class="n">inst</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">/</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">MISSING</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Register instance for serialization</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        inst (Any): Instance to serialize. Defaults to None.</span>
+<span class="sd">        name (str): Name of instances.</span>
+<span class="sd">    </span>
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; @dman.register_instance(name=&#39;ell1&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; def ell1(x, y):</span>
+<span class="sd">        &gt;&gt;&gt;     return abs(x) + abs(y)</span>
+
+<span class="sd">        &gt;&gt;&gt; dman.register_instance(ell1, name=&#39;ell1&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">is</span> <span class="n">MISSING</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;registered_instance() missing 1 required keyword-only argument: &#39;name&#39;&quot;</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span><span class="n">inst</span><span class="p">):</span>
+        <span class="n">old</span> <span class="o">=</span> <span class="n">_Instance</span><span class="o">.</span><span class="n">registered</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">old</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Overwrote registered instance with name </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1"> from </span><span class="si">{</span><span class="n">old</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span><span class="si">}</span><span class="s1"> to </span><span class="si">{</span><span class="n">inst</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+        <span class="n">_Instance</span><span class="o">.</span><span class="n">registered</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">inst</span>
+        <span class="k">return</span> <span class="n">inst</span>
+    <span class="k">if</span> <span class="n">inst</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">wrap</span>
+    <span class="k">return</span> <span class="n">wrap</span><span class="p">(</span><span class="n">inst</span><span class="p">)</span></div>
+        
+
+
+<div class="viewcode-block" id="Unserializable"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.Unserializable">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;__unserializable&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Unserializable</span><span class="p">(</span><span class="n">BaseInvalid</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents an object that could not be serialized.&quot;&quot;&quot;</span>
+
+    <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="ExcUnserializable"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.ExcUnserializable">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;__exc_unserializable&quot;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ExcUnserializable</span><span class="p">(</span><span class="n">ExcInvalid</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents an object that could not be serialized due to an exception.&quot;&quot;&quot;</span>
+
+    <span class="o">...</span></div>
+
+
+<div class="viewcode-block" id="Undeserializable"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.Undeserializable">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;__undeserializable&quot;</span><span class="p">)</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Undeserializable</span><span class="p">(</span><span class="n">BaseInvalid</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents an object that could not be deserialized.&quot;&quot;&quot;</span>
+
+    <span class="n">serialized</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1">#: The serialized object.</span>
+    <span class="n">expected</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1">#: The expected serializable type of the object.</span>
+
+<div class="viewcode-block" id="Undeserializable.format"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.Undeserializable.format">[docs]</a>    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">format</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Serialized</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">yield</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">indent</span><span class="p">(</span><span class="n">sjson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">serialized</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">),</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="mi">0</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__serialize__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;serialized&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;ser_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">serialized</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">deserialize</span><span class="p">(</span><span class="n">serialized</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">serialized</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">deserialize</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">serialized</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">expected</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+
+<div class="viewcode-block" id="ExcUndeserializable"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.ExcUndeserializable">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;__exc_undeserializable&quot;</span><span class="p">)</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ExcUndeserializable</span><span class="p">(</span><span class="n">ExcInvalid</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents an object that could not be deserialized due to an exception.&quot;&quot;&quot;</span>
+
+    <span class="n">serialized</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="n">expected</span><span class="p">:</span> <span class="nb">str</span>
+
+<div class="viewcode-block" id="ExcUndeserializable.format"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.ExcUndeserializable.format">[docs]</a>    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">yield from</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">format</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Serialized</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="k">yield</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">indent</span><span class="p">(</span><span class="n">sjson</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">serialized</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">),</span> <span class="s2">&quot; &quot;</span> <span class="o">*</span> <span class="mi">0</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">__serialize__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__serialize__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;serialized&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialized</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">res</span><span class="p">[</span><span class="s2">&quot;expected&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expected</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__deserialize__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">serialized</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">context</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">serialized</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">res</span><span class="o">.</span><span class="n">serialized</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">deserialize</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">serialized</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">res</span><span class="o">.</span><span class="n">expected</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+
+<div class="viewcode-block" id="isvalid"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.isvalid">[docs]</a><span class="k">def</span> <span class="nf">isvalid</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check if an object is valid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">ser_str2type</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SER_TYPE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)),</span> <span class="n">BaseInvalid</span><span class="p">)</span>
+    <span class="k">return</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">BaseInvalid</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SerializationError"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.SerializationError">[docs]</a><span class="k">class</span> <span class="nc">SerializationError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Serialization Error raised when an object could not be serialized.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="ValidationError"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.ValidationError">[docs]</a><span class="k">class</span> <span class="nc">ValidationError</span><span class="p">(</span><span class="n">SerializationError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Validation Error raised when an object could not be validated.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="validate"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.validate">[docs]</a><span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Could not validate object&quot;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the object is valid, raise a ValidationError otherwise.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj: The object to validate</span>
+<span class="sd">        msg (str, optional): An optional message set in the Validation Error.</span>
+<span class="sd">            Defaults to &#39;Could not validate object&#39;.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValidationError: The object is not valid.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">isvalid</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+        <span class="k">return</span>
+    <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">_call_optional_context</span><span class="p">(</span>
+    <span class="n">method</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ExcInvalid</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">method</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">method</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">BaseContext</span><span class="p">()</span> <span class="k">if</span> <span class="n">context</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Expected method that takes </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="si">}</span><span class="s2"> or </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2"> positional arguments but got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sig</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span>
+        <span class="p">)</span>
+    <span class="k">except</span> <span class="n">SerializationError</span><span class="p">:</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">exc_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">e</span>
+        <span class="k">return</span> <span class="n">exc_type</span><span class="o">.</span><span class="n">from_exception</span><span class="p">(</span><span class="o">*</span><span class="n">sys</span><span class="o">.</span><span class="n">exc_info</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">ignore</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="BaseContext"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.BaseContext">[docs]</a><span class="k">class</span> <span class="nc">BaseContext</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The basic interface for serialization contexts.</span>
+
+<span class="sd">    It is passed hierarchically through the hierarchy of objects that</span>
+<span class="sd">    are being serialized and describes how the serialization should be completed.</span>
+<span class="sd">    For :class:`dman.model.record.Context` for more information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">process_invalid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">BaseInvalid</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ExcInvalid</span><span class="p">):</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">BaseInvalid</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obj</span><span class="p">)),</span>
+                <span class="s2">&quot;context&quot;</span><span class="p">,</span>
+                <span class="n">obj</span><span class="o">.</span><span class="n">trace</span><span class="p">,</span>
+                <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">log</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="s2">&quot;context&quot;</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">config</span><span class="o">.</span><span class="n">validate</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="n">msg</span>
+                <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Description:</span><span class="se">\n</span><span class="s2">&quot;</span>
+                <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">log</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">format_stack</span><span class="p">()</span><span class="si">}</span><span class="s2">] &quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="BaseContext.serialize"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.BaseContext.serialize">[docs]</a>    <span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">content_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize a serializable object.</span>
+
+<span class="sd">            The context can be used to store the current directory, logging</span>
+<span class="sd">            and custom serialization behavior. Serializable objects are created</span>
+<span class="sd">            using :func:`serializable` or alternatively using :func:`register_serializable`.</span>
+
+<span class="sd">            By default, any object that can be handled by json is serializable.</span>
+<span class="sd">            That is ``str``, ``int``, ``float``, ``None``, ``list``, ``tuple`` and ``dict``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            obj: The object to serialize</span>
+<span class="sd">            context (BaseContext, optional): The serialization context. Defaults to None.</span>
+<span class="sd">            content_only (bool, optional): Do not include type information when true.</span>
+<span class="sd">                Results in more compact serialization. Defaults to False.</span>
+
+<span class="sd">        See also: :func:`serialize`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># check whether the object a registered instance. If so, convert it.</span>
+        <span class="n">inst</span> <span class="o">=</span> <span class="n">_Instance</span><span class="o">.</span><span class="n">__convert__</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">inst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">inst</span>
+
+        <span class="k">if</span> <span class="n">sjson</span><span class="o">.</span><span class="n">atomic_type</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">obj</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;list(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;serializing&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="nb">list</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize_list</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;dict(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;serializing&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="nb">dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+        <span class="c1"># if isinstance(ser, BaseInvalid):</span>
+        <span class="c1">#     self._process_invalid(&#39;Invalid object encountered during serialization.&#39;, ser)</span>
+
+        <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;serializing&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="n">obj</span><span class="p">):</span>
+            <span class="n">ser_type</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize_object</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">BaseInvalid</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">process_invalid</span><span class="p">(</span>
+                    <span class="s2">&quot;Serialization resulted in an invalid object.&quot;</span><span class="p">,</span> <span class="n">content</span>
+                <span class="p">)</span>
+                <span class="n">ser_type</span><span class="p">,</span> <span class="n">content</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize_object</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">content_only</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">content</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">SER_TYPE</span><span class="p">:</span> <span class="n">ser_type</span><span class="p">,</span> <span class="n">SER_CONTENT</span><span class="p">:</span> <span class="n">content</span><span class="p">}</span></div>
+
+<div class="viewcode-block" id="BaseContext.serialize_object"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.BaseContext.serialize_object">[docs]</a>    <span class="k">def</span> <span class="nf">serialize_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize a generic serializable object.&quot;&quot;&quot;</span>
+        <span class="n">ser_type</span><span class="p">,</span> <span class="n">ser_method</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">get_custom_serializable</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">),</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ser_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ser_type</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">SER_TYPE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_serializable_type_str</span><span class="p">(</span><span class="n">ser_type</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="n">Unserializable</span><span class="p">(</span>
+                    <span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                    <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Unserializable type: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">ser_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">SERIALIZE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ser_type</span><span class="p">,</span> <span class="n">_call_optional_context</span><span class="p">(</span>
+                <span class="n">ser_method</span><span class="p">,</span>
+                <span class="n">context</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">exc_type</span><span class="o">=</span><span class="n">ExcUnserializable</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="n">info</span><span class="o">=</span><span class="s2">&quot;Error during serialization:&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ser_type</span><span class="p">,</span> <span class="n">_call_optional_context</span><span class="p">(</span>
+                <span class="n">ser_method</span><span class="p">,</span>
+                <span class="n">obj</span><span class="p">,</span>
+                <span class="n">context</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">exc_type</span><span class="o">=</span><span class="n">ExcUnserializable</span><span class="p">,</span>
+                <span class="nb">type</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+                <span class="n">info</span><span class="o">=</span><span class="s2">&quot;Error during serialization:&quot;</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseContext.serialize_list"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.BaseContext.serialize_list">[docs]</a>    <span class="k">def</span> <span class="nf">serialize_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">list</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize a list.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">itm</span> <span class="k">if</span> <span class="n">sjson</span><span class="o">.</span><span class="n">atomic_type</span><span class="p">(</span><span class="n">itm</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">itm</span><span class="p">)</span> <span class="k">for</span> <span class="n">itm</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="BaseContext.serialize_dict"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.BaseContext.serialize_dict">[docs]</a>    <span class="k">def</span> <span class="nf">serialize_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize a dictionary.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">obj</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span></div>
+
+<div class="viewcode-block" id="BaseContext.deserialize"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.BaseContext.deserialize">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serialized</span><span class="p">,</span> <span class="n">ser_type</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deserialize an object produced through serialization.</span>
+
+<span class="sd">            The context can be used to store the current directory, logging</span>
+<span class="sd">            and custom serialization behavior. Deserializable objects are created</span>
+<span class="sd">            using :func:`serializable` or alternatively using :func:`register_serializable`.</span>
+
+<span class="sd">            By default, any object that can be handled by json is deserializable.</span>
+<span class="sd">            That is ``str``, ``int``, ``float``, ``None``, ``list``, ``tuple`` and ``dict``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            serialized: The object to deserialize.</span>
+<span class="sd">            context (BaseContext, optional): _description_. Defaults to None.</span>
+<span class="sd">            expected (_type_, optional): Class or string representing the expected type. If set to</span>
+<span class="sd">                None the type is received from the dictionary. Defaults to None.</span>
+
+<span class="sd">            See also: :func:`deserialize`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_deserialize_inner</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="n">ser_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">BaseInvalid</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">process_invalid</span><span class="p">(</span><span class="s2">&quot;An error occurred during deserialization:&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+    <span class="k">def</span> <span class="nf">_deserialize_inner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serialized</span><span class="p">,</span> <span class="n">expected</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">serialized</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">expected</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;list(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;deserializing&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="nb">list</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize_list</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">sjson</span><span class="o">.</span><span class="n">atomic_type</span><span class="p">(</span><span class="n">serialized</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize_atomic</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">serialized</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">Undeserializable</span><span class="p">(</span>
+                    <span class="nb">type</span><span class="o">=</span><span class="n">expected</span><span class="p">,</span>
+                    <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Unexpected type for serialized: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span><span class="si">}</span><span class="s2">. Expected either list, tuple, atomic type or dict.&quot;</span><span class="p">,</span>
+                    <span class="n">serialized</span><span class="o">=</span><span class="n">serialized</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">expected</span> <span class="o">=</span> <span class="n">serialized</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SER_TYPE</span><span class="p">,</span> <span class="n">MISSING</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">expected</span> <span class="ow">is</span> <span class="n">MISSING</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;dict(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;deserializing&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="nb">dict</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize_dict</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">serialized</span> <span class="o">=</span> <span class="n">serialized</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SER_CONTENT</span><span class="p">,</span> <span class="p">{})</span>
+                <span class="n">ser_type_get</span> <span class="o">=</span> <span class="n">ser_str2type</span><span class="p">(</span><span class="n">expected</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ser_type_get</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">Undeserializable</span><span class="p">(</span>
+                        <span class="nb">type</span><span class="o">=</span><span class="n">ser_type_get</span><span class="p">,</span>
+                        <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Unregistered type stored in serialized.&quot;</span><span class="p">,</span>
+                        <span class="n">serialized</span><span class="o">=</span><span class="n">serialized</span><span class="p">,</span>
+                        <span class="n">expected</span><span class="o">=</span><span class="n">expected</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="n">_ser_name</span> <span class="o">=</span> <span class="n">get_type_name</span><span class="p">(</span><span class="n">ser_type_get</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_ser_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;deserializing&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="n">ser_type_get</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize_object</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="n">ser_type_get</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">compare_type</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;dict(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;deserializing&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="nb">dict</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize_dict</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">compare_type</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;list(</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;deserializing&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="nb">list</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize_list</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">ser_type_get</span> <span class="o">=</span> <span class="n">ser_str2type</span><span class="p">(</span><span class="n">expected</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ser_type_get</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Undeserializable</span><span class="p">(</span>
+                    <span class="nb">type</span><span class="o">=</span><span class="n">ser_type_get</span><span class="p">,</span>
+                    <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Unregistered type provided as argument.&quot;</span><span class="p">,</span>
+                    <span class="n">serialized</span><span class="o">=</span><span class="n">serialized</span><span class="p">,</span>
+                    <span class="n">expected</span><span class="o">=</span><span class="n">expected</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">expected</span> <span class="o">=</span> <span class="n">ser_type_get</span>
+
+        <span class="k">if</span> <span class="n">expected</span> <span class="ow">in</span> <span class="n">sjson</span><span class="o">.</span><span class="n">atomic_types</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize_atomic</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+
+        <span class="n">_ser_name</span> <span class="o">=</span> <span class="n">get_type_name</span><span class="p">(</span><span class="n">expected</span><span class="p">)</span>
+        <span class="k">with</span> <span class="n">log</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_ser_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;deserializing&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="o">=</span><span class="n">expected</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize_object</span><span class="p">(</span><span class="n">serialized</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span>
+
+<div class="viewcode-block" id="BaseContext.deserialize_object"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.BaseContext.deserialize_object">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serialized</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deserialize an object of an expected type.&quot;&quot;&quot;</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">ser_method</span> <span class="o">=</span> <span class="n">get_custom_serializable</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">ser_method</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ser_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">expected</span><span class="p">,</span> <span class="n">DESERIALIZE</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ser_method</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Undeserializable</span><span class="p">(</span>
+                <span class="n">get_type_name</span><span class="p">(</span><span class="n">expected</span><span class="p">),</span> 
+                <span class="sa">f</span><span class="s2">&quot;Could not recover __deserialize__ method for type &#39;</span><span class="si">{</span><span class="n">get_type_name</span><span class="p">(</span><span class="n">expected</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">,</span> 
+                <span class="n">serialized</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">_call_optional_context</span><span class="p">(</span>
+            <span class="n">ser_method</span><span class="p">,</span>
+            <span class="n">serialized</span><span class="p">,</span>
+            <span class="n">context</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">exc_type</span><span class="o">=</span><span class="n">ExcUndeserializable</span><span class="p">,</span>
+            <span class="nb">type</span><span class="o">=</span><span class="n">ser_type2str</span><span class="p">(</span><span class="n">expected</span><span class="p">),</span>
+            <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Exception encountered while deserializing </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">,</span>
+            <span class="n">serialized</span><span class="o">=</span><span class="n">serialized</span><span class="p">,</span>
+            <span class="n">expected</span><span class="o">=</span><span class="n">ser_type2str</span><span class="p">(</span><span class="n">expected</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="BaseContext.deserialize_atomic"><a class="viewcode-back" href="../../../api/serializables.html#dman.core.serializables.BaseContext.deserialize_atomic">[docs]</a>    <span class="k">def</span> <span class="nf">deserialize_atomic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serialized</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deserialize an atomic object of an expected type&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">suppress</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">expected</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">expected</span> <span class="ow">is</span> <span class="ow">not</span> <span class="nb">type</span><span class="p">(</span><span class="n">serialized</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Undeserializable</span><span class="p">(</span>
+                <span class="nb">type</span><span class="o">=</span><span class="n">expected</span><span class="p">,</span>
+                <span class="n">info</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Specified type </span><span class="si">{</span><span class="n">expected</span><span class="si">}</span><span class="s2">, but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+                <span class="n">serialized</span><span class="o">=</span><span class="n">serialized</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">serialized</span></div>
+
+    <span class="k">def</span> <span class="nf">deserialize_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serialized</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">itm</span> <span class="k">if</span> <span class="n">sjson</span><span class="o">.</span><span class="n">atomic_type</span><span class="p">(</span><span class="n">itm</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">itm</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">itm</span> <span class="ow">in</span> <span class="n">serialized</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">expected</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">res</span>
+        <span class="k">return</span> <span class="n">expected</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">deserialize_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serialized</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">serialized</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">if</span> <span class="n">expected</span> <span class="ow">is</span> <span class="nb">dict</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">res</span>
+        <span class="k">return</span> <span class="n">expected</span><span class="p">(</span><span class="n">res</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

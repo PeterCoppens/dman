@@ -1,0 +1,524 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Model Types &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Repository" href="repository.html" />
+    <link rel="prev" title="Records" href="records.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gallery/patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../gallery/fundamentals/index.html">Fundamentals</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="modules.html#core">Core</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="modules.html#model-types">Model Types</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="records.html">Records</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Model Types</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.Config"><code class="docutils literal notranslate"><span class="pre">Config</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.get_record"><code class="docutils literal notranslate"><span class="pre">get_record()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.set_record"><code class="docutils literal notranslate"><span class="pre">set_record()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.record_fields"><code class="docutils literal notranslate"><span class="pre">record_fields()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.unused_fields"><code class="docutils literal notranslate"><span class="pre">unused_fields()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.serializefield"><code class="docutils literal notranslate"><span class="pre">serializefield()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.is_serializable_field"><code class="docutils literal notranslate"><span class="pre">is_serializable_field()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.recordfield"><code class="docutils literal notranslate"><span class="pre">recordfield()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.register_preset"><code class="docutils literal notranslate"><span class="pre">register_preset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.modelclass"><code class="docutils literal notranslate"><span class="pre">modelclass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.is_modelclass"><code class="docutils literal notranslate"><span class="pre">is_modelclass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.is_model"><code class="docutils literal notranslate"><span class="pre">is_model()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.mlist"><code class="docutils literal notranslate"><span class="pre">mlist</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.smlist"><code class="docutils literal notranslate"><span class="pre">smlist</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.mdict"><code class="docutils literal notranslate"><span class="pre">mdict</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.smdict"><code class="docutils literal notranslate"><span class="pre">smdict</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.mruns"><code class="docutils literal notranslate"><span class="pre">mruns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.smruns"><code class="docutils literal notranslate"><span class="pre">smruns</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.mlist_factory"><code class="docutils literal notranslate"><span class="pre">mlist_factory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.smlist_factory"><code class="docutils literal notranslate"><span class="pre">smlist_factory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.mdict_factory"><code class="docutils literal notranslate"><span class="pre">mdict_factory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.smdict_factory"><code class="docutils literal notranslate"><span class="pre">smdict_factory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.mruns_factory"><code class="docutils literal notranslate"><span class="pre">mruns_factory()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dman.model.modelclasses.smruns_factory"><code class="docutils literal notranslate"><span class="pre">smruns_factory()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="repository.html">Repository</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules</a> &raquo;</li>
+        
+      <li>Model Types</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/modelclasses.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="module-dman.model.modelclasses">
+<span id="model-types"></span><h1>Model Types<a class="headerlink" href="#module-dman.model.modelclasses" title="Permalink to this heading">¶</a></h1>
+<p>Defines Model Types, which are containers for storables.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="dman.model.modelclasses.Config">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">Config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">auto_clean</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#Config"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.Config" title="Permalink to this definition">¶</a></dt>
+<dd><p>Configuration for model types.</p>
+<blockquote>
+<div><p>This class has a global instance that can be accessed as follows:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dman</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">modelclasses</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">auto_clean</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">dman</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">auto_clean</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># equivalent</span>
+</pre></div>
+</div>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>auto_clean</strong> (<em>bool</em><em>, </em><em>optional</em>) – Automatically clean files associated with items that were removed from the container.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.get_record">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">get_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default=&lt;dataclasses._MISSING_TYPE</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#get_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.get_record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the record for a field in a modelclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – The modelclass</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – Key of the field</p></li>
+<li><p><strong>default</strong> (<em>optional</em>) – Default value. Defaults to MISSING.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.set_record">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">set_record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="records.html#dman.model.record.Record" title="dman.model.record.Record"><span class="pre">Record</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#set_record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.set_record" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the record for a field in a modelclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>obj</strong> – The modelclass</p></li>
+<li><p><strong>key</strong> (<em>str</em>) – Key of the field</p></li>
+<li><p><strong>value</strong> (<em>record</em>) – The value to set.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.record_fields">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">record_fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#record_fields"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.record_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all the records associated with storable fields in a modelclass.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.unused_fields">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">unused_fields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#unused_fields"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.unused_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all the records that are no longer used since they were overwritten.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.serializefield">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">serializefield</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">*,</span> <span class="pre">default=&lt;dataclasses._MISSING_TYPE</span> <span class="pre">object&gt;,</span> <span class="pre">default_factory=&lt;dataclasses._MISSING_TYPE</span> <span class="pre">object&gt;,</span> <span class="pre">init:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">repr:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">hash:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">compare:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">metadata=None,</span> <span class="pre">pre:</span> <span class="pre">~typing.Optional[~typing.Callable[[~typing.Any],</span> <span class="pre">~typing.Any]]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Field</span></span></span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#serializefield"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.serializefield" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Return an object to identify serializable modelclass fields.</dt><dd><p>All arguments of the <code class="docutils literal notranslate"><span class="pre">field</span></code> method from <code class="docutils literal notranslate"><span class="pre">dataclasses</span></code> are provided.
+Moreover, <code class="docutils literal notranslate"><span class="pre">record</span></code> specific options are provided</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>default</strong> (<em>optional</em>) – is the default value of the field.</p></li>
+<li><p><strong>default_factory</strong> (<em>optional</em>) – is a 0-argument function called to initialize.</p></li>
+<li><p><strong>init</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include in the class’s __init__(). Defaults to True.</p></li>
+<li><p><strong>repr</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include in the object’s repr(). Defaults to True.</p></li>
+<li><p><strong>hash</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include in the object’s hash(). Defaults to False.</p></li>
+<li><p><strong>compare</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include in comparison functions. Defaults to True.</p></li>
+<li><p><strong>metadata</strong> (<em>_type_</em><em>, </em><em>optional</em>) – Additional information. Defaults to None.</p></li>
+<li><p><strong>pre</strong> (<em>Callable</em><em>[</em><em>[</em><em>Any</em><em>]</em><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – Call method on field before setting. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.is_serializable_field">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">is_serializable_field</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fld</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Field</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#is_serializable_field"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.is_serializable_field" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if a field is explicitly registered as a serializable field.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.recordfield">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">recordfield</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">*,</span> <span class="pre">default=&lt;dataclasses._MISSING_TYPE</span> <span class="pre">object&gt;,</span> <span class="pre">default_factory=&lt;dataclasses._MISSING_TYPE</span> <span class="pre">object&gt;,</span> <span class="pre">init:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">repr:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">hash:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">compare:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">metadata=None,</span> <span class="pre">stem:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;,</span> <span class="pre">suffix:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;,</span> <span class="pre">name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;,</span> <span class="pre">subdir:</span> <span class="pre">~os.PathLike</span> <span class="pre">=</span> <span class="pre">&lt;dman.core.path._Auto</span> <span class="pre">object&gt;,</span> <span class="pre">preload:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">pre:</span> <span class="pre">~typing.Optional[~typing.Callable[[~typing.Any],</span> <span class="pre">~typing.Any]]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Field</span></span></span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#recordfield"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.recordfield" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Return an object to identify storable modelclass fields.</dt><dd><p>All arguments of the <code class="docutils literal notranslate"><span class="pre">field</span></code> method from <code class="docutils literal notranslate"><span class="pre">dataclasses</span></code> are provided.
+Moreover, <code class="docutils literal notranslate"><span class="pre">record</span></code> specific options are provided</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>default</strong> (<em>optional</em>) – The default value of the field.. Defaults to MISSING.</p></li>
+<li><p><strong>default_factory</strong> (<em>optional</em>) – A 0-argument function called to initialize. Defaults to MISSING.</p></li>
+<li><p><strong>init</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include in the class’s __init__(). Defaults to True.</p></li>
+<li><p><strong>repr</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include in the object’s repr(). Defaults to False.</p></li>
+<li><p><strong>hash</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include in the object’s hash(). Defaults to False.</p></li>
+<li><p><strong>compare</strong> (<em>bool</em><em>, </em><em>optional</em>) – Include in comparison functions. Defaults to False.</p></li>
+<li><p><strong>metadata</strong> (<em>_type_</em><em>, </em><em>optional</em>) – Additional information. Defaults to None.</p></li>
+<li><p><strong>stem</strong> (<em>str</em><em>, </em><em>optional</em>) – The stem of the file. Defaults to AUTO.</p></li>
+<li><p><strong>suffix</strong> (<em>str</em><em>, </em><em>optional</em>) – The suffix or extension of the file (e.g. <code class="docutils literal notranslate"><span class="pre">'.json'</span></code>). Defaults to AUTO.</p></li>
+<li><p><strong>name</strong> (<em>str</em><em>, </em><em>optional</em>) – The full name of the file. Defaults to AUTO.</p></li>
+<li><p><strong>subdir</strong> (<em>os.PathLike</em><em>, </em><em>optional</em>) – The subdirectory in which to store te file. Defaults to AUTO.</p></li>
+<li><p><strong>preload</strong> (<em>str</em><em>, </em><em>optional</em>) – When <code class="docutils literal notranslate"><span class="pre">True</span></code> the file will be loaded during deserialization. Defaults to False.</p></li>
+<li><p><strong>pre</strong> (<em>Callable</em><em>[</em><em>[</em><em>Any</em><em>]</em><em>, </em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – Call method on field before setting. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.register_preset">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">register_preset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#register_preset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.register_preset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register a preset method <code class="docutils literal notranslate"><span class="pre">pre</span></code> for a type <code class="docutils literal notranslate"><span class="pre">tp</span></code>.</p>
+<blockquote>
+<div><p>When a field with that type is defined in a modelclass, <code class="docutils literal notranslate"><span class="pre">pre</span></code>
+is called before setting the field.</p>
+</div></blockquote>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">register_preset</span><span class="p">(</span><span class="n">barray</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">arg</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>   <span class="n">arg</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">arg</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.modelclass">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">modelclass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">repr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unsafe_hash</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frozen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">storable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compact</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_by_field</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">_T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">_T</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#modelclass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.modelclass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a class to a modelclass.</p>
+<blockquote>
+<div><p>Returns the same class as was passed in, with dunder methods added based
+on the fields defined in the class. The class is automatically made
+<code class="docutils literal notranslate"><span class="pre">serializable</span></code> by adding <code class="docutils literal notranslate"><span class="pre">__serialize__</span></code> and <code class="docutils literal notranslate"><span class="pre">__deserialize__</span></code>.</p>
+<p>If an attribute <code class="docutils literal notranslate"><span class="pre">__no_serialize__</span></code> is added, then the
+field names listed as string within will not be included
+in the serialization.</p>
+<p>The arguments of the <code class="docutils literal notranslate"><span class="pre">dataclass</span></code> decorator are provided and some
+additional arguments are also available.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cls</strong> – Class to convert.</p></li>
+<li><p><strong>name</strong> (<em>str</em><em>, </em><em>optional</em>) – Name of the serializable (and storable if required). Defaults to class name.</p></li>
+<li><p><strong>init</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add an <code class="docutils literal notranslate"><span class="pre">__init__</span></code> method. Defaults to True.</p></li>
+<li><p><strong>repr</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add a <code class="docutils literal notranslate"><span class="pre">__repr__</span></code> method. Defaults to True.</p></li>
+<li><p><strong>eq</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add a <code class="docutils literal notranslate"><span class="pre">__eq__</span></code> method. Defaults to True.</p></li>
+<li><p><strong>order</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add rich comparison methods. Defaults to False.</p></li>
+<li><p><strong>unsafe_hash</strong> (<em>bool</em><em>, </em><em>optional</em>) – Add a <code class="docutils literal notranslate"><span class="pre">__hash__</span></code> method. Defaults to False.</p></li>
+<li><p><strong>frozen</strong> (<em>bool</em><em>, </em><em>optional</em>) – Fields may not be assigned after instance creation. Defaults to False.</p></li>
+<li><p><strong>storable</strong> (<em>bool</em><em>, </em><em>optional</em>) – Make the class storable with a <code class="docutils literal notranslate"><span class="pre">__write__</span></code> and <code class="docutils literal notranslate"><span class="pre">__read__</span></code>. Defaults to False.</p></li>
+<li><p><strong>compact</strong> (<em>bool</em><em>, </em><em>optional</em>) – Do not include serializable types during serialization, making the result more compact. Defaults to False.</p></li>
+<li><p><strong>store_by_field</strong> (<em>bool</em><em>, </em><em>optional</em>) – The stem of files is determined by the field name. Defaults to False.</p></li>
+<li><p><strong>cluster</strong> (<em>bool</em><em>, </em><em>optional</em>) – Each file is stored in a subfolder determined by the field name. Defaults to False.</p></li>
+<li><p><strong>subdir</strong> (<em>str</em><em>, </em><em>optional</em>) – Store the files in a common subfolder. Defaults to “”.</p></li>
+<li><p><strong>template</strong> (<em>Any</em><em>, </em><em>optional</em>) – Template for serialization. Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.is_modelclass">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">is_modelclass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#is_modelclass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.is_modelclass" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if a class is a modelclass.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.is_model">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">is_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#is_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.is_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the provided class is a model type.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dman.model.modelclasses.mlist">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">mlist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Iterable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#mlist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.mlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializable Model List.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dman.model.modelclasses.smlist">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">smlist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Iterable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#smlist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.smlist" title="Permalink to this definition">¶</a></dt>
+<dd><p>Storable Model List.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dman.model.modelclasses.mdict">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">mdict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_by_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#mdict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.mdict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializable Model Dictionary.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dman.model.modelclasses.smdict">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">smdict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_by_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#smdict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.smdict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Storable Model Dictionary.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dman.model.modelclasses.mruns">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">mruns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Iterable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'run'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#mruns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.mruns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serializable Model Runs.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dman.model.modelclasses.smruns">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">smruns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Iterable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'run'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#smruns"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.smruns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Storable Model Runs.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.mlist_factory">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">mlist_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#mlist_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.mlist_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for Model List. Useful in combination with modelclass fields.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.smlist_factory">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">smlist_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#smlist_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.smlist_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for Storable Model List. Useful in combination with modelclass fields.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.mdict_factory">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">mdict_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_by_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#mdict_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.mdict_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for Model Dict. Useful in combination with modelclass fields.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.smdict_factory">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">smdict_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_by_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#smdict_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.smdict_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for Storable Model Dict. Useful in combination with modelclass fields.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.mruns_factory">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">mruns_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'run'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#mruns_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.mruns_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for Model Runs. Useful in combination with modelclass fields.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dman.model.modelclasses.smruns_factory">
+<span class="sig-prename descclassname"><span class="pre">dman.model.modelclasses.</span></span><span class="sig-name descname"><span class="pre">smruns_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stem</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PathLike</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store_subdir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dman/model/modelclasses.html#smruns_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dman.model.modelclasses.smruns_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for Storable Model Runs. Useful in combination with modelclass fields.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="repository.html" class="btn btn-neutral float-right" title="Repository" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="records.html" class="btn btn-neutral float-left" title="Records" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

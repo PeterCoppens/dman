@@ -1,0 +1,885 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>dman.core.log &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/misc/example0_common.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../gallery/fundamentals/index.html">Fundamentals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>dman.core.log</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dman.core.log</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">MISSING</span><span class="p">,</span> <span class="n">asdict</span>
+<span class="kn">import</span> <span class="nn">logging</span> <span class="k">as</span> <span class="nn">backend</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">contextmanager</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">io</span> <span class="k">as</span> <span class="nn">_io</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">from</span> <span class="nn">tempfile</span> <span class="kn">import</span> <span class="n">TemporaryDirectory</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
+<span class="kn">from</span> <span class="nn">tkinter</span> <span class="kn">import</span> <span class="n">NONE</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">ModuleType</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Type</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">uuid</span> <span class="kn">import</span> <span class="n">uuid4</span>
+<span class="kn">from</span> <span class="nn">dman.core.errors</span> <span class="kn">import</span> <span class="n">Trace</span>
+
+
+<span class="n">LOGGER_NAME</span> <span class="o">=</span> <span class="s2">&quot;dman&quot;</span>
+<span class="n">DEFAULT_FORMAT</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%(indent)s%(label)s%(message)s</span><span class="s2">&quot;</span>
+<span class="n">DEFAULT_FORMAT_LEVEL</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(levelname)s</span><span class="s2">: </span><span class="si">%(indent)s%(label)s%(message)s</span><span class="s2">&quot;</span>
+<span class="n">BASE_INDENT</span> <span class="o">=</span> <span class="s2">&quot;  &quot;</span>
+<span class="n">CAPITALIZE_LEVELNAME</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="kn">from</span> <span class="nn">logging</span> <span class="kn">import</span> <span class="n">CRITICAL</span><span class="p">,</span> <span class="n">FATAL</span><span class="p">,</span> <span class="n">ERROR</span><span class="p">,</span> <span class="n">WARN</span><span class="p">,</span> <span class="n">WARNING</span><span class="p">,</span> <span class="n">INFO</span><span class="p">,</span> <span class="n">DEBUG</span><span class="p">,</span> <span class="n">NOTSET</span>
+
+
+<div class="viewcode-block" id="IndentedFormatter"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.IndentedFormatter">[docs]</a><span class="k">class</span> <span class="nc">IndentedFormatter</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Formatter that supports indentation and label specification.</span>
+
+<span class="sd">    New formatting options: `indent` and `label`</span>
+<span class="sd">    </span>
+<span class="sd">    Example:</span>
+
+<span class="sd">    &gt;&gt;&gt; fmt = IndentedFormatter(fmt=&quot;%(levelname)s: %(indent)s%(label)s%(message)s&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; logger = Logger(&#39;example&#39;, level=INFO)</span>
+<span class="sd">    &gt;&gt;&gt; h = backend.StreamHandler()</span>
+<span class="sd">    &gt;&gt;&gt; h.setFormatter(formatter)</span>
+<span class="sd">    &gt;&gt;&gt; log.addHandler(hdlr)</span>
+<span class="sd">    &gt;&gt;&gt; with log.layer(&#39;value&#39;, &#39;label&#39;):</span>
+<span class="sd">    ...     log.info(&#39;test&#39;)</span>
+<span class="sd">    ...     log.info(&#39;test&#39;, &#39;label&#39;)</span>
+<span class="sd">    &lt;label type=value&gt;</span>
+<span class="sd">    test</span>
+<span class="sd">    [label]: test</span>
+<span class="sd">    &lt;end label type=value&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="n">DEFAULT_FORMAT</span><span class="p">,</span> <span class="n">datefmt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">style</span><span class="o">=</span><span class="s2">&quot;%&quot;</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">capitalize_levelname</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>        
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="n">datefmt</span><span class="p">,</span> <span class="n">style</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">capitalize_levelname</span> <span class="o">=</span> <span class="n">capitalize_levelname</span>
+    
+    <span class="k">def</span> <span class="nf">_format_inner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">backend</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">,</span> <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">include_stack</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fmt</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+            <span class="k">return</span> <span class="n">fmt</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">include_stack</span><span class="p">:</span>
+            <span class="n">formatter</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">formatter</span><span class="o">.</span><span class="n">usesTime</span><span class="p">():</span>
+                <span class="n">record</span><span class="o">.</span><span class="n">asctime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatTime</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">datefmt</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">formatter</span><span class="o">.</span><span class="n">formatMessage</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">backend</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">fmt</span>
+    
+<div class="viewcode-block" id="IndentedFormatter.format"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.IndentedFormatter.format">[docs]</a>    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s1">&#39;indent&#39;</span><span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s1">&#39;indent&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">capitalize_levelname</span><span class="p">:</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">levelname</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">record</span><span class="o">.</span><span class="n">levelname</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">splits</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;\%\(indent\)[-0-9]*s&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fmt</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">splits</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+        <span class="n">prefix</span><span class="p">,</span> <span class="n">indented</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_format_inner</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="s1">&#39;%(message)&#39;</span> <span class="ow">in</span> <span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">splits</span><span class="p">]</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">indented</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">indent</span><span class="p">(</span><span class="n">lines</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">record</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">+=</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span> <span class="o">+</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">indent</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span> <span class="s1">&#39; &#39;</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="o">+</span> <span class="n">record</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span>
+            
+        <span class="c1"># record.msg = s</span>
+        <span class="c1"># record.indent = &#39;&#39;</span>
+        <span class="c1"># record.label = &#39;&#39;</span>
+        <span class="k">return</span> <span class="n">s</span></div></div>
+
+<div class="viewcode-block" id="format_type"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.format_type">[docs]</a><span class="k">def</span> <span class="nf">format_type</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get string label for type.&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="n">ModuleType</span><span class="p">,</span> <span class="n">Type</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span></div>
+
+
+<div class="viewcode-block" id="default_formatter"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.default_formatter">[docs]</a><span class="k">def</span> <span class="nf">default_formatter</span><span class="p">(</span><span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_FORMAT</span><span class="p">,</span> <span class="n">datefmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">capitalize_levelname</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the default ``dman`` formatter.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        fmt (str, optional): Format string.</span>
+<span class="sd">        datefmt (str, optional): Date format specification. Defaults to None.</span>
+<span class="sd">        capitalize_levelname (bool, optional): Capitalize the log-level name. Defaults to False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">IndentedFormatter</span><span class="p">(</span><span class="n">fmt</span><span class="p">,</span> <span class="n">datefmt</span><span class="p">,</span> <span class="n">capitalize_levelname</span><span class="o">=</span><span class="n">capitalize_levelname</span><span class="p">)</span></div>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">rich.logging</span> <span class="kn">import</span> <span class="n">RichHandler</span>
+    <span class="kn">from</span> <span class="nn">rich.theme</span> <span class="kn">import</span> <span class="n">Theme</span>
+    <span class="kn">from</span> <span class="nn">rich.console</span> <span class="kn">import</span> <span class="n">Console</span>
+    <span class="kn">from</span> <span class="nn">rich.text</span> <span class="kn">import</span> <span class="n">Text</span>
+    <span class="kn">from</span> <span class="nn">rich.highlighter</span> <span class="kn">import</span> <span class="n">RegexHighlighter</span><span class="p">,</span> <span class="n">Highlighter</span>
+    <span class="kn">import</span> <span class="nn">rich.traceback</span> <span class="k">as</span> <span class="nn">_rich_tb</span>
+    <span class="kn">from</span> <span class="nn">rich.table</span> <span class="kn">import</span> <span class="n">Table</span>
+
+    <span class="n">CAPITALIZE_LEVELNAME</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="n">log_theme</span> <span class="o">=</span> <span class="n">Theme</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;backend.label&quot;</span><span class="p">:</span> <span class="s2">&quot;bright_green&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.tag&quot;</span><span class="p">:</span> <span class="s2">&quot;purple&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.str&quot;</span><span class="p">:</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.path&quot;</span><span class="p">:</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.filename&quot;</span><span class="p">:</span> <span class="s2">&quot;green&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.error&quot;</span><span class="p">:</span> <span class="s2">&quot;red&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.fail&quot;</span><span class="p">:</span> <span class="s2">&quot;red&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.warning&quot;</span><span class="p">:</span> <span class="s2">&quot;yellow&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.warn&quot;</span><span class="p">:</span> <span class="s2">&quot;yellow&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.debug&quot;</span><span class="p">:</span> <span class="s2">&quot;bright_black&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.emphasis&quot;</span><span class="p">:</span> <span class="s2">&quot;blue&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;backend.io&quot;</span><span class="p">:</span> <span class="s2">&quot;bright_cyan&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="LoggingHighlighter"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.LoggingHighlighter">[docs]</a>    <span class="k">class</span> <span class="nc">LoggingHighlighter</span><span class="p">(</span><span class="n">RegexHighlighter</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply coloring to ``dman`` log messages. Highlights label, headers, paths and strings.&quot;&quot;&quot;</span>
+
+        <span class="n">base_style</span> <span class="o">=</span> <span class="s2">&quot;backend.&quot;</span>
+        <span class="n">highlights</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">r</span><span class="s2">&quot;(?P&lt;label&gt;\[(.*?)\]:)&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;(?&lt;![</span><span class="se">\\</span><span class="s2">\w])(?P&lt;str&gt;b?&#39;&#39;&#39;.*?(?&lt;!</span><span class="se">\\</span><span class="s2">)&#39;&#39;&#39;|b?&#39;.*?(?&lt;!</span><span class="se">\\</span><span class="s2">)&#39;|b?</span><span class="se">\&quot;\&quot;\&quot;</span><span class="s2">.*?(?&lt;!</span><span class="se">\\</span><span class="s2">)</span><span class="se">\&quot;\&quot;\&quot;</span><span class="s2">|b?</span><span class="se">\&quot;</span><span class="s2">.*?(?&lt;!</span><span class="se">\\</span><span class="s2">)</span><span class="se">\&quot;</span><span class="s2">)&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;(?P&lt;path&gt;\B(/[-\w._:+]+)*\/)(?P&lt;filename&gt;[-\w._+]*)?&quot;</span><span class="p">,</span>
+            <span class="sa">r</span><span class="s2">&quot;(?P&lt;tag&gt;&lt;(.*?)&gt;)&quot;</span><span class="p">,</span>
+        <span class="p">]</span></div>
+
+<div class="viewcode-block" id="MinimalHighlighter"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.MinimalHighlighter">[docs]</a>    <span class="k">class</span> <span class="nc">MinimalHighlighter</span><span class="p">(</span><span class="n">RegexHighlighter</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Only highlight label.&quot;&quot;&quot;</span>
+
+        <span class="n">base_style</span> <span class="o">=</span> <span class="s2">&quot;backend.&quot;</span>
+        <span class="n">highlights</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">r</span><span class="s2">&quot;(?P&lt;label&gt;\[(.*?)\]:)&quot;</span><span class="p">,</span>
+        <span class="p">]</span></div>
+
+<div class="viewcode-block" id="ColorHighlighter"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.ColorHighlighter">[docs]</a>    <span class="k">class</span> <span class="nc">ColorHighlighter</span><span class="p">(</span><span class="n">Highlighter</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Highlights all basic text with specified color, still applying base to get specific colors</span>
+<span class="sd">        for other pieces of text.&quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_color</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">LoggingHighlighter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base_color</span> <span class="o">=</span> <span class="n">base_color</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">base</span> <span class="o">=</span> <span class="n">base</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ColorHighlighter.highlight"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.ColorHighlighter.highlight">[docs]</a>        <span class="k">def</span> <span class="nf">highlight</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">base_color</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">text</span><span class="o">.</span><span class="n">stylize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_color</span><span class="p">)</span>
+            <span class="n">highlighter</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">base</span><span class="p">()</span>
+            <span class="n">highlighter</span><span class="o">.</span><span class="n">highlight</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">text</span></div></div>
+
+    <span class="k">def</span> <span class="nf">get_highlighter</span><span class="p">(</span><span class="n">color</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">minimal</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a highlighter.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            color (str): The color of the base text.</span>
+<span class="sd">            minimal (bool): When set to False, :class:`LoggingHighlighter` is </span>
+<span class="sd">                applied to the string after setting the base color.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">LoggingHighlighter</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">color</span> <span class="ow">is</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">ColorHighlighter</span><span class="p">(</span>
+                <span class="n">color</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">MinimalHighlighter</span> <span class="k">if</span> <span class="n">minimal</span> <span class="k">else</span> <span class="n">LoggingHighlighter</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="trace2rich"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.trace2rich">[docs]</a>    <span class="k">def</span> <span class="nf">trace2rich</span><span class="p">(</span><span class="n">trace</span><span class="p">:</span> <span class="n">Trace</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert traceback to internal representation used by rich.&quot;&quot;&quot;</span>
+        <span class="n">stacks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">stack</span> <span class="ow">in</span> <span class="n">trace</span><span class="o">.</span><span class="n">stacks</span><span class="p">:</span>
+            <span class="n">frames</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">stack</span><span class="o">.</span><span class="n">frames</span><span class="p">:</span>
+                <span class="n">frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_rich_tb</span><span class="o">.</span><span class="n">Frame</span><span class="p">(</span><span class="o">**</span><span class="n">asdict</span><span class="p">(</span><span class="n">frame</span><span class="p">)))</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="n">asdict</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;frames&quot;</span><span class="p">:</span> <span class="n">frames</span><span class="p">})</span>
+            <span class="n">stacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_rich_tb</span><span class="o">.</span><span class="n">Stack</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">_rich_tb</span><span class="o">.</span><span class="n">Trace</span><span class="p">(</span><span class="n">stacks</span><span class="p">)</span> </div>
+    
+<div class="viewcode-block" id="DManHandler"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.DManHandler">[docs]</a>    <span class="k">class</span> <span class="nc">DManHandler</span><span class="p">(</span><span class="n">RichHandler</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The default logging handler used by ``dman``.&quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">_traceback_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+                <span class="n">width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tracebacks_width</span><span class="p">,</span>
+                <span class="n">extra_lines</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tracebacks_extra_lines</span><span class="p">,</span>
+                <span class="n">theme</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tracebacks_theme</span><span class="p">,</span>
+                <span class="n">word_wrap</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tracebacks_word_wrap</span><span class="p">,</span>
+                <span class="n">show_locals</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tracebacks_show_locals</span><span class="p">,</span>
+                <span class="n">locals_max_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">locals_max_length</span><span class="p">,</span>
+                <span class="n">locals_max_string</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">locals_max_string</span><span class="p">,</span>
+                <span class="n">suppress</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tracebacks_suppress</span><span class="p">,</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="DManHandler.emit"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.DManHandler.emit">[docs]</a>        <span class="k">def</span> <span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">backend</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s1">&#39;trace&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rich_tracebacks</span><span class="p">:</span>
+                    <span class="n">record</span><span class="o">.</span><span class="n">exc_text</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">delattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s1">&#39;trace&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="DManHandler.render"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.DManHandler.render">[docs]</a>        <span class="k">def</span> <span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">backend</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">,</span> <span class="n">traceback</span><span class="p">,</span> <span class="n">message_renderable</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s1">&#39;trace&#39;</span><span class="p">):</span>
+                <span class="n">traceback</span> <span class="o">=</span> <span class="n">_rich_tb</span><span class="o">.</span><span class="n">Traceback</span><span class="p">(</span>
+                    <span class="n">trace2rich</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">trace</span><span class="p">),</span>
+                    <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_traceback_kwargs</span><span class="p">()</span>
+                <span class="p">)</span>
+
+            <span class="c1"># highlight traceback</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">traceback</span><span class="p">,</span> <span class="n">Text</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="o">==</span> <span class="n">backend</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span>
+                    <span class="n">traceback</span> <span class="o">=</span> <span class="n">ColorHighlighter</span><span class="p">(</span><span class="s1">&#39;backend.warning&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">MinimalHighlighter</span><span class="p">)(</span><span class="n">traceback</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">record</span><span class="o">.</span><span class="n">levelno</span> <span class="ow">in</span> <span class="p">[</span><span class="n">backend</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span> <span class="n">backend</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">]:</span>
+                    <span class="n">traceback</span> <span class="o">=</span> <span class="n">ColorHighlighter</span><span class="p">(</span><span class="s1">&#39;backend.error&#39;</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="n">MinimalHighlighter</span><span class="p">)(</span><span class="n">traceback</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">traceback</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">highlighter</span><span class="p">(</span><span class="n">traceback</span><span class="p">)</span>
+            
+            <span class="c1"># apply indent if necessary</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatter</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatter</span> <span class="k">else</span> <span class="n">backend</span><span class="o">.</span><span class="n">Formatter</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">indent</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">traceback</span><span class="p">:</span>
+                <span class="n">splits</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;\%\(indent\)[-0-9]*s&#39;</span><span class="p">,</span> <span class="n">fmt</span><span class="o">.</span><span class="n">_fmt</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">splits</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="s1">&#39;%(message)&#39;</span> <span class="ow">in</span> <span class="n">splits</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="n">Table</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">padding</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+                    <span class="n">output</span><span class="o">.</span><span class="n">add_column</span><span class="p">()</span>
+                    <span class="n">output</span><span class="o">.</span><span class="n">add_column</span><span class="p">()</span>
+                    <span class="n">output</span><span class="o">.</span><span class="n">add_row</span><span class="p">(</span>
+                        <span class="n">Text</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">indent</span><span class="p">),</span> <span class="n">traceback</span>
+                    <span class="p">)</span>
+                    <span class="n">traceback</span> <span class="o">=</span> <span class="n">output</span>
+                    
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="n">record</span><span class="o">=</span><span class="n">record</span><span class="p">,</span> <span class="n">traceback</span><span class="o">=</span><span class="n">traceback</span><span class="p">,</span> <span class="n">message_renderable</span><span class="o">=</span><span class="n">message_renderable</span><span class="p">)</span></div></div>
+    
+    <span class="k">def</span> <span class="nf">default_handler</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">use_rich</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the default handler used by ``dman``.</span>
+
+<span class="sd">        The stream is passed to the handler, which is either a standard :class:`backend.StreamHandler`</span>
+<span class="sd">        or a :class:`DManHandler` instance. Any other keyword arguments are passed to the </span>
+<span class="sd">        ``__init__`` method of the handler.</span>
+
+<span class="sd">        Additionally the option ``console_style`` can be set to a dictionary. </span>
+<span class="sd">        The keyword arguments contained within are passed to the :class:`rich.console.Console`</span>
+<span class="sd">        initializer and the output console is passed to the `DManHandler`. </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">use_rich</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">backend</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+        <span class="n">console_style</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;theme&#39;</span><span class="p">:</span> <span class="n">log_theme</span><span class="p">,</span> <span class="s1">&#39;file&#39;</span><span class="p">:</span> <span class="n">stream</span><span class="p">}</span>
+        <span class="n">console_style</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;console_style&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">rich_tracebacks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">tracebacks_show_locals</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">console</span><span class="o">=</span><span class="n">Console</span><span class="p">(</span><span class="o">**</span><span class="n">console_style</span><span class="p">),</span>
+            <span class="n">enable_link_path</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="n">default</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">DManHandler</span><span class="p">(</span><span class="o">**</span><span class="n">default</span><span class="p">)</span>
+
+
+<span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<div class="viewcode-block" id="get_highlighter"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.get_highlighter">[docs]</a>    <span class="k">def</span> <span class="nf">get_highlighter</span><span class="p">(</span><span class="n">color</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">minimal</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a highlighter when ``rich`` is not available. </span>
+<span class="sd">        In this case the options have no effect.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="default_handler"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.default_handler">[docs]</a>    <span class="k">def</span> <span class="nf">default_handler</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="n">NONE</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the default handler when ``rich`` is not available. </span>
+<span class="sd">        In this case the returned handler is a standard stream handler.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">backend</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="default_config"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.default_config">[docs]</a><span class="k">def</span> <span class="nf">default_config</span><span class="p">(</span><span class="n">level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the default logger configuration.&quot;&quot;&quot;</span>
+    <span class="n">config</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">level</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="config"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.config">[docs]</a><span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">filemode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">stream</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">datefmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">handlers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">backend</span><span class="o">.</span><span class="n">Handler</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configure the ``dman`` logger.</span>
+<span class="sd">    </span>
+<span class="sd">    This function does nothing if the ``dman`` logger already has handlers configured,</span>
+<span class="sd">    unless if the ``force`` keyword argument is set to true.</span>
+
+<span class="sd">    The default behavior is to create a :class:`DmanHandler` using </span>
+<span class="sd">    the :func:`default_handler` method. Any keyword arguments not specified below are </span>
+<span class="sd">    passed to that method. </span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        level (_type_, optional): Set the logger level to the specified level.</span>
+<span class="sd">        filename (str, optional): Specifies that a FileHandler be created, using the specified</span>
+<span class="sd">            filename, rather than a StreamHandler.</span>
+<span class="sd">        filemode (str, optional): Specifies the mode to open the file, if filename is specified</span>
+<span class="sd">            (if filemode is unspecified, it defaults to &#39;a&#39;).</span>
+<span class="sd">        stream (optional): Use the specified stream to initialize the StreamHandler. Note</span>
+<span class="sd">            that this argument is incompatible with &#39;filename&#39; - if both</span>
+<span class="sd">            are present, &#39;stream&#39; is ignored.</span>
+<span class="sd">        format (str, optional): Use the specified format string for the handler.</span>
+<span class="sd">        datefmt (str, optional): Use the specified date/time format.</span>
+<span class="sd">        handlers (List[backend.Handler], optional): If specified, this should be </span>
+<span class="sd">            an iterable of already created handlers, which will be added to the </span>
+<span class="sd">            root handler. Any handler in the list which does not have a formatter </span>
+<span class="sd">            assigned will be assigned the formatter created in this function.</span>
+<span class="sd">        force (bool, optional): If this keyword is specified as true, any </span>
+<span class="sd">            existing handlers attached to the root logger are removed and closed, </span>
+<span class="sd">            before carrying out the configuration as specified by the other</span>
+<span class="sd">            arguments.. Defaults to False.</span>
+
+<span class="sd">    Note that you could specify a stream created using open(filename, mode)</span>
+<span class="sd">    rather than passing the filename and mode in. However, it should be</span>
+<span class="sd">    remembered that StreamHandler does not close its stream (since it may be</span>
+<span class="sd">    using sys.stdout or sys.stderr), whereas FileHandler closes its stream</span>
+<span class="sd">    when the handler is closed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">backend</span><span class="o">.</span><span class="n">basicConfig</span>
+    <span class="k">if</span> <span class="n">force</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">[:]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+            <span class="n">h</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">handlers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stream</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;stream&#39; and &#39;filename&#39; should not be &quot;</span>
+                                    <span class="s2">&quot;specified together&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">stream</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">filename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;&#39;stream&#39; or &#39;filename&#39; should not be &quot;</span>
+                                <span class="s2">&quot;specified together with &#39;handlers&#39;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">handlers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">filename</span><span class="p">:</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">filemode</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">default_handler</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="n">stream</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">handlers</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">format</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">format</span> <span class="o">=</span> <span class="n">DEFAULT_FORMAT</span> <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;use_rich&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span> <span class="k">else</span> <span class="n">DEFAULT_FORMAT_LEVEL</span>
+            
+        <span class="n">fmt</span> <span class="o">=</span> <span class="n">default_formatter</span><span class="p">(</span><span class="nb">format</span><span class="p">,</span> <span class="n">datefmt</span><span class="p">,</span> <span class="n">capitalize_levelname</span><span class="o">=</span><span class="n">CAPITALIZE_LEVELNAME</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">handlers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">formatter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">h</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+        
+    <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">level</span><span class="p">)</span></div>
+
+            
+<div class="viewcode-block" id="Logger"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger">[docs]</a><span class="k">class</span> <span class="nc">Logger</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">Logger</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logger instance used by ``dman``. Provides some additional logging methods.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">backend</span><span class="o">.</span><span class="n">NOTSET</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">level</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">stack</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">stack</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">indent</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">format_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">format_type</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span> <span class="k">if</span> <span class="n">a</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">])[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">pack</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">exc_info</span> <span class="o">=</span> <span class="n">MISSING</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">minimal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">use_rich_highlighter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">enabled</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">backend</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+        <span class="n">stack</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span>
+        <span class="k">if</span> <span class="n">enabled</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">stack</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">]: &quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stack</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format_stack</span><span class="p">()</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[@</span><span class="si">{</span><span class="n">stack</span><span class="si">}</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;&quot;</span> <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot; | </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]: &quot;</span>
+
+        <span class="n">indent</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">enabled</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">indent</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">indent</span> <span class="o">=</span> <span class="n">BASE_INDENT</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">indent</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span>
+
+        <span class="n">extra</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;label&quot;</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span> <span class="s2">&quot;indent&quot;</span><span class="p">:</span> <span class="n">indent</span><span class="p">}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">use_rich_highlighter</span><span class="p">:</span>
+            <span class="n">extra</span><span class="p">[</span><span class="s2">&quot;highlighter&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_highlighter</span><span class="p">(</span><span class="n">color</span><span class="p">,</span> <span class="n">minimal</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">exc_info</span> <span class="ow">is</span> <span class="n">MISSING</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">msg</span><span class="p">,</span> <span class="n">extra</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">exc_info</span><span class="p">,</span> <span class="n">Trace</span><span class="p">):</span>
+            <span class="n">extra</span><span class="p">[</span><span class="s1">&#39;trace&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">exc_info</span>
+            <span class="k">return</span> <span class="n">msg</span><span class="p">,</span> <span class="n">extra</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">msg</span><span class="p">,</span> <span class="n">extra</span><span class="p">,</span> <span class="n">exc_info</span>
+
+<div class="viewcode-block" id="Logger.info"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.info">[docs]</a>    <span class="k">def</span> <span class="nf">info</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_rich_highlighter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log an info message.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): message</span>
+<span class="sd">            label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">            color (str, optional): The color of the text. Defaults to None.</span>
+<span class="sd">            use_rich_highlighter (bool, optional): Use rich highlighting. Defaults to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span><span class="p">,</span> <span class="n">extra</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">use_rich_highlighter</span><span class="o">=</span><span class="n">use_rich_highlighter</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.debug"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.debug">[docs]</a>    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log a debug message.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): message</span>
+<span class="sd">            label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span><span class="p">,</span> <span class="n">extra</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;backend.debug&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.warning"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.warning">[docs]</a>    <span class="k">def</span> <span class="nf">warning</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log a warning message</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): message</span>
+<span class="sd">            label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">            exc_info (bool, optional): Add exception info. Defaults to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span><span class="p">,</span> <span class="n">extra</span><span class="p">,</span> <span class="n">exc_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">exc_info</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;backend.warning&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">exc_info</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.error"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.error">[docs]</a>    <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log an error message</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): message</span>
+<span class="sd">            label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">            exc_info (bool, optional): Add exception info. Defaults to False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span><span class="p">,</span> <span class="n">extra</span><span class="p">,</span> <span class="n">exc_info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">exc_info</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;backend.error&quot;</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="n">exc_info</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.exception"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.exception">[docs]</a>    <span class="k">def</span> <span class="nf">exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log an exception</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): message</span>
+<span class="sd">            label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">            exc_info (bool, optional): Add exception info. Defaults to True.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">exc_info</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.emphasize"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.emphasize">[docs]</a>    <span class="k">def</span> <span class="nf">emphasize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log an emphasized info message.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): message</span>
+<span class="sd">            label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;backend.emphasis&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.io"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.io">[docs]</a>    <span class="k">def</span> <span class="nf">io</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log an info message associated with io.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): message</span>
+<span class="sd">            label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;backend.io&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.header"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.header">[docs]</a>    <span class="k">def</span> <span class="nf">header</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log an info header.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): message</span>
+<span class="sd">            label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">            prefix (str, optional): Prefix added before the message. Defaults to &quot;type&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&lt;</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2">&gt;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.layer"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.layer">[docs]</a>    <span class="nd">@contextmanager</span>
+    <span class="k">def</span> <span class="nf">layer</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enter a layer context, indenting all future log messages.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (str): message</span>
+<span class="sd">            label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">            owner (Str, optional): Owner of the layer, which is added to the stack. Defaults to None.</span>
+<span class="sd">            prefix (str, optional): Prefix added before the message. Defaults to &quot;type&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;stacklevel&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">owner</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="bp">self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">header</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;end </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Logger.makeRecord"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.Logger.makeRecord">[docs]</a>    <span class="k">def</span> <span class="nf">makeRecord</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">rv</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">makeRecord</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">trace</span><span class="p">:</span> <span class="n">Trace</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">rv</span><span class="p">,</span> <span class="s1">&#39;trace&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">trace</span><span class="p">:</span>
+            <span class="n">rv</span><span class="o">.</span><span class="n">exc_text</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">trace</span><span class="o">.</span><span class="n">format</span><span class="p">())</span>
+            <span class="n">rv</span><span class="o">.</span><span class="n">exc_info</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">rv</span></div>
+    
+    <span class="k">def</span> <span class="nf">_log</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">exc_info</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">stack_info</span><span class="p">:</span> <span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stacklevel</span><span class="p">:</span> <span class="nb">int</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_log</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">exc_info</span><span class="p">,</span> <span class="n">extra</span><span class="p">,</span> <span class="n">stack_info</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+
+<span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">LOGGER_NAME</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="vm">__class__</span> <span class="o">=</span> <span class="n">Logger</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">stack</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+<div class="viewcode-block" id="info"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.info">[docs]</a><span class="k">def</span> <span class="nf">info</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">use_rich_highlighter</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log an info message.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        msg (str): message</span>
+<span class="sd">        label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">        color (str, optional): The color of the text. Defaults to None.</span>
+<span class="sd">        use_rich_highlighter (bool, optional): Use rich highlighting. Defaults to False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">default_config</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">use_rich_highlighter</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="debug"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.debug">[docs]</a><span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>        
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log a debug message.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        msg (str): message</span>
+<span class="sd">        label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">default_config</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="warning"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.warning">[docs]</a><span class="k">def</span> <span class="nf">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log a warning message</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        msg (str): message</span>
+<span class="sd">        label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">        exc_info (bool, optional): Add exception info. Defaults to False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">default_config</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">exc_info</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="error"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.error">[docs]</a><span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log an error message</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        msg (str): message</span>
+<span class="sd">        label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">        exc_info (bool, optional): Add exception info. Defaults to False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">default_config</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">exc_info</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="exception"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.exception">[docs]</a><span class="k">def</span> <span class="nf">exception</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log an exception</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        msg (str): message</span>
+<span class="sd">        label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">        exc_info (bool, optional): Add exception info. Defaults to True.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">default_config</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">logger</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">exc_info</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="emphasize"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.emphasize">[docs]</a><span class="k">def</span> <span class="nf">emphasize</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log an emphasized info message.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        msg (str): message</span>
+<span class="sd">        label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">default_config</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">logger</span><span class="o">.</span><span class="n">emphasize</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="io"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.io">[docs]</a><span class="k">def</span> <span class="nf">io</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log an info message associated with io.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        msg (str): message</span>
+<span class="sd">        label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">default_config</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">logger</span><span class="o">.</span><span class="n">io</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="layer"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.layer">[docs]</a><span class="k">def</span> <span class="nf">layer</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter a layer context, indenting all future log messages.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        msg (str): message</span>
+<span class="sd">        label (str, optional): The label added before the message (if specified in format string). Defaults to None.</span>
+<span class="sd">        owner (Str, optional): Owner of the layer, which is added to the stack. Defaults to None.</span>
+<span class="sd">        prefix (str, optional): Prefix added before the message. Defaults to &quot;type&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">default_config</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">logger</span><span class="o">.</span><span class="n">layer</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+        
+
+<div class="viewcode-block" id="logger_context"><a class="viewcode-back" href="../../../api/log.html#dman.core.log.logger_context">[docs]</a><span class="nd">@contextmanager</span>
+<span class="k">def</span> <span class="nf">logger_context</span><span class="p">(</span><span class="n">level</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter a logger context with a temporary log level.</span>
+<span class="sd">    </span>
+<span class="sd">    Example:</span>
+
+<span class="sd">    &gt;&gt;&gt; with logger_context(level=INFO):</span>
+<span class="sd">    ...     info(&#39;test&#39;, &#39;label&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">logger</span>
+        <span class="k">return</span>
+
+    <span class="n">_level</span> <span class="o">=</span> <span class="n">logger</span><span class="o">.</span><span class="n">level</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">({</span><span class="kc">True</span><span class="p">:</span> <span class="n">INFO</span><span class="p">,</span> <span class="kc">False</span><span class="p">:</span> <span class="n">WARNING</span><span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">level</span><span class="p">))</span>
+    <span class="k">yield</span> <span class="n">logger</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">_level</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

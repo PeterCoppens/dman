@@ -1,0 +1,671 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Getting Started &mdash; dman 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-binder.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-dataframe.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/sg_gallery-rendered-html.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Glossary" href="../../glossary.html" />
+    <link rel="prev" title="The Data Manager Package" href="../../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> dman
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Introduction</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#basic-types">Basic types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-a-file-hierarchy">Creating a File Hierarchy</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#modelclasses">Modelclasses</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../glossary.html">Glossary</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../cases/index.html">Case Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../patterns/index.html">Design Patterns</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../fundamentals/index.html">Fundamentals</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">Modules</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dman</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Getting Started</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../../_sources/gallery/misc/example0_common.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="sphx-glr-download-link-note admonition note">
+<p class="admonition-title">Note</p>
+<p>Click <a class="reference internal" href="#sphx-glr-download-gallery-misc-example0-common-py"><span class="std std-ref">here</span></a>
+to download the full example code</p>
+</div>
+<section class="sphx-glr-example-title" id="getting-started">
+<span id="sphx-glr-gallery-misc-example0-common-py"></span><h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this heading">¶</a></h1>
+<p>This example illustrates basic usage of <code class="docutils literal notranslate"><span class="pre">dman</span></code>.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">dman</span></code> packages allows for convenient data storing and loading.
+The focus is on human readability, hence <code class="docutils literal notranslate"><span class="pre">dman</span></code> is mostly a file
+hierarchy manager. It does allow storing some types to files by default,
+but for others you have to define yourself how files are read from and written
+to disk. More details are provided in other example. For the full
+overview of introducing new types into <code class="docutils literal notranslate"><span class="pre">dman</span></code> see
+<a class="reference internal" href="../fundamentals/example1_storables.html#sphx-glr-gallery-fundamentals-example1-storables-py"><span class="std std-ref">Defining Storables</span></a> and
+<a class="reference internal" href="../fundamentals/example0_serializables.html#sphx-glr-gallery-fundamentals-example0-serializables-py"><span class="std std-ref">Defining Serializables</span></a>. In all
+likelihood however you will not need to do so too often. Especially
+if your data is represented in terms of <code class="docutils literal notranslate"><span class="pre">numpy</span></code> arrays.
+We will be using those in this example.</p>
+<p>This example starts with some basic <code class="docutils literal notranslate"><span class="pre">python</span></code> types and how to store them
+to disk. We then show how <code class="docutils literal notranslate"><span class="pre">dman</span></code> extends on these types, allowing
+for specifying file paths. Finally we show how <code class="docutils literal notranslate"><span class="pre">modelclasses</span></code>,
+the <code class="docutils literal notranslate"><span class="pre">dman</span></code> extension of a <code class="docutils literal notranslate"><span class="pre">dataclass</span></code> can be used.</p>
+<p>If you want some code that can run out-of-the-box instead of a
+detailed introduction to the important components, you can take a look
+at the other examples listed under <a class="reference internal" href="../patterns/index.html#sphx-glr-gallery-patterns"><span class="std std-ref">Design Patterns</span></a>.</p>
+<p>To run this example you will require <code class="docutils literal notranslate"><span class="pre">numpy</span></code> and <code class="docutils literal notranslate"><span class="pre">rich</span></code>.</p>
+</section>
+<section id="basic-types">
+<h2>Basic types<a class="headerlink" href="#basic-types" title="Permalink to this heading">¶</a></h2>
+<p>You can store most basic <code class="docutils literal notranslate"><span class="pre">python</span></code> types. Specifically those
+that can be handled by <code class="docutils literal notranslate"><span class="pre">json</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># clear any old data</span>
+<span class="kn">import</span> <span class="nn">dman</span><span class="o">,</span> <span class="nn">shutil</span><span class="o">,</span> <span class="nn">os</span>
+<span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">()):</span>
+    <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">())</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mode&#39;</span><span class="p">:</span> <span class="s1">&#39;automatic&#39;</span><span class="p">,</span> <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="mi">5</span><span class="p">}</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">**</span><span class="mi">2</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">])]</span>
+
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;config&#39;</span><span class="p">:</span> <span class="n">config</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">})</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{&#39;config&#39;: {&#39;mode&#39;: &#39;automatic&#39;, &#39;size&#39;: 5}, &#39;data&#39;: [0, 1, 4, 9, 16]}
+</pre></div>
+</div>
+<p>If you receive an error about <code class="docutils literal notranslate"><span class="pre">.dman</span></code> not existing. This means you
+have to create one by executing <code class="docutils literal notranslate"><span class="pre">dman</span> <span class="pre">init</span></code> in your terminal or creating
+a <code class="docutils literal notranslate"><span class="pre">.dman</span></code> folder manually in your project root.
+Files will, by default, be stored in this folder:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/cache/examples:misc:example0_common
+┗━━ 📂 result
+    ┗━━ 📄 result.json (148 bytes)
+         ──────────────────────────────────────────────────────────────────────
+          {
+            &quot;config&quot;: {
+              &quot;mode&quot;: &quot;automatic&quot;,
+              &quot;size&quot;: 5
+            },
+            &quot;data&quot;: [
+              0,
+              1,
+              4,
+              9,
+              16
+            ]
+          }
+         ──────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>By default <code class="docutils literal notranslate"><span class="pre">dman</span></code> can also handle <code class="docutils literal notranslate"><span class="pre">numpy</span></code> arrays.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;config&#39;</span><span class="p">:</span> <span class="n">config</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">})</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/cache/examples:misc:example0_common
+┗━━ 📂 result
+    ┗━━ 📄 result.json (176 bytes)
+         ──────────────────────────────────────────────────────────────────────
+          {
+            &quot;config&quot;: {
+              &quot;mode&quot;: &quot;automatic&quot;,
+              &quot;size&quot;: 5
+            },
+            &quot;data&quot;: {
+              &quot;_ser__type&quot;: &quot;_num__ndarray&quot;,
+              &quot;_ser__content&quot;: &quot;[0, 1, 4, 9, 16]&quot;
+            }
+          }
+         ──────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>We mentioned that <code class="docutils literal notranslate"><span class="pre">dman</span></code> is a file hierarchy manager.
+Already some convenience is provided since we didn’t need to specify a path
+for our data. This path has been determined automatically by <a class="reference internal" href="../fundamentals/example4_path.html#dman.mount" title="dman.mount"><code class="xref py py-func docutils literal notranslate"><span class="pre">dman.mount()</span></code></a>
+internally based on the name of the script. Of course if you want
+to read the file from a different script this can be inconvenient.
+So you can specify the generator yourself.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">,</span> <span class="s1">&#39;content&#39;</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="s1">&#39;example_common&#39;</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="n">generator</span><span class="o">=</span><span class="s1">&#39;example_common&#39;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/example_common
+┗━━ 📂 result
+    ┗━━ 📄 result.json (9 bytes)
+         ──────────────────────────────────────────────────────────────────────
+          &quot;content&quot;
+         ──────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>The signature of <a class="reference internal" href="../fundamentals/example4_path.html#dman.mount" title="dman.mount"><code class="xref py py-func docutils literal notranslate"><span class="pre">dman.mount()</span></code></a> is similar to that of <code class="xref py py-func docutils literal notranslate"><span class="pre">dman.save()</span></code>,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">dman.load()</span></code> and <code class="xref py py-func docutils literal notranslate"><span class="pre">dman.track()</span></code>. Hence if you want to know
+where your files go, you can always use it.</p>
+<p>We can also load files of course:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">,</span> <span class="n">generator</span><span class="o">=</span><span class="s1">&#39;example_common&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>content
+</pre></div>
+</div>
+<p>If the <code class="docutils literal notranslate"><span class="pre">generator</span></code> is not specified then loading only works
+when executed in the same script as the one where <code class="docutils literal notranslate"><span class="pre">save</span></code> was called
+with the default <code class="docutils literal notranslate"><span class="pre">generator</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>{&#39;config&#39;: {&#39;mode&#39;: &#39;automatic&#39;, &#39;size&#39;: 5}, &#39;data&#39;: array([ 0,  1,  4,  9, 16])}
+</pre></div>
+</div>
+<p>Finally we can do both at the same time</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;updated&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;original&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+<span class="k">with</span> <span class="n">dman</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="s1">&#39;updated&#39;</span><span class="p">,</span> <span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span> <span class="k">as</span> <span class="n">data</span><span class="p">:</span>
+    <span class="n">data</span><span class="p">[</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;updated&#39;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/cache/examples:misc:example0_common/updated
+┗━━ 📄 updated.json (38 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;original&quot;: 0,
+        &quot;value&quot;: 42
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+</section>
+<section id="creating-a-file-hierarchy">
+<h2>Creating a File Hierarchy<a class="headerlink" href="#creating-a-file-hierarchy" title="Permalink to this heading">¶</a></h2>
+<p>Beyond just automatically determining a <code class="docutils literal notranslate"><span class="pre">mount</span></code> point to save files
+to, <code class="docutils literal notranslate"><span class="pre">dman</span></code> also allows creating a file hierarchy within this folder.</p>
+<p>To do so we need to use model types. Let’s start with the model version
+of dictionaries and of lists. We will also use <code class="docutils literal notranslate"><span class="pre">barray</span></code>,
+which is the first <code class="docutils literal notranslate"><span class="pre">storable</span></code> type. It can be written and read from disk.
+The second storable is <code class="docutils literal notranslate"><span class="pre">smdict</span></code>, which is simply a dictionary
+that will be stored to a separate file.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dman.numeric</span> <span class="kn">import</span> <span class="n">barray</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">smdict</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">config</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">])</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">)</span>
+
+<span class="n">files</span> <span class="o">=</span> <span class="n">dman</span><span class="o">.</span><span class="n">mdict</span><span class="p">(</span><span class="n">store_by_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">files</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+<span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;files&#39;</span><span class="p">,</span> <span class="n">files</span><span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;files&#39;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/cache/examples:misc:example0_common/files
+┣━━ 📄 config.json (71 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;store&quot;: {
+┃         &quot;mode&quot;: &quot;automatic&quot;,
+┃         &quot;size&quot;: 5
+┃       }
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 data.npy (168 bytes)
+┗━━ 📄 files.json (578 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;_ser__mdict&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;store&quot;: {
+            &quot;config&quot;: {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;config.json&quot;,
+                &quot;sto_type&quot;: &quot;_sto__smdict&quot;
+              }
+            },
+            &quot;data&quot;: {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;data.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            }
+          },
+          &quot;store_by_key&quot;: true
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>Now three files have been created</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">files.json</span></code> contains meta-data, describing the content of the other files.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.json</span></code> is what became of our <code class="docutils literal notranslate"><span class="pre">config</span></code> object.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.npy</span></code> stores the contents of <code class="docutils literal notranslate"><span class="pre">data</span></code>.</p></li>
+</ul>
+<p>Let us consider a more interesting example, using <code class="xref py py-class docutils literal notranslate"><span class="pre">dman.mruns</span></code>. This object
+acts like a list, but creates file names for storables automatically.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">dman</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="s1">&#39;runs&#39;</span><span class="p">,</span> <span class="n">default_factory</span><span class="o">=</span><span class="n">dman</span><span class="o">.</span><span class="n">mruns_factory</span><span class="p">(</span><span class="n">store_subdir</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span> <span class="k">as</span> <span class="n">runs</span><span class="p">:</span>
+    <span class="n">runs</span><span class="p">:</span> <span class="n">dman</span><span class="o">.</span><span class="n">mruns</span> <span class="o">=</span> <span class="n">runs</span>     <span class="c1"># for type hinting</span>
+    <span class="n">runs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>                <span class="c1"># remove all previous runs</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="n">runs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">))</span>
+
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;runs&#39;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/cache/examples:misc:example0_common/runs
+┣━━ 📄 run-0.npy (128 bytes)
+┣━━ 📄 run-1.npy (136 bytes)
+┣━━ 📄 run-2.npy (144 bytes)
+┗━━ 📄 runs.json (825 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;_ser__mruns&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;stem&quot;: &quot;run&quot;,
+          &quot;run_count&quot;: 3,
+          &quot;store_subdir&quot;: false,
+          &quot;store&quot;: [
+            {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;run-0.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            },
+            {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;run-1.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            },
+            {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;run-2.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            }
+          ]
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<p>If you don’t care about file names, <code class="docutils literal notranslate"><span class="pre">dman</span></code> can generate them automatically:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">dman</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span> <span class="k">as</span> <span class="n">lst</span><span class="p">:</span>
+    <span class="n">lst</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+    <span class="n">lst</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">barray</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)])</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;auto&#39;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/cache/examples:misc:example0_common/auto
+┣━━ 📄 0cdfb3bf-799d-4ef8-998c-f6f7955ddb42.npy (144 bytes)
+┣━━ 📄 307e91fd-c680-4718-85fa-8efdcd043dea.npy (136 bytes)
+┣━━ 📄 6c28b730-efe5-4247-8e13-fd2d1e429967.npy (128 bytes)
+┗━━ 📄 auto.json (840 bytes)
+     ──────────────────────────────────────────────────────────────────────────
+      {
+        &quot;_ser__type&quot;: &quot;_ser__mlist&quot;,
+        &quot;_ser__content&quot;: {
+          &quot;store&quot;: [
+            {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;6c28b730-efe5-4247-8e13-fd2d1e429967.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            },
+            {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;307e91fd-c680-4718-85fa-8efdcd043dea.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            },
+            {
+              &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+              &quot;_ser__content&quot;: {
+                &quot;target&quot;: &quot;0cdfb3bf-799d-4ef8-998c-f6f7955ddb42.npy&quot;,
+                &quot;sto_type&quot;: &quot;_num__barray&quot;
+              }
+            }
+          ]
+        }
+      }
+     ──────────────────────────────────────────────────────────────────────────
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Both specifying file names and having them be automatically generated
+have advantages and disadvantages. When specifying the file names
+you risk overwriting existing data, however <code class="docutils literal notranslate"><span class="pre">dman</span></code>
+will give a warning by default. See <a class="reference internal" href="../fundamentals/example4_path.html#sphx-glr-gallery-fundamentals-example4-path-py"><span class="std std-ref">Mounting and Targets</span></a>
+for more info. Importantly if you want <code class="docutils literal notranslate"><span class="pre">dman</span></code> to prompt you for a new
+filename whenever it risks overwriting an existing file use:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">params</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">on_retouch</span> <span class="o">=</span> <span class="s1">&#39;prompt&#39;</span>
+</pre></div>
+</div>
+<p>When not specifying file names, files will likely not be removed.
+Instead <code class="docutils literal notranslate"><span class="pre">dman</span></code> keeps creating new files (unless if you use <code class="docutils literal notranslate"><span class="pre">track</span></code> correctly
+as illustrated above).</p>
+</div>
+</section>
+<section id="modelclasses">
+<h2>Modelclasses<a class="headerlink" href="#modelclasses" title="Permalink to this heading">¶</a></h2>
+<p>We finally briefly illustrate the usage of <code class="docutils literal notranslate"><span class="pre">modelclass</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">dman.numeric</span> <span class="kn">import</span> <span class="n">sarray</span>
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">compact</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">storable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Config</span><span class="p">:</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span>
+
+<span class="nd">@dman</span><span class="o">.</span><span class="n">modelclass</span><span class="p">(</span><span class="n">storable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">store_by_field</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">Data</span><span class="p">:</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">sarray</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span>
+    <span class="n">output</span><span class="p">:</span> <span class="n">barray</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="s1">&#39;Experiment generating numbers&#39;</span><span class="p">,</span> <span class="mi">25</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">Data</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">cfg</span><span class="o">.</span><span class="n">size</span><span class="p">))</span>
+<span class="n">data</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">cfg</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">modelclass</span></code> automatically converts the numpy arrays to the
+specified types:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span>
+    <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">)</span><span class="si">=}</span><span class="s1">&#39;</span><span class="p">,</span>
+    <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">=}</span><span class="s1">&#39;</span><span class="p">,</span>
+    <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">output</span><span class="p">)</span><span class="si">=}</span><span class="s1">&#39;</span><span class="p">,</span>
+    <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>type(data.values)=&lt;class &#39;dman.numeric.sarray[int]&#39;&gt;
+type(data.values[0])=&lt;class &#39;numpy.int64&#39;&gt;
+type(data.output)=&lt;class &#39;dman.numeric.barray&#39;&gt;
+</pre></div>
+</div>
+<p>We can now save the result</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">dman</span><span class="o">.</span><span class="n">save</span><span class="p">(</span>
+    <span class="s1">&#39;model&#39;</span><span class="p">,</span>
+    <span class="n">dman</span><span class="o">.</span><span class="n">mdict</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span><span class="s1">&#39;cfg&#39;</span><span class="p">:</span> <span class="n">cfg</span><span class="p">,</span> <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">data</span><span class="p">},</span> <span class="n">store_by_key</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">dman</span><span class="o">.</span><span class="n">tui</span><span class="o">.</span><span class="n">walk_directory</span><span class="p">(</span><span class="n">dman</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s1">&#39;model&#39;</span><span class="p">),</span> <span class="n">show_content</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>📂 .dman/cache/examples:misc:example0_common/model
+┣━━ 📄 cfg.json (70 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;description&quot;: &quot;Experiment generating numbers&quot;,
+┃       &quot;size&quot;: 25
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 data.json (366 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;values&quot;: {
+┃         &quot;_ser__type&quot;: &quot;_num__sarray&quot;,
+┃         &quot;_ser__content&quot;: &quot;[1, 1, 1, 2, 3, 4, 5, 7, 10, 13, 17, 23, 31, 42, 5
+┃       },
+┃       &quot;output&quot;: {
+┃         &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃         &quot;_ser__content&quot;: {
+┃           &quot;target&quot;: &quot;output.npy&quot;,
+┃           &quot;sto_type&quot;: &quot;_num__barray&quot;
+┃         }
+┃       }
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┣━━ 📄 model.json (559 bytes)
+┃    ──────────────────────────────────────────────────────────────────────────
+┃     {
+┃       &quot;_ser__type&quot;: &quot;_ser__mdict&quot;,
+┃       &quot;_ser__content&quot;: {
+┃         &quot;store&quot;: {
+┃           &quot;cfg&quot;: {
+┃             &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃             &quot;_ser__content&quot;: {
+┃               &quot;target&quot;: &quot;cfg.json&quot;,
+┃               &quot;sto_type&quot;: &quot;Config&quot;
+┃             }
+┃           },
+┃           &quot;data&quot;: {
+┃             &quot;_ser__type&quot;: &quot;_ser__record&quot;,
+┃             &quot;_ser__content&quot;: {
+┃               &quot;target&quot;: &quot;data.json&quot;,
+┃               &quot;sto_type&quot;: &quot;Data&quot;
+┃             }
+┃           }
+┃         },
+┃         &quot;store_by_key&quot;: true
+┃       }
+┃     }
+┃    ──────────────────────────────────────────────────────────────────────────
+┗━━ 📄 output.npy (328 bytes)
+</pre></div>
+</div>
+<p>More information on how to use <code class="docutils literal notranslate"><span class="pre">modelclass</span></code> can be found in
+<a class="reference internal" href="../fundamentals/example3_models.html#sphx-glr-gallery-fundamentals-example3-models-py"><span class="std std-ref">Model Types</span></a>.</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> ( 0 minutes  0.090 seconds)</p>
+<div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-misc-example0-common-py">
+<div class="sphx-glr-download sphx-glr-download-python docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/9ebb565fb7ec9ed494860f78e5710035/example0_common.py"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Python</span> <span class="pre">source</span> <span class="pre">code:</span> <span class="pre">example0_common.py</span></code></a></p>
+</div>
+<div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
+<p><a class="reference download internal" download="" href="../../_downloads/f8eeb83619c3bd0abc4aeac5d0242dd8/example0_common.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">example0_common.ipynb</span></code></a></p>
+</div>
+</div>
+<p class="sphx-glr-signature"><a class="reference external" href="https://sphinx-gallery.github.io">Gallery generated by Sphinx-Gallery</a></p>
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="../../glossary.html" class="btn btn-neutral float-right" title="Glossary" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../../index.html" class="btn btn-neutral float-left" title="The Data Manager Package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Peter Coppens.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,16 @@
+
+:orphan:
+
+.. _sphx_glr_gallery_cases_sg_execution_times:
+
+Computation times
+=================
+**00:07.401** total execution time for **gallery_cases** files:
+
++-------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_cases_example_svm.py` (``example_svm.py``)       | 00:05.978 | 0.0 MB |
++-------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_cases_example_pandas.py` (``example_pandas.py``) | 00:00.939 | 0.0 MB |
++-------------------------------------------------------------------------+-----------+--------+
+| :ref:`sphx_glr_gallery_cases_example_numpy.py` (``example_numpy.py``)   | 00:00.484 | 0.0 MB |
++-------------------------------------------------------------------------+-----------+--------+
