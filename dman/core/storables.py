@@ -11,6 +11,7 @@ from typing import Type, Union, Any, Callable, Optional
 import io as _io
 from tempfile import TemporaryDirectory
 import shutil
+import functools import partial
 from uuid import uuid4
 
 
@@ -58,10 +59,10 @@ def register_storable(
     cls: Type[Any],
     *,
     write: Callable[[Any, Optional["BaseContext"]], Any] = None,
-    read: Callable[[Any, Optional["BaseContext"]], Any] = None,
+    read: Callable[[Type, Any, Optional["BaseContext"]], Any] = None,
 ):
     """
-    Register a class as a storable type with a given name
+    Register a class as a storable type with a given name.
     """
     __storable_types[name] = cls
     if write is not None and read is not None:
@@ -209,6 +210,7 @@ def read(type: Union[str, Type], path: os.PathLike, context: BaseContext = None,
             raise ReadException(f"Unregistered type: {type}.")
 
     _, _, inner_read = get_custom_storable(type, (None, None, None))
+    inner_read = partial(type)  # assign the class
     if inner_read is None:
         inner_read = getattr(type, READ, None)
     if inner_read is None:
