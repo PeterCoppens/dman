@@ -295,3 +295,139 @@ def walk_directory(
         if console is None:
             console = Console(width=80)
         console.print(tree)
+
+
+DEFAULT_BOX: box.Box = box.Box("""\
+    
+    
+ ━━ 
+    
+ ── 
+ ━━ 
+    
+    
+"""
+)
+
+
+class LiveTable:
+    def __init__(self, box: box.Box = DEFAULT_BOX, padding: int = 1):
+        self.box = box
+        self.config = {}
+        self.padding = padding
+
+    def distribute(self, width: int):
+        column_width = width // len(self.config)
+        remainder = width - column_width * len(self.config)
+        for v in self.config.values():
+            v['width'] = column_width
+            v['default'] = v['default'].ljust(column_width)
+        v['width'] += remainder
+        v['default'] = v['default'].ljust(column_width + remainder)
+        return self
+
+    @property
+    def widths(self):
+        return [c['width'] for c in self.config.values()]
+
+    def pad(self, v):
+        return ' '*self.padding + str(v) + ' '*self.padding
+
+    def cell(self, v, *, width: int, default: str, fmt: str):
+        if v is None:
+            return default
+        if fmt is not None:
+            v = fmt.format(v)
+        return self.pad(v).ljust(width)
+    
+    def add_column(self, title: str, *, width: int = None, default: str = None, fmt: str = None):
+        if width is None and default is None:
+            raise ValueError('Either width of default value should be specified.')
+        elif width is not None and default is not None:
+            raise ValueError('Either width of default value should be specified, not both.')
+        elif width is None and default is not None:
+            width = len(default)
+        elif width is not None and default is None:
+            default = ' '*width
+        self.config[title] = {'width': width, 'default': default, 'fmt': fmt}
+        return self
+
+    def head(self):
+        headers = [self.cell(k, **(v | {'fmt': None})) for k, v in self.config.items()]
+        return '\n'.join([
+            self.box.get_top(self.widths),
+            self.box.head_left + self.box.head_vertical.join(headers) + self.box.head_right,
+            self.box.get_row(self.widths, level='head')
+        ])
+    
+    def update(self, **kwargs):
+        kwargs = {k: None for k in self.config} | kwargs
+        cells = [self.cell(v, **opts) for v, opts in zip(kwargs.values(), self.config.values())]
+        return self.box.mid_left + self.box.mid_vertical.join(cells) + self.box.mid_right
+    
+    def line(self):
+        return self.box.get_row(self.widths, level='row')
+    
+    def terminate(self, **kwargs):
+        if len(kwargs) == 0:
+            return self.box.get_row(self.widths, level='foot')
+        kwargs = {k: None for k in self.config} | kwargs
+        cells = [self.cell(v, **opts) for v, opts in zip(kwargs.values(), self.config.values())]
+        return '\n'.join([
+            self.box.get_row(self.widths, level='foot'),
+            self.box.foot_left + self.box.foot_vertical.join(cells) + self.box.foot_right,
+            self.box.get_bottom(self.widths)
+        ])
+    
+
+from rich.logging import RichHandler
+import logging
+
+
+class TableLogger(LiveTable):
+    def __init__(self, *, box=DEFAULT_BOX, padding: int = 1, width: int = 150):
+        super().__init__(box, padding)
+        self.handler = RichHandler(level="NOTSET", console=Console(width=width))
+        logging.basicConfig(level="NOTSET", handlers=[
+            self.handler 
+        ], format='%(message)s')
+        self.logger = logging.getLogger('rich')
+        self.terminated = False
+        self.last_update = {}
+        self.progress: Progress = None
+
+    def __enter__(self) -> 'TableLogger':
+        self.start()
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+    def add_progress(self, *columns, **kwargs):
+        kwargs = kwargs | {'console': self.handler.console}
+        self.progress = Progress(*columns, **kwargs)
+        return self
+    
+    def start(self):
+        self.logger.info(self.head())
+        if self.progress is not None:
+            self.progress.start()
+
+    def close(self):
+        if not self.terminated:
+            self.terminate(**self.last_update)
+
+    def terminate(self, **kwargs):
+        self.logger.info(super().terminate(**kwargs))
+        if self.progress is not None:
+            self.progress.stop()
+        self.terminated = True
+    
+    def update(self, **kwargs):
+        self.logger.info(super().update(**kwargs))
+        self.last_update = kwargs
+
+    def line(self):
+        ln = super().line()
+        if not ln.isspace():
+            self.logger.info(super().line())
