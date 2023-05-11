@@ -7,7 +7,7 @@ import sys
 import uuid
 
 from dataclasses import asdict, dataclass, is_dataclass
-from typing import Any, Tuple
+from typing import Any, Tuple, Callable, Optional
 from contextlib import suppress
 
 from dman.core import log
@@ -46,9 +46,16 @@ REMOVE = "__remove__"
 EXTENSION = "__ext__"
 
 
+__custom_removables = dict()
+
+
 def is_removable(obj):
     """Check if an object is removable."""
-    return hasattr(obj, REMOVE)
+    return hasattr(obj, REMOVE) or type(obj) in __custom_removables 
+
+
+def register_removable(obj, remove: Callable[[Any, Optional[BaseContext]], Any]):
+    __custom_removables[obj] = remove
 
 
 @serializable(name="__no_file")
@@ -302,6 +309,8 @@ class Context(BaseContext):
         if is_removable(obj):
             with log.layer(tp.__name__, "remove"):
                 inner_remove = getattr(obj, REMOVE, None)
+                if inner_remove is None:
+                    __custom_removables.get(type(obj), None)
                 if inner_remove is not None:
                     inner_remove(local)
                 return
@@ -335,7 +344,7 @@ class Context(BaseContext):
         self, target: os.PathLike, *, choice: str = None
     ) -> Tuple["Context", Target]:
         """Prepare a target for writing a storable to."""
-        target = self.mnt.prepare(self.absolute(target), choice=choice)
+        target = self.mnt.prepare(self.absolute(target), choice=choice, return_abspath=False)
         return self.join(target.subdir), Target(name=target.name)
 
     def __enter__(self):

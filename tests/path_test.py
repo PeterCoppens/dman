@@ -62,51 +62,51 @@ def test_mount():
 def test_prepare():
     with temporary_mount('test.npy') as mnt:
         with mock_input("test-manual.npy"):
-            t = mnt.prepare('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt', return_abspath=False)
         assert t == 'test-manual.npy'
         with mock_input("test-manual.npy\ntest-second.npy"):
-            t = mnt.prepare('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt', return_abspath=False)
         assert t == 'test-second.npy'
         
     with temporary_mount('test.npy') as mnt:
         with mock_input("auto"):
-            t = mnt.prepare('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt', return_abspath=False)
         assert t == 'test0.npy'
         with mock_input("\n"):
-            t = mnt.prepare('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt', return_abspath=False)
         assert t == 'test1.npy'
         with mock_input("auto"):
-            t = mnt.prepare('test1.npy', choice='prompt')
+            t = mnt.prepare('test1.npy', choice='prompt', return_abspath=False)
         assert t == 'test2.npy'
         
     with temporary_mount('test.npy') as mnt:
         with mock_input("x"):
-            t = mnt.prepare('test.npy', choice='prompt')
+            t = mnt.prepare('test.npy', choice='prompt', return_abspath=False)
         assert t == 'test.npy'
         
     with temporary_mount('test.npy') as mnt:
         try:
             with mock_input("q"):
-                t = mnt.prepare('test.npy', choice='prompt')
+                t = mnt.prepare('test.npy', choice='prompt', return_abspath=False)
             assert False
         except TargetException:
             assert True
         
     with temporary_mount('test.npy') as mnt:
-        t = mnt.prepare('test.npy', choice='auto')
+        t = mnt.prepare('test.npy', choice='auto', return_abspath=False)
         assert t == 'test0.npy'
-        t = mnt.prepare('test.npy', choice='auto')
+        t = mnt.prepare('test.npy', choice='auto', return_abspath=False)
         assert t == 'test1.npy'
-        t = mnt.prepare('test1.npy', choice='auto')
+        t = mnt.prepare('test1.npy', choice='auto', return_abspath=False)
         assert t == 'test2.npy'
         
     with temporary_mount('test.npy') as mnt:
-        t = mnt.prepare('test.npy', choice='ignore')
+        t = mnt.prepare('test.npy', choice='ignore', return_abspath=False)
         assert t == 'test.npy'
         
     with temporary_mount('test.npy') as mnt:
         try:
-            t = mnt.prepare('test.npy', choice='quit')
+            t = mnt.prepare('test.npy', choice='quit', return_abspath=False)
             assert False
         except TargetException:
             assert True

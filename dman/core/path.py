@@ -404,7 +404,7 @@ class Mount(os.PathLike):
         # We reach this option if a custom file name was provided by the user.
         return self.register(target.update(name=choice), choice="prompt")
 
-    def prepare(self, target: os.PathLike, *, validate: bool = True, choice: str = None):
+    def prepare(self, target: os.PathLike, *, validate: bool = True, choice: str = None, return_abspath: bool = True):
         """Prepare directory to write to target path."""
         # Normalize the path relative to this mount point.
         target = self.normalize(target, validate=validate)
@@ -419,6 +419,8 @@ class Mount(os.PathLike):
             os.makedirs(directory)
 
         # Return the target
+        if return_abspath:
+            return self.abspath(target)
         return target
 
     def close(self):
@@ -445,8 +447,8 @@ class Mount(os.PathLike):
         
             The signature is identical to the standard ``open`` command.
         """
-        path = self.prepare(path, validate=True)
-        f = open(self.abspath(path), *args, **kwargs)
+        path = self.prepare(path, validate=True, return_abspath=True)
+        f = open(path, *args, **kwargs)
         yield f
         f.close()
     
@@ -517,3 +519,47 @@ def mount(
         subdir = os.path.join(subdir, key)
     directory = os.path.join(base, generator, subdir)
     return Mount(directory, cluster=cluster, gitignore=gitignore)
+
+
+@contextmanager
+def directory(
+    key: str = "",
+    *,
+    subdir: os.PathLike = "",
+    generator: str = None,
+    base: os.PathLike = None,
+    gitignore: bool = True,
+):
+    """Get a directory through the mount system of dman.
+        The path of the file is determined as described below.
+
+            If the files are clustered then the path is ``<base>/<generator>/<subdir>/<key>/<key>.<ext>``
+            If cluster is set to False then the path is ``<base>/<generator>/<subdir>/<key>.<ext>``
+
+            When base is not provided then it is set to .dman if
+            it does not exist an exception is raised.
+
+            When generator is not provided it will automatically be set based on
+            the location of the script relative to the .dman folder
+            (again raising an exception if it is not found). For example
+            if the script is located in ``<project-root>/examples/folder/script.py``
+            and .dman is located in ``<project-root>/.dman``.
+            Then generator is set to cache/examples:folder:script (i.e.
+            the / is replaced by : in the output).
+        
+            See :ref:`sphx_glr_gallery_fundamentals_example4_path.py` for
+            detailed examples on how to create and use mount points.
+
+    Args:
+        key (str, optional):  Key for the file. Default ``''``, so the generator folder is returned.
+        subdir (os.PathLike, optional): Specifies optional subdirectory in generator folder. Defaults to "".
+        cluster (bool, optional): A subfolder ``key`` is automatically created when set to True. Defaults to True.
+        generator (str, optional): Specifies the generator that created the file. Defaults to script label.
+        base (os.PathLike, optional): Specifies the root folder. Defaults to ".dman".
+        gitignore (bool, optional): Specifies whether the directory should be ignored.
+    """
+    mnt = mount(
+        key, subdir=subdir, generator=generator, base=base, gitignore=gitignore
+    )
+    yield mnt.prepare("")
+    mnt.close()
