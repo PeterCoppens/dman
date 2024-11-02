@@ -324,7 +324,6 @@ def config(*, level=None, filename: str=None, filemode: str = 'a', stream=None, 
     using sys.stdout or sys.stderr), whereas FileHandler closes its stream
     when the handler is closed.
     """
-    backend.basicConfig
     if force:
         for h in logger.handlers[:]:
             logger.removeHandler(h)

@@ -26,6 +26,7 @@ from rich.pretty import pprint
 from dman.core.path import get_root_path, normalize_path
 from dman.core.serializables import BaseContext, serialize
 from dman import sjson
+from dman import log
 
 _print = print
 
@@ -297,13 +298,14 @@ def walk_directory(
         console.print(tree)
 
 
-DEFAULT_BOX: box.Box = box.Box("""\
+DEFAULT_BOX: box.Box = box.Box(
+    """\
     
     
- ━━ 
+━━━━
     
- ── 
- ━━ 
+────
+━━━━
     
     
 """
@@ -351,47 +353,60 @@ class LiveTable:
             default = ' '*width
         self.config[title] = {'width': width, 'default': default, 'fmt': fmt}
         return self
+    
+    def line(self, mode='row'):
+        if mode == 'row':
+            return self.box.get_row(self.widths, level='row')
+        if mode == 'foot':
+            return self.box.get_row(self.widths, level='foot')
+        if mode == 'bottom':
+            return self.box.get_bottom(self.widths)
+        if mode == 'top':
+            return self.box.get_top(self.widths)
+        if mode == 'head':
+            return self.box.get_row(self.widths, level='head')
+        raise ValueError(f'Unexpected line mode: {mode}')
 
-    def head(self):
-        headers = [self.cell(k, **(v | {'fmt': None})) for k, v in self.config.items()]
+    def head(self, *args):
+        headers = [self.cell(v, **(opts | {'fmt': None})) for v, opts in zip(args, self.config.values())]
+        return self.box.head_left + self.box.head_vertical.join(headers) + self.box.head_right
+
+    def header(self):
         return '\n'.join([
-            self.box.get_top(self.widths),
-            self.box.head_left + self.box.head_vertical.join(headers) + self.box.head_right,
-            self.box.get_row(self.widths, level='head')
+            self.line('top'),
+            self.head(*self.config.keys()),
+            self.line('head')
         ])
     
     def update(self, **kwargs):
         kwargs = {k: None for k in self.config} | kwargs
         cells = [self.cell(v, **opts) for v, opts in zip(kwargs.values(), self.config.values())]
         return self.box.mid_left + self.box.mid_vertical.join(cells) + self.box.mid_right
-    
-    def line(self):
-        return self.box.get_row(self.widths, level='row')
-    
-    def terminate(self, **kwargs):
-        if len(kwargs) == 0:
-            return self.box.get_row(self.widths, level='foot')
+
+    def foot(self, **kwargs):     
         kwargs = {k: None for k in self.config} | kwargs
         cells = [self.cell(v, **opts) for v, opts in zip(kwargs.values(), self.config.values())]
+        return self.box.foot_left + self.box.foot_vertical.join(cells) + self.box.foot_right
+    
+    def footer(self, **kwargs):
+        if len(kwargs) == 0:
+            return self.box.get_row(self.widths, level='foot')
         return '\n'.join([
-            self.box.get_row(self.widths, level='foot'),
-            self.box.foot_left + self.box.foot_vertical.join(cells) + self.box.foot_right,
-            self.box.get_bottom(self.widths)
+            self.line(mode='foot'),
+            self.foot(**kwargs),
+            self.line(mode='bottom')
         ])
     
 
-from rich.logging import RichHandler
-import logging
-
-
 class TableLogger(LiveTable):
-    def __init__(self, *, box=DEFAULT_BOX, padding: int = 1, width: int = 150):
+    def __init__(self, *, box=DEFAULT_BOX, padding: int = 1, width: int = 150, name: str = __name__):
         super().__init__(box, padding)
-        self.handler = RichHandler(level="NOTSET", console=Console(width=width))
-        logging.basicConfig(level="NOTSET", handlers=[
-            self.handler 
-        ], format='%(message)s')
-        self.logger = logging.getLogger('rich')
+        self.handler = log.RichHandler(level="NOTSET", console=Console(width=width))
+        self.logger = log.backend.Logger(name=name)
+        fmt = log.default_formatter('%(message)s')
+        self.handler.setFormatter(fmt)
+        self.logger.addHandler(self.handler)
+
         self.terminated = False
         self.last_update = {}
         self.progress: Progress = None
@@ -409,25 +424,48 @@ class TableLogger(LiveTable):
         return self
     
     def start(self):
-        self.logger.info(self.head())
+        self.header()
         if self.progress is not None:
             self.progress.start()
 
     def close(self):
         if not self.terminated:
-            self.terminate(**self.last_update)
-
-    def terminate(self, **kwargs):
-        self.logger.info(super().terminate(**kwargs))
+            self.footer(**self.last_update)
         if self.progress is not None:
             self.progress.stop()
-        self.terminated = True
+
+    def line(self, mode: str = 'row'):
+        ln = super().line(mode)
+        if not ln.isspace():
+            self.logger.info(ln)
+
+    def head(self, *args):
+        self.logger.info(super().head(*args))
+
+    def header(self):
+        self.logger.info('\n'.join([
+            super().line('top'),
+            super().head(*self.config.keys()),
+            super().line('head')
+        ]))
+
+    def foot(self, **kwargs):
+        self.logger.info(super().foot(**kwargs))
+
+    def footer(self, **kwargs):
+        if len(kwargs) == 0:
+            self.logger.info(self.box.get_row(self.widths, level='foot'))
+        else:
+            self.logger.info('\n'.join([
+                self.line(mode='foot'),
+                self.foot(**kwargs),
+                self.line(mode='bottom')
+            ]))
     
     def update(self, **kwargs):
         self.logger.info(super().update(**kwargs))
         self.last_update = kwargs
 
-    def line(self):
-        ln = super().line()
-        if not ln.isspace():
-            self.logger.info(super().line())
+    def terminate(self, **kwargs):
+        self.footer(**kwargs)
+        self.terminated = True

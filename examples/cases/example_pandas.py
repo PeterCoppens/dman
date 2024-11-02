@@ -41,7 +41,7 @@ dman.register_storable(
     "pd_dataframe",
     pd.DataFrame,
     write=lambda df, path: df.to_csv(path),
-    read=lambda path: pd.read_csv(path),
+    read=lambda cls, path: pd.read_csv(path),
 )
 pd.DataFrame.__ext__ = '.csv'
 

@@ -501,7 +501,10 @@ def isvalid(obj):
     Check if an object is valid
     """
     if isinstance(obj, dict):
-        return not issubclass(ser_str2type(obj.get(SER_TYPE, None)), BaseInvalid)
+        tp = obj.get(SER_TYPE, None)
+        if tp is None:
+            return True
+        return not issubclass(ser_str2type(tp), BaseInvalid)
     return not isinstance(obj, BaseInvalid)
 
 
@@ -671,7 +674,7 @@ class BaseContext:
         """Serialize a dictionary."""
         return {self.serialize(k): self.serialize(v) for k, v in obj.items()}
 
-    def deserialize(self, serialized, ser_type=None):
+    def deserialize(self, serialized, expected=None):
         """Deserialize an object produced through serialization.
 
             The context can be used to store the current directory, logging
@@ -689,7 +692,7 @@ class BaseContext:
 
             See also: :func:`deserialize`.
         """
-        res = self._deserialize_inner(serialized, ser_type)
+        res = self._deserialize_inner(serialized, expected)
         if isinstance(res, BaseInvalid):
             self.process_invalid("An error occurred during deserialization:", res)
         return res

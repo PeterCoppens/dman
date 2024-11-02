@@ -126,7 +126,7 @@ class Frozen:
 def _write_frozen(frozen: Frozen, path: os.PathLike):
     """Write frozen to disk."""
     with open(path, 'w') as f:
-        f.write(frozen.data)
+        f.write(str(frozen.data))
     
 
 def _read_frozen(path: os.PathLike):
@@ -141,6 +141,30 @@ dman.register_storable(
     write=_write_frozen, 
     read=_read_frozen
 )
+
+# %%
+# We can create and store an instance of the frozen class.
+with TemporaryDirectory() as base:
+    ctx = dman.Context.from_directory(base)     # we will need a context.
+
+    # Create the storable and add it to a record.
+    # The record will handle all path specifications automatically.
+    frozen = Frozen(113)
+    rec = dman.record(frozen, stem='value')
+
+    # We can store the file through serialization.
+    ser = dman.serialize(rec, context=ctx)
+    print('record data:')
+    dman.tui.print_serializable(ser)
+    print('files:')
+    dman.tui.walk_directory(base, show_content=True)
+
+    # Remove all files associated with the record
+    dman.remove(rec, context=ctx)  
+    print('files after removal:')
+    dman.tui.walk_directory(base, show_content=True)
+
+
 
 # %%
 # Creating Multiple Files

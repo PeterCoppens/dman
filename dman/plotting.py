@@ -215,6 +215,12 @@ class PklFigure:
 
 try:
     import tikzplotlib
+    
+    # fix dashed line support
+    from matplotlib.lines import Line2D
+    Line2D._us_dashSeq = [3, 3]
+    Line2D._us_dashOffset = 0.0
+
     @dman.storable(name='__plt_tikz')
     class TexFigure:
         __ext__ = '.tex'

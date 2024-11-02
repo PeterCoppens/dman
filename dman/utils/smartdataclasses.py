@@ -38,15 +38,17 @@ def idataclass(
     :param bool frozen: fields may not be assigned to after instance creation.
     """
     def wrap(cls):
-        res = dataclass(
-            cls,
-            init=init,
-            repr=repr,
-            eq=eq,
-            order=order,
-            unsafe_hash=unsafe_hash,
-            frozen=frozen,
-        )
+        res = cls
+        if not is_dataclass(cls):
+            res = dataclass(
+                cls,
+                init=init,
+                repr=repr,
+                eq=eq,
+                order=order,
+                unsafe_hash=unsafe_hash,
+                frozen=frozen,
+            )
         setattr(
             res, "__iter__", lambda self: (getattr(self, f.name) for f in fields(self))
         )

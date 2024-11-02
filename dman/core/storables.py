@@ -11,7 +11,7 @@ from typing import Type, Union, Any, Callable, Optional
 import io as _io
 from tempfile import TemporaryDirectory
 import shutil
-import functools import partial
+from functools import partial
 from uuid import uuid4
 
 
@@ -210,9 +210,11 @@ def read(type: Union[str, Type], path: os.PathLike, context: BaseContext = None,
             raise ReadException(f"Unregistered type: {type}.")
 
     _, _, inner_read = get_custom_storable(type, (None, None, None))
-    inner_read = partial(type)  # assign the class
     if inner_read is None:
         inner_read = getattr(type, READ, None)
+    else:
+        inner_read = partial(inner_read, type)  # assign the class
+
     if inner_read is None:
         raise ReadException(f"Could not find __read__ method.")
     return _call_optional_context(inner_read, path, context=context, **kwargs)

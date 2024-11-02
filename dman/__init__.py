@@ -9,10 +9,10 @@ from dman.core.serializables import ser_type2str, ser_str2type, register_seriali
 from dman.core.serializables import isvalid, ValidationError, SerializationError
 from dman.core.storables import FileTarget
 from dman.core.storables import storable, write, read, register_storable
-from dman.core.path import mount, target, get_root_path, AUTO
+from dman.core.path import mount, target, get_root_path, AUTO, directory
 from dman.core import log
 
-from dman.model.record import record, remove, Context, register_removable
+from dman.model.record import record, remove, Context, register_removable, Record
 from dman.model.modelclasses import recordfield, mdict, smdict, mlist, smlist, mruns, smruns, serializefield, modelclass
 from dman.model.modelclasses import smlist_factory, smdict_factory, smruns_factory, mruns_factory, mdict_factory, mlist_factory
 from dman.model.modelclasses import record_fields, unused_fields, register_preset
