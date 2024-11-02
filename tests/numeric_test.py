@@ -18,7 +18,7 @@ def test_container():
 
     assert isinstance(container.b, sarray)
     assert isinstance(container.b, sarray[float])
-    assert isinstance(container.b[0], np.float)
+    assert isinstance(container.b[0], float)
 
     assert isinstance(container.c, carray)
     assert isinstance(container.c, carray[int])
